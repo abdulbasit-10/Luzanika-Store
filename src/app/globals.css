@@ -17,6 +17,15 @@
   --accent: #8b5e3c;
   --danger: #dc2626;
   --ring: #8b5e3c;
+
+  /* Sticky header height; shrinks on short laptop viewports (e.g. 1366x768, or 1080p at 150%+ scaling). */
+  --header-height: 5rem;
+}
+
+@media (max-height: 43.75rem) {
+  :root {
+    --header-height: 4rem;
+  }
 }
 
 @theme inline {

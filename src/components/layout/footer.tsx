@@ -75,7 +75,7 @@ export function Footer() {
             </nav>
           ))}
 
-          <div className="flex flex-col gap-3 text-xs">
+          <div className="flex flex-col gap-3 text-xs [overflow-wrap:anywhere]">
             <h2 className="text-xs font-semibold">Contact us</h2>
             <div className="flex flex-col gap-1">
               <p className="text-accent">{complaintServices.label}</p>

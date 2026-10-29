@@ -78,7 +78,7 @@ export function MobileNavPanel() {
     <nav
       id="mobile-nav"
       aria-label="Mobile"
-      className="absolute inset-x-0 top-full flex max-h-[calc(100dvh-5rem)] flex-col gap-4 overflow-y-auto border-t border-border bg-surface px-gutter py-4 shadow-overlay sm:px-8 lg:hidden"
+      className="absolute inset-x-0 top-full flex max-h-[calc(100dvh-var(--header-height))] flex-col gap-4 overflow-y-auto border-t border-border bg-surface px-gutter py-4 shadow-overlay sm:px-8 lg:hidden"
     >
       <MobileNavSection links={mainNav.links} onNavigate={close} />
       <MobileNavSection

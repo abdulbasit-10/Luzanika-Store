@@ -22,7 +22,7 @@ const iconLinks = [
 export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-surface">
-      <Container className="flex h-20 items-center justify-between gap-6">
+      <Container className="flex h-(--header-height) items-center justify-between gap-6">
         <Logo />
         <MainNav />
         <div className="flex items-center gap-3 sm:gap-4">
