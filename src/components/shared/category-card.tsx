@@ -9,6 +9,8 @@ interface CategoryCardProps {
   description: string;
   href: string;
   image: { src: string; alt: string };
+  /** CSS object-position, used to keep the subject in frame when the photo is cropped. */
+  imagePosition?: string;
   sizes: string;
   className?: string;
 }
@@ -18,6 +20,7 @@ export function CategoryCard({
   description,
   href,
   image,
+  imagePosition = "center",
   sizes,
   className,
 }: CategoryCardProps) {
@@ -34,6 +37,7 @@ export function CategoryCard({
         alt={image.alt}
         fill
         sizes={sizes}
+        style={{ objectPosition: imagePosition }}
         className="object-cover transition-transform duration-500 group-hover:scale-105"
       />
       <div

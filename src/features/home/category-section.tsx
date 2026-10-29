@@ -8,6 +8,7 @@ const topRow = [
     description: "Tailored Suits & Casual Classics",
     href: "/men",
     image: { src: "/images/categories/men.jpg", alt: "Man in a tailored suit" },
+    imagePosition: "50% 0%",
   },
   {
     title: "Ladies",
@@ -17,12 +18,14 @@ const topRow = [
       src: "/images/categories/ladies.jpg",
       alt: "Woman in a neutral knit top",
     },
+    imagePosition: "50% 0%",
   },
   {
     title: "Kids",
     description: "Playful Luxury & Everyday Wear",
     href: "/kids",
     image: { src: "/images/categories/kids.jpg", alt: "Girl in a beige coat" },
+    imagePosition: "50% 0%",
   },
 ];
 
@@ -32,6 +35,7 @@ const bottomRow = [
     description: "Handcrafted Italian Leather Goods",
     href: "/bags",
     image: { src: "/images/categories/bags.jpg", alt: "Brown leather handbag" },
+    imagePosition: "50% 65%",
   },
   {
     title: "Fragrances",
@@ -41,6 +45,7 @@ const bottomRow = [
       src: "/images/categories/fragrances.jpg",
       alt: "Perfume bottle on a gold fabric background",
     },
+    imagePosition: "50% 45%",
   },
 ];
 
