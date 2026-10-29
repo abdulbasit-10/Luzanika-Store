@@ -34,7 +34,7 @@ export function ProductCard({
             "relative block overflow-hidden bg-muted",
             isDetailed
               ? "aspect-[6/7] rounded-xl"
-              : "aspect-square rounded-2xl",
+              : "aspect-[12/13] rounded-2xl",
           )}
         >
           {product.image ? (

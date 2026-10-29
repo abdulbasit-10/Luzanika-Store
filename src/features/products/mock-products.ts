@@ -74,24 +74,44 @@ export const mockNewArrivals: ProductSummary[] = [
     id: "new-1",
     slug: "everyday-backpack",
     name: "Everyday Backpack",
+    image: {
+      src: "/images/products/everyday-backpack.jpg",
+      alt: "Black leather backpack beside a plant",
+      position: "50% 50%",
+    },
     prices: mockPrices(15),
   },
   {
     id: "new-2",
     slug: "womens-formal-dress",
     name: "Women's Formal Dress",
+    image: {
+      src: "/images/products/womens-formal-dress.jpg",
+      alt: "Woman in a beaded champagne formal dress and hijab",
+      position: "50% 0%",
+    },
     prices: mockPrices(25),
   },
   {
     id: "new-3",
     slug: "mens-casual-shirt",
     name: "Men's Casual Shirt",
+    image: {
+      src: "/images/products/mens-casual-shirt.jpg",
+      alt: "Man in a beige linen shirt and jeans",
+      position: "40% 50%",
+    },
     prices: mockPrices(18),
   },
   {
     id: "new-4",
     slug: "unisex-fragrance",
     name: "Unisex Fragrance",
+    image: {
+      src: "/images/products/unisex-fragrance.jpg",
+      alt: "Perfume bottle with a gold cap on a white podium",
+      position: "50% 50%",
+    },
     prices: mockPrices(50),
   },
 ];
