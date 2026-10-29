@@ -7,7 +7,13 @@ function getFormatter(locale: Locale, currency: CurrencyCode) {
   const key = `${locale}:${currency}`;
   let formatter = formatterCache.get(key);
   if (!formatter) {
-    formatter = new Intl.NumberFormat(locale, { style: "currency", currency });
+    // Explicit digits keep server (Node) and browser output identical; ICU versions disagree on PKR's default.
+    formatter = new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
     formatterCache.set(key, formatter);
   }
   return formatter;

@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export default function GlobalError({
   error,
   retry,
@@ -15,9 +17,7 @@ export default function GlobalError({
           ? `An unexpected error occurred (ref: ${error.digest}).`
           : "An unexpected error occurred."}
       </p>
-      <button type="button" className="btn-primary" onClick={() => retry()}>
-        Try again
-      </button>
+      <Button onClick={() => retry()}>Try again</Button>
     </main>
   );
 }

@@ -1,11 +1,17 @@
-import { siteConfig } from "@/config/site";
+import { CategorySection } from "@/features/home/category-section";
+import { FeaturedProductsSection } from "@/features/home/featured-products-section";
+import { HeroSection } from "@/features/home/hero-section";
+import { NewArrivalsSection } from "@/features/home/new-arrivals-section";
+import { SpecialOffersSection } from "@/features/home/special-offers-section";
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-page flex-1 flex-col items-center justify-center px-gutter py-section text-center">
-      <h1 className="text-3xl font-semibold tracking-tight">
-        {siteConfig.name}
-      </h1>
+    <main className="flex-1">
+      <HeroSection />
+      <CategorySection />
+      <FeaturedProductsSection />
+      <NewArrivalsSection />
+      <SpecialOffersSection />
     </main>
   );
 }

@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 /*
- * Design tokens. Values are neutral defaults until the Figma specs are
- * supplied; update them here and every utility/component follows.
+ * Design tokens. Colors and fonts come from the Figma file; spacing, radius,
+ * border and shadow values are estimates until exact specs are available.
  */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #d9d9d9;
+  --section: #f5f1ea;
+  --surface: #ffffff;
+  --foreground: #252525;
   --muted: #f5f5f5;
-  --muted-foreground: #737373;
+  --muted-foreground: #7a7a7a;
   --border: #e5e5e5;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
-  --accent: #404040;
+  --primary: #252525;
+  --primary-foreground: #ffffff;
+  --accent: #8b5e3c;
   --danger: #dc2626;
-  --ring: #171717;
+  --ring: #8b5e3c;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-section: var(--section);
+  --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -30,6 +34,9 @@
   --color-ring: var(--ring);
 
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading-family), ui-serif, Georgia, serif;
+  --font-button:
+    var(--font-button-family), ui-sans-serif, system-ui, sans-serif;
 }
 
 @theme {
@@ -58,26 +65,7 @@ body {
   color: var(--foreground);
 }
 
-/*
- * Shared conventions for the core controls. Components compose these classes
- * instead of repeating utility strings.
- */
-@utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50;
-}
-
-@utility btn-primary {
-  @apply btn bg-primary text-primary-foreground hover:bg-accent;
-}
-
-@utility btn-secondary {
-  @apply btn border border-border bg-background text-foreground hover:bg-muted;
-}
-
+/* Form control style, reused by the Input component once forms are built. */
 @utility input {
-  @apply w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:opacity-50;
-}
-
-@utility product-card {
-  @apply overflow-hidden rounded-lg border border-border bg-background shadow-card;
+  @apply w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:opacity-50;
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { ButtonLink } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
@@ -7,9 +7,7 @@ export default function NotFound() {
       <p className="text-muted-foreground">
         The page you are looking for does not exist.
       </p>
-      <Link href="/" className="btn-primary">
-        Back to home
-      </Link>
+      <ButtonLink href="/">Back to home</ButtonLink>
     </main>
   );
 }
