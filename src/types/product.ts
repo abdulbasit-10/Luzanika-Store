@@ -3,6 +3,8 @@ import type { RegionalPrice } from "@/types/region";
 export interface ProductImage {
   src: string;
   alt: string;
+  /** CSS object-position, keeps the subject in frame when the photo is cropped. */
+  position?: string;
 }
 
 export interface ProductColor {

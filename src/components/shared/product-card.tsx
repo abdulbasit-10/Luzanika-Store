@@ -43,6 +43,7 @@ export function ProductCard({
               alt={product.image.alt}
               fill
               sizes={sizes}
+              style={{ objectPosition: product.image.position }}
               className="object-cover"
             />
           ) : (
