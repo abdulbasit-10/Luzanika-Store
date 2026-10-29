@@ -121,24 +121,44 @@ export const mockSpecialOffers: ProductSummary[] = [
     id: "offer-1",
     slug: "black-jacket-denim",
     name: "Black Jacket Denim",
+    image: {
+      src: "/images/products/black-jacket-denim.png",
+      alt: "Man wearing a black denim jacket over a white turtleneck",
+      position: "50% 35%",
+    },
     prices: mockPrices(30),
   },
   {
     id: "offer-2",
     slug: "black-shoe-casual",
     name: "Black Shoe Casual",
+    image: {
+      src: "/images/products/black-shoe-casual.jpg",
+      alt: "Black tassel loafers with white soles on a wooden bridge",
+      position: "45% 50%",
+    },
     prices: mockPrices(45),
   },
   {
     id: "offer-3",
     slug: "woman-trouser-blue-light",
     name: "Woman Trouser Blue light",
+    image: {
+      src: "/images/products/woman-trouser-blue-light.png",
+      alt: "Light blue wide-leg jeans with black lace-up shoes",
+      position: "50% 30%",
+    },
     prices: mockPrices(25),
   },
   {
     id: "offer-4",
     slug: "bag-casual-office",
     name: "Bag Casual Office",
+    image: {
+      src: "/images/products/bag-casual-office.png",
+      alt: "Black leather briefcase held against an olive coat",
+      position: "56% 50%",
+    },
     prices: mockPrices(35),
   },
 ];
