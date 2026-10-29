@@ -17,6 +17,7 @@
   --accent: #8b5e3c;
   --danger: #dc2626;
   --ring: #8b5e3c;
+  --timer: #3b5bdb;
 
   /* Sticky header height; shrinks on short laptop viewports (e.g. 1366x768, or 1080p at 150%+ scaling). */
   --header-height: 5rem;
@@ -41,6 +42,7 @@
   --color-accent: var(--accent);
   --color-danger: var(--danger);
   --color-ring: var(--ring);
+  --color-timer: var(--timer);
 
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-heading-family), ui-serif, Georgia, serif;

@@ -1,6 +1,7 @@
 import { ProductGrid } from "@/components/shared/product-grid";
 import { Section } from "@/components/ui/section";
 import { SectionHeading } from "@/components/ui/section-heading";
+import { MockOfferCountdown } from "@/features/home/mock-offer-countdown";
 import { mockSpecialOffers } from "@/features/products/mock-products";
 
 export function SpecialOffersSection() {
@@ -13,6 +14,8 @@ export function SpecialOffersSection() {
           </>
         }
         description="Discover offers on selected styles."
+        action={<MockOfferCountdown />}
+        className="items-start"
       />
       <div className="mt-8">
         <ProductGrid products={mockSpecialOffers} variant="compact" />
