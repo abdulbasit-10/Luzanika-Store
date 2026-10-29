@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Luzanika Store (Frontend)
 
-## Getting Started
+Storefront for a fashion e-commerce website serving **Pakistan (PKR)** and **Germany (EUR)**. It consumes a separate Express REST API.
 
-First, run the development server:
+**Stack:** Next.js (App Router) · React · TypeScript (strict) · Tailwind CSS v4 · TanStack Query · Zustand · Axios · React Hook Form · Zod · Lucide React
+
+> This project uses a Next.js version with breaking changes. Read the guides in `node_modules/next/dist/docs/` before writing framework-level code (see `AGENTS.md`).
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # PowerShell: Copy-Item .env.example .env.local
+npm run dev                  # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Requires Node.js 20.9+ and a running backend API for data-driven pages.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable               | Required | Description                                                          |
+| ---------------------- | -------- | -------------------------------------------------------------------- |
+| `NEXT_PUBLIC_API_URL`  | Yes      | Express API base URL, e.g. `http://localhost:5000/api/v1`            |
+| `NEXT_PUBLIC_SITE_URL` | No       | Public storefront URL for metadata (default `http://localhost:3000`) |
 
-## Learn More
+Variables are validated with Zod in `src/config/env.ts`; the app fails fast if they are missing or invalid.
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command                | Purpose                           |
+| ---------------------- | --------------------------------- |
+| `npm run dev`          | Start the development server      |
+| `npm run build`        | Production build                  |
+| `npm run start`        | Serve the production build        |
+| `npm run lint`         | ESLint                            |
+| `npm run typecheck`    | TypeScript check (`tsc --noEmit`) |
+| `npm run format`       | Format with Prettier              |
+| `npm run format:check` | Check formatting                  |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project structure
 
-## Deploy on Vercel
+```
+src/
+  app/         Routes, layouts, loading/error/not-found (Server Components by default)
+  config/      env validation, region config, site metadata
+  lib/         Axios client (api-client.ts), QueryClient factory
+  providers/   Client providers (TanStack Query)
+  stores/      Zustand stores (client UI state only)
+  types/       Shared types (regions, prices)
+  utils/       Pure helpers (currency formatting)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Add `components/{ui,layout,shared}`, `features/*`, `hooks/` and `services/` when the corresponding Figma designs are built. Import with the `@/` alias (maps to `src/`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture notes
+
+- **Server vs client:** pages and layouts are Server Components; add `"use client"` only for interactivity or client hooks.
+- **API:** all requests go through `apiClient` in `src/lib/api-client.ts` (base URL, 15s timeout, errors normalized to `ApiError`). Put per-resource calls in `src/services/`. Authentication is not implemented yet; add it via request interceptors.
+- **Server state vs UI state:** API data lives in TanStack Query. Zustand (`src/stores/ui-store.ts`) holds only UI state (selected region, mobile nav, cart drawer). Do not copy query data into stores.
+- **Regions:** `src/config/regions.ts` is the single source for PK/DE, currency and default locale. Region and language are independent. Prices come from the backend per region (`RegionalPrice`); there are no exchange rates or automatic geolocation on the frontend.
+- **Currency:** `formatCurrency` / `formatRegionalPrice` in `src/utils/format-currency.ts` wrap `Intl.NumberFormat`.
+- **Design tokens:** CSS variables and Tailwind `@theme` values (colors, fonts, spacing, radius, shadows, breakpoints, container widths) live in `src/app/globals.css`. They are neutral defaults until Figma specs are applied. Shared control styles are `.btn-primary`, `.btn-secondary`, `.input` and `.product-card`.

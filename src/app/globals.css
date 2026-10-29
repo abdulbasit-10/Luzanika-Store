@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens. Values are neutral defaults until the Figma specs are
+ * supplied; update them here and every utility/component follows.
+ */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --border: #e5e5e5;
+  --primary: #171717;
+  --primary-foreground: #fafafa;
+  --accent: #404040;
+  --danger: #dc2626;
+  --ring: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
+}
+
+@theme {
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+  --breakpoint-2xl: 96rem;
+
+  --container-page: 80rem;
+  --container-narrow: 48rem;
+
+  --spacing-gutter: 1rem;
+  --spacing-section: 4rem;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.06), 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-overlay: 0 10px 30px -5px rgb(0 0 0 / 0.2);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/*
+ * Shared conventions for the core controls. Components compose these classes
+ * instead of repeating utility strings.
+ */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-primary text-primary-foreground hover:bg-accent;
+}
+
+@utility btn-secondary {
+  @apply btn border border-border bg-background text-foreground hover:bg-muted;
+}
+
+@utility input {
+  @apply w-full rounded-md border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:opacity-50;
+}
+
+@utility product-card {
+  @apply overflow-hidden rounded-lg border border-border bg-background shadow-card;
+}
