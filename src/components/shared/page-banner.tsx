@@ -3,17 +3,18 @@ import Image from "next/image";
 import { cn } from "@/utils/cn";
 
 /*
- * Full-width banner with a centred title. From lg up, the height follows the
- * 2.4:1 Figma frame (41.67vw) but is capped so at least 8rem of the page
- * stays visible under it: the banner never fills the whole screen, whatever
- * the laptop size, Windows scaling or browser zoom. The photo is anchored so
- * heads are not cropped when the banner is short.
+ * Full-width banner with a centred title. From lg up it fills the visible area
+ * below the header, like the home and About heroes, so it fits the screen at
+ * any laptop size, Windows scaling or browser zoom. It is capped at 60vw so it
+ * does not grow taller than the photo on tall windows. The height is set
+ * directly (not aspect-ratio) so the width always stays full. The photo is
+ * anchored so heads are not cropped when the banner is short.
  * The 45% black overlay matches the Figma banners (measured on the Men and
  * Ladies frames, and shown on the Contact frame) and keeps the white title
  * readable on any photo.
  */
 export const PAGE_BANNER_HEIGHT =
-  "h-56 sm:h-72 lg:h-[min(41.67vw,calc(100dvh-var(--header-height)-8rem))] lg:min-h-64";
+  "h-56 sm:h-72 lg:h-[min(60vw,calc(100dvh-var(--header-height)))] lg:min-h-64";
 
 /* A short strip, a quarter of the visible screen under the header (--banner-short in globals.css). */
 const PAGE_BANNER_SHORT_HEIGHT = "h-40 sm:h-48 lg:h-(--banner-short)";
@@ -22,7 +23,7 @@ interface PageBannerProps {
   title: string;
   image: { src: string; alt: string; position?: string };
   titleClassName?: string;
-  /** Use the short (quarter-screen) height instead of the collection banner height. */
+  /** Use the short (quarter-screen) height instead of the full-screen collection banner height. */
   short?: boolean;
 }
 
