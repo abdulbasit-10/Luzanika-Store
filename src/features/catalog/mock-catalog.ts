@@ -1,3 +1,4 @@
+import { mockKidsProducts } from "@/features/catalog/mock-kids-products";
 import { mockLadiesProducts } from "@/features/catalog/mock-ladies-products";
 import { mockMenProducts } from "@/features/catalog/mock-men-products";
 import {
@@ -109,6 +110,47 @@ const catalogs: Partial<Record<CategorySlug, Catalog>> = {
       priceRange: sharedPriceRange,
     },
     products: mockLadiesProducts,
+  },
+  kids: {
+    category: {
+      slug: "kids",
+      label: "Kids",
+      heroTitle: "Kids Collection",
+      title: "Kids — Collection",
+      description:
+        "Curated collection of 18 playful essentials designed for ease, comfortable fits, and timeless charm across soft, durable textiles.",
+      heroImage: {
+        src: "/images/categories/kids-hero.jpg",
+        alt: "Three girls in denim and neutral layers against a teal backdrop",
+        position: "50% 15%",
+      },
+      subcategories: [
+        { slug: ALL_SUBCATEGORY, label: "ALL KIDS" },
+        { slug: "formal", label: "FORMAL WEAR", shortLabel: "Formal" },
+        { slug: "sports", label: "SPORTS ACTIVEWEAR", shortLabel: "Sports" },
+        { slug: "casual", label: "CASUAL WEAR", shortLabel: "Casual" },
+        {
+          slug: "knitwear",
+          label: "CASHMERE & KNITWEAR",
+          shortLabel: "Knitwear",
+        },
+        { slug: "outerwear", label: "OUTERWEAR", shortLabel: "Outerwear" },
+      ],
+    },
+    facets: {
+      collections: [
+        { value: "kids-casual", label: "Kids Casual" },
+        { value: "kids-formal", label: "Kids Formal & Suiting" },
+        { value: "kids-sports", label: "Kids Atelier Sports" },
+        { value: "kids-outerwear", label: "Kids Outerwear" },
+        { value: "kids-atelier", label: "Kids Atelier" },
+        { value: "haute-leatherware", label: "Haute Leatherware" },
+      ],
+      sizes: sharedSizes,
+      availability: sharedAvailability,
+      priceRange: sharedPriceRange,
+    },
+    products: mockKidsProducts,
   },
 };
 
