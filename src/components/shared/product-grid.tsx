@@ -30,7 +30,7 @@ export function ProductGrid({
       )}
     >
       {products.map((product) => (
-        <li key={product.id}>
+        <li key={product.id} className="h-full">
           <ProductCard
             product={product}
             variant={variant}

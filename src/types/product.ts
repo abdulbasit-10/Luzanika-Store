@@ -28,6 +28,8 @@ export interface ProductSummary {
   /** The first color is the one shown as selected. */
   colors?: ProductColor[];
   sizes?: string[];
+  /** Short descriptors such as scent notes ("Woody", "Amber"). On catalog cards they replace the sizes line. */
+  notes?: string[];
   isNew?: boolean;
   badge?: ProductBadge;
 }

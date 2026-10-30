@@ -1,4 +1,5 @@
 import { mockBagsProducts } from "@/features/catalog/mock-bags-products";
+import { mockFragrancesProducts } from "@/features/catalog/mock-fragrances-products";
 import { mockKidsProducts } from "@/features/catalog/mock-kids-products";
 import { mockLadiesProducts } from "@/features/catalog/mock-ladies-products";
 import { mockMenProducts } from "@/features/catalog/mock-men-products";
@@ -196,6 +197,46 @@ const catalogs: Partial<Record<CategorySlug, Catalog>> = {
       priceRange: sharedPriceRange,
     },
     products: mockBagsProducts,
+  },
+  fragrances: {
+    category: {
+      slug: "fragrances",
+      label: "Fragrances",
+      heroTitle: "HAUTE PARFUMERIE Collection",
+      title: "HAUTE PARFUMERIE — Collection",
+      description:
+        "Curated collection of 18 artisanal scents designed for presence, lasting depth, and timeless character across rare, natural ingredients.",
+      heroImage: {
+        src: "/images/categories/fragrances-hero.jpg",
+        alt: "Four perfume bottles on stone podiums with white flowers and driftwood",
+        position: "50% 50%",
+      },
+      subcategories: [
+        { slug: ALL_SUBCATEGORY, label: "ALL FRAGRANCES" },
+        {
+          slug: "woody",
+          label: "WOODY & AMBER",
+          shortLabel: "Woody & Amber",
+        },
+        { slug: "floral", label: "FLORAL & SOFT", shortLabel: "Floral" },
+        { slug: "oud", label: "OUD & INTENSE", shortLabel: "Oud" },
+        { slug: "fresh", label: "FRESH & CITRUS", shortLabel: "Fresh" },
+        { slug: "gifts", label: "GIFT SETS", shortLabel: "Gift sets" },
+      ],
+    },
+    facets: {
+      collections: [
+        { value: "men", label: "Men" },
+        { value: "ladies", label: "Ladies" },
+        { value: "unisex", label: "Unisex" },
+        { value: "room", label: "Room" },
+        { value: "car", label: "Car" },
+      ],
+      sizes: ["15 ml", "25 ml", "30 ml", "50 ml", "100 ml"],
+      availability: sharedAvailability,
+      priceRange: sharedPriceRange,
+    },
+    products: mockFragrancesProducts,
   },
 };
 

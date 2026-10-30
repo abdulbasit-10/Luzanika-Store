@@ -105,7 +105,7 @@ export function ProductCard({
       className={cn(
         "flex gap-3",
         variant === "catalog" && "gap-4",
-        isList ? "flex-row" : "flex-col",
+        isList ? "flex-row" : "h-full flex-col",
       )}
     >
       <div className={cn("relative", isList && "w-40 shrink-0 sm:w-56")}>
@@ -170,26 +170,32 @@ export function ProductCard({
       ) : null}
 
       {variant === "catalog" ? (
-        <div className={cn("flex flex-col gap-2", isList && "justify-center")}>
-          {/* In the grid, reserve two lines so sizes, price and colors line up across cards when a name wraps. */}
-          <h3
-            className={cn(
-              "max-w-48 text-base leading-7 font-semibold",
-              !isList && "min-h-14",
-            )}
-          >
+        <div
+          className={cn(
+            "flex flex-1 flex-col gap-2",
+            isList && "justify-center",
+          )}
+        >
+          <h3 className="max-w-48 text-base leading-7 font-semibold">
             <Link href={href}>{product.name}</Link>
           </h3>
-          {product.sizes?.length ? (
-            <p className="text-[10px] tracking-wide text-muted-foreground uppercase">
-              Sizes: {product.sizes.join(" - ")}
-            </p>
-          ) : null}
-          <ProductPrice
-            prices={product.prices}
-            className="text-base font-bold"
-          />
-          <ColorDots product={product} />
+          {/* In the grid the details sit at the bottom of the (row-stretched) card, so they line up even when a name wraps. */}
+          <div className={cn("flex flex-col gap-2", !isList && "mt-auto")}>
+            {product.notes?.length ? (
+              <p className="text-[10px] text-muted-foreground">
+                {product.notes.join(" · ")}
+              </p>
+            ) : product.sizes?.length ? (
+              <p className="text-[10px] tracking-wide text-muted-foreground uppercase">
+                Sizes: {product.sizes.join(" - ")}
+              </p>
+            ) : null}
+            <ProductPrice
+              prices={product.prices}
+              className="text-base font-bold"
+            />
+            <ColorDots product={product} />
+          </div>
         </div>
       ) : null}
     </article>
