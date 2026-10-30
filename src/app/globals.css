@@ -22,6 +22,10 @@
   --panel: #f5f1eb;
   /* "Personal Stylist" card on the listing sidebar. */
   --stylist: #dbccbf;
+  /* Dark navy used by the About page headings in Figma. */
+  --navy: #05172a;
+  /* Darker body copy used on the About page. */
+  --copy: #4f4f50;
 
   /* Sticky header height; shrinks on short laptop viewports (e.g. 1366x768, or 1080p at 150%+ scaling). */
   --header-height: 5rem;
@@ -57,6 +61,8 @@
   --color-timer: var(--timer);
   --color-panel: var(--panel);
   --color-stylist: var(--stylist);
+  --color-navy: var(--navy);
+  --color-copy: var(--copy);
 
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-heading-family), ui-serif, Georgia, serif;

@@ -8,6 +8,9 @@ interface SectionHeadingProps {
   description?: string;
   action?: ReactNode;
   className?: string;
+  titleClassName?: string;
+  /** Overrides the spacing of the eyebrow / title / description stack. */
+  contentClassName?: string;
 }
 
 export function SectionHeading({
@@ -16,6 +19,8 @@ export function SectionHeading({
   description,
   action,
   className,
+  titleClassName,
+  contentClassName,
 }: SectionHeadingProps) {
   return (
     <div
@@ -24,14 +29,19 @@ export function SectionHeading({
         className,
       )}
     >
-      <div className="flex flex-col gap-3">
+      <div className={cn("flex flex-col gap-3", contentClassName)}>
         {eyebrow ? (
           <p className="flex items-center gap-3 font-heading text-xs font-medium tracking-[0.2em] text-accent uppercase">
             <span aria-hidden className="h-px w-8 bg-accent" />
             {eyebrow}
           </p>
         ) : null}
-        <h2 className="max-w-xl font-heading text-3xl leading-tight font-bold lg:text-[40px]">
+        <h2
+          className={cn(
+            "max-w-xl font-heading text-3xl leading-tight font-bold lg:text-[40px]",
+            titleClassName,
+          )}
+        >
           {title}
         </h2>
         {description ? (
