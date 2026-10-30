@@ -171,7 +171,13 @@ export function ProductCard({
 
       {variant === "catalog" ? (
         <div className={cn("flex flex-col gap-2", isList && "justify-center")}>
-          <h3 className="max-w-48 text-base leading-7 font-semibold">
+          {/* In the grid, reserve two lines so sizes, price and colors line up across cards when a name wraps. */}
+          <h3
+            className={cn(
+              "max-w-48 text-base leading-7 font-semibold",
+              !isList && "min-h-14",
+            )}
+          >
             <Link href={href}>{product.name}</Link>
           </h3>
           {product.sizes?.length ? (

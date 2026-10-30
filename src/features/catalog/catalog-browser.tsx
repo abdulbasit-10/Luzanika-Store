@@ -89,7 +89,7 @@ export function CatalogBrowser({ category, facets, products }: Catalog) {
             : []),
         ]}
       />
-      <h2 className="mt-6 font-heading text-3xl leading-tight font-medium lg:text-[40px]">
+      <h2 className="mt-6 max-w-xl font-heading text-3xl leading-tight font-medium lg:text-[40px]">
         {category.title}
       </h2>
       <p className="mt-6 max-w-xl text-base text-muted-foreground">

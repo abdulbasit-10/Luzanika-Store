@@ -1,3 +1,4 @@
+import { mockBagsProducts } from "@/features/catalog/mock-bags-products";
 import { mockKidsProducts } from "@/features/catalog/mock-kids-products";
 import { mockLadiesProducts } from "@/features/catalog/mock-ladies-products";
 import { mockMenProducts } from "@/features/catalog/mock-men-products";
@@ -151,6 +152,50 @@ const catalogs: Partial<Record<CategorySlug, Catalog>> = {
       priceRange: sharedPriceRange,
     },
     products: mockKidsProducts,
+  },
+  bags: {
+    category: {
+      slug: "bags",
+      label: "Bags",
+      heroTitle: "BAGS Collection",
+      title: "BAGS & LEATHERGOODS — Collection",
+      description:
+        "Curated collection of 18 handcrafted essentials designed for everyday ease, enduring structure, and timeless character in fine leather and canvas.",
+      heroImage: {
+        src: "/images/categories/bags-hero.jpg",
+        alt: "Leather tote, backpack, shoulder bag and duffel arranged on stone podiums",
+        position: "50% 50%",
+      },
+      subcategories: [
+        { slug: ALL_SUBCATEGORY, label: "ALL BAGS" },
+        { slug: "handbags", label: "HANDBAGS", shortLabel: "Handbags" },
+        {
+          slug: "shoulder",
+          label: "SHOULDER BAGS",
+          shortLabel: "Shoulder bags",
+        },
+        { slug: "totes", label: "TOTE BAGS", shortLabel: "Tote bags" },
+        { slug: "backpacks", label: "BACKPACKS", shortLabel: "Backpacks" },
+        {
+          slug: "travel",
+          label: "TRAVEL BAGS",
+          shortLabel: "Travel bags",
+        },
+      ],
+    },
+    facets: {
+      collections: [
+        { value: "bag-casual", label: "Bag Casual" },
+        { value: "bag-formal", label: "Bag Formal & Suiting" },
+        { value: "handbags", label: "Handbags" },
+        { value: "backpacks", label: "Backpacks" },
+        { value: "travel-bags", label: "Travel Bags" },
+      ],
+      sizes: sharedSizes,
+      availability: sharedAvailability,
+      priceRange: sharedPriceRange,
+    },
+    products: mockBagsProducts,
   },
 };
 
