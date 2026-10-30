@@ -1,6 +1,8 @@
 export interface NavLink {
   label: string;
   href: string;
+  /** Highlight only on this exact path, not on pages nested under it (e.g. /products vs /products/<slug>). */
+  exact?: boolean;
 }
 
 export const categoryLinks: NavLink[] = [
@@ -14,8 +16,8 @@ export const categoryLinks: NavLink[] = [
 export const mainNav: { links: NavLink[]; categoryLabel: string } = {
   categoryLabel: "Category",
   links: [
-    { label: "Home", href: "/" },
-    { label: "Products", href: "/products" },
+    { label: "Home", href: "/", exact: true },
+    { label: "Products", href: "/products", exact: true },
     { label: "About Us", href: "/about" },
     { label: "Contact Us", href: "/contact" },
   ],

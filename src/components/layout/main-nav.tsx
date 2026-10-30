@@ -8,12 +8,12 @@ import { Dropdown } from "@/components/ui/dropdown";
 import { categoryLinks, mainNav, type NavLink } from "@/config/navigation";
 import { cn } from "@/utils/cn";
 
-function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+function isActive(pathname: string, { href, exact }: NavLink) {
+  return exact ? pathname === href : pathname.startsWith(href);
 }
 
 function MainNavLink({ link, pathname }: { link: NavLink; pathname: string }) {
-  const active = isActive(pathname, link.href);
+  const active = isActive(pathname, link);
 
   return (
     <Link
@@ -32,9 +32,7 @@ function MainNavLink({ link, pathname }: { link: NavLink; pathname: string }) {
 export function MainNav() {
   const pathname = usePathname();
   const [home, ...rest] = mainNav.links;
-  const categoryActive = categoryLinks.some((link) =>
-    isActive(pathname, link.href),
-  );
+  const categoryActive = categoryLinks.some((link) => isActive(pathname, link));
 
   return (
     <nav aria-label="Main" className="hidden lg:block">
