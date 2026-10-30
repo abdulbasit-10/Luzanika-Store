@@ -18,9 +18,21 @@
   --danger: #dc2626;
   --ring: #8b5e3c;
   --timer: #3b5bdb;
+  /* Light warm panel behind the filter sidebar and the product list. */
+  --panel: #f5f1eb;
+  /* "Personal Stylist" card on the listing sidebar. */
+  --stylist: #dbccbf;
 
   /* Sticky header height; shrinks on short laptop viewports (e.g. 1366x768, or 1080p at 150%+ scaling). */
   --header-height: 5rem;
+  /* Side padding of the page container. */
+  --page-pad: 1rem;
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --page-pad: 2rem;
+  }
 }
 
 @media (max-height: 43.75rem) {
@@ -43,6 +55,8 @@
   --color-danger: var(--danger);
   --color-ring: var(--ring);
   --color-timer: var(--timer);
+  --color-panel: var(--panel);
+  --color-stylist: var(--stylist);
 
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-heading-family), ui-serif, Georgia, serif;
@@ -79,4 +93,62 @@ body {
 /* Form control style, reused by the Input component once forms are built. */
 @utility input {
   @apply w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring disabled:opacity-50;
+}
+
+/*
+ * Native range input restyled to the Figma slider: dark filled track up to the
+ * thumb (--range-progress, set by RangeSlider) and a light remainder.
+ */
+.range-slider {
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.range-slider::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) var(--range-progress, 0%),
+    #ffffff var(--range-progress, 0%)
+  );
+}
+
+.range-slider::-moz-range-track {
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    var(--primary) var(--range-progress, 0%),
+    #ffffff var(--range-progress, 0%)
+  );
+}
+
+.range-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.25rem;
+  border: 2px solid var(--surface);
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: var(--shadow-card);
+}
+
+.range-slider::-moz-range-thumb {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--surface);
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: var(--shadow-card);
+}
+
+.range-slider:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 4px;
+  border-radius: 9999px;
 }

@@ -12,6 +12,12 @@ export interface ProductColor {
   hex: string;
 }
 
+/** Small label on a product photo, e.g. "NEW ARRIVAL". */
+export interface ProductBadge {
+  label: string;
+  tone: "dark" | "light";
+}
+
 export interface ProductSummary {
   id: string;
   slug: string;
@@ -19,6 +25,9 @@ export interface ProductSummary {
   image?: ProductImage;
   prices: RegionalPrice[];
   rating?: number;
-  color?: ProductColor;
+  /** The first color is the one shown as selected. */
+  colors?: ProductColor[];
+  sizes?: string[];
   isNew?: boolean;
+  badge?: ProductBadge;
 }

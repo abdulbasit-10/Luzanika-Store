@@ -1,0 +1,119 @@
+import type { CatalogProduct } from "@/features/catalog/types";
+import type { RegionalPrice } from "@/types/region";
+
+/** Temporary Men catalog taken from the Figma Men Collection page. Replace with API data. */
+function mockPrices(amount: number): RegionalPrice[] {
+  return [
+    { region: "PK", currency: "PKR", amount },
+    { region: "DE", currency: "EUR", amount },
+  ];
+}
+
+const colors = [
+  { name: "Black", hex: "#252525" },
+  { name: "Forest", hex: "#1f6b50" },
+  { name: "Cream", hex: "#f4f1ea" },
+];
+
+export const mockMenProducts: CatalogProduct[] = [
+  {
+    id: "men-1",
+    slug: "archival-cashmere-overshirt",
+    name: "Archival Cashmere Overshirt",
+    image: {
+      src: "/images/products/archival-cashmere-overshirt.jpg",
+      alt: "Man in a camel wool overshirt with two chest pockets",
+      position: "50% 0%",
+    },
+    prices: mockPrices(850),
+    sizes: ["XS", "S", "M", "L"],
+    colors,
+    badge: { label: "ATELIER SIGNATURE", tone: "dark" },
+    subcategory: "casual",
+    collection: "men-casual",
+    availability: "in-stock",
+  },
+  {
+    id: "men-2",
+    slug: "relaxed-linen-pleated-trouser",
+    name: "Relaxed Linen Pleated Trouser",
+    image: {
+      src: "/images/products/relaxed-linen-pleated-trouser.jpg",
+      alt: "Man in a linen shirt and brown pleated trousers against a grey backdrop",
+      position: "50% 0%",
+    },
+    prices: mockPrices(650),
+    sizes: ["46", "48", "50", "52"],
+    colors,
+    badge: { label: "NEW ARRIVAL", tone: "light" },
+    subcategory: "formal",
+    collection: "men-formal",
+    availability: "fitting-ready",
+  },
+  {
+    id: "men-3",
+    slug: "deconstructed-silk-cotton-knit",
+    name: "Deconstructed Silk-Cotton Knit",
+    image: {
+      src: "/images/products/deconstructed-silk-cotton-knit.jpg",
+      alt: "Model in an off-white deconstructed knit cardigan with ring fastenings",
+      position: "50% 0%",
+    },
+    prices: mockPrices(540),
+    sizes: ["XS", "S", "M", "L"],
+    colors,
+    subcategory: "knitwear",
+    collection: "men-casual",
+    availability: "in-stock",
+  },
+  {
+    id: "men-4",
+    slug: "double-faced-wool-field-jacket",
+    name: "Double-Faced Wool Field Jacket",
+    image: {
+      src: "/images/products/double-faced-wool-field-jacket.jpg",
+      alt: "Man in an olive wool field jacket over a grey polo",
+      position: "50% 20%",
+    },
+    prices: mockPrices(1420),
+    sizes: ["XS", "S", "M", "L"],
+    colors,
+    badge: { label: "ARCHIVAL ALLOCATION", tone: "dark" },
+    subcategory: "casual",
+    collection: "men-outerwear",
+    availability: "in-stock",
+  },
+  {
+    id: "men-5",
+    slug: "heavyweight-raw-cotton-tee",
+    name: "Heavyweight Raw Cotton Tee",
+    image: {
+      src: "/images/products/heavyweight-raw-cotton-tee.jpg",
+      alt: "Man in an off-white heavyweight tee with a silver chain",
+      position: "50% 0%",
+    },
+    prices: mockPrices(320),
+    sizes: ["46", "48", "50", "52"],
+    colors,
+    badge: { label: "NEW ARRIVAL", tone: "light" },
+    subcategory: "casual",
+    collection: "men-casual",
+    availability: "in-stock",
+  },
+  {
+    id: "men-6",
+    slug: "tailored-minimalist-trench",
+    name: "Tailored Minimalist Trench",
+    image: {
+      src: "/images/products/tailored-minimalist-trench.jpg",
+      alt: "Man in a grey double-breasted trench coat",
+      position: "50% 0%",
+    },
+    prices: mockPrices(1850),
+    sizes: ["48", "50", "52"],
+    colors,
+    subcategory: "overcoats",
+    collection: "men-outerwear",
+    availability: "pre-order",
+  },
+];

@@ -24,7 +24,7 @@ export const mockFeaturedProducts: ProductSummary[] = [
     },
     prices: mockPrices(150),
     rating: 4.8,
-    color: { name: "Black", hex: "#111111" },
+    colors: [{ name: "Black", hex: "#111111" }],
     isNew: true,
   },
   {
@@ -38,7 +38,7 @@ export const mockFeaturedProducts: ProductSummary[] = [
     },
     prices: mockPrices(200),
     rating: 4.5,
-    color: { name: "Cream", hex: "#efe6d4" },
+    colors: [{ name: "Cream", hex: "#efe6d4" }],
   },
   {
     id: "featured-3",
@@ -51,7 +51,7 @@ export const mockFeaturedProducts: ProductSummary[] = [
     },
     prices: mockPrices(230),
     rating: 4.8,
-    color: { name: "Brown", hex: "#6b4226" },
+    colors: [{ name: "Brown", hex: "#6b4226" }],
     isNew: true,
   },
   {
@@ -65,7 +65,7 @@ export const mockFeaturedProducts: ProductSummary[] = [
     },
     prices: mockPrices(280),
     rating: 4.8,
-    color: { name: "Olive", hex: "#6b6b3a" },
+    colors: [{ name: "Olive", hex: "#6b6b3a" }],
   },
 ];
 
