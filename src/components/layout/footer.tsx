@@ -2,20 +2,10 @@ import Link from "next/link";
 import { cacheLife } from "next/cache";
 
 import { Logo } from "@/components/shared/logo";
-import {
-  FacebookIcon,
-  LinkedInIcon,
-  XIcon,
-} from "@/components/shared/social-icons";
+import { SocialLinks } from "@/components/shared/social-links";
 import { Container } from "@/components/ui/container";
 import { footerColumns, footerLegalLinks } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
-
-const socialIcons = {
-  LinkedIn: LinkedInIcon,
-  X: XIcon,
-  Facebook: FacebookIcon,
-} as const;
 
 const linkClass = "text-xs text-white/80 transition-colors hover:text-white";
 
@@ -38,24 +28,7 @@ export function Footer() {
             <p className="max-w-52 text-xs text-white/80">
               {siteConfig.tagline}
             </p>
-            <ul className="flex gap-2">
-              {siteConfig.socials.map(({ name, href }) => {
-                const Icon = socialIcons[name];
-                return (
-                  <li key={name}>
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={name}
-                      className="flex size-7 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/30"
-                    >
-                      <Icon />
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
+            <SocialLinks variant="footer" />
           </div>
 
           {footerColumns.map((column) => (

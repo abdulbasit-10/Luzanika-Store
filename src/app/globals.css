@@ -45,6 +45,27 @@
   }
 }
 
+/*
+ * Short banner (Contact): a quarter of the visible screen under the header,
+ * never below 8rem so its title fits.
+ *
+ * Contact form section: it fills the rest of the screen under the banner, so
+ * banner + form are exactly one visible screen. The content is about 885px tall
+ * at full size (the 874px Figma card plus a little). --contact-fit is 1px when
+ * the screen is tall enough and shrinks proportionally on shorter screens so
+ * everything fits. 1000 leaves room for the elements that have a minimum size
+ * and so do not shrink; 2rem is the section's vertical padding.
+ */
+@media (min-width: 64rem) {
+  :root {
+    --banner-short: max(8rem, calc((100dvh - var(--header-height)) * 0.25));
+    --contact-fit: min(
+      1px,
+      calc((100dvh - var(--header-height) - var(--banner-short) - 2rem) / 1000)
+    );
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-section: var(--section);

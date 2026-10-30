@@ -29,7 +29,7 @@ export function HeroSection() {
       <Container className="flex min-h-[inherit] items-center py-16 lg:h-full lg:py-0">
         <div className="flex flex-col items-start gap-6 lg:w-[48vw] lg:max-w-[690px]">
           <h1 className="font-heading text-4xl leading-normal font-semibold sm:text-5xl lg:text-[clamp(2.5rem,4.58vw,4.125rem)]">
-            Discover the Latest Trends in Fashion Ecommerce
+            Discover the Latest Trends in Fashion
           </h1>
           <p className="max-w-[648px] font-medium text-muted-foreground lg:text-[clamp(0.875rem,1.1vw,1rem)]">
             Discover the latest trends and redefine your style with our online
