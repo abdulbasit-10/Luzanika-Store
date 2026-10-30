@@ -9,6 +9,7 @@ interface SectionHeadingProps {
   action?: ReactNode;
   className?: string;
   titleClassName?: string;
+  descriptionClassName?: string;
   /** Overrides the spacing of the eyebrow / title / description stack. */
   contentClassName?: string;
 }
@@ -20,6 +21,7 @@ export function SectionHeading({
   action,
   className,
   titleClassName,
+  descriptionClassName,
   contentClassName,
 }: SectionHeadingProps) {
   return (
@@ -45,7 +47,9 @@ export function SectionHeading({
           {title}
         </h2>
         {description ? (
-          <p className="text-sm text-foreground">{description}</p>
+          <p className={cn("text-sm text-foreground", descriptionClassName)}>
+            {description}
+          </p>
         ) : null}
       </div>
       {action}
