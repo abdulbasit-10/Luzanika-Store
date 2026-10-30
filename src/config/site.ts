@@ -4,11 +4,8 @@ export const siteConfig = {
   tagline: "Thoughtfully designed clothing for everyday living.",
   // Contact details and social links come from the Figma design and are placeholders.
   contact: {
-    complaintServices: {
-      label: "For Luzanika Complaint Services",
-      phone: "(684) 555-0102",
-      email: "Luzanika@example.com",
-    },
+    address: "Pak & Germany",
+    email: "Luzanika@example.com",
     customerService: {
       label: "Customers Complaint Service",
       phone: "(480) 555-0103",

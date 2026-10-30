@@ -7,7 +7,7 @@ import { Container } from "@/components/ui/container";
 import { footerColumns, footerLegalLinks } from "@/config/navigation";
 import { siteConfig } from "@/config/site";
 
-const linkClass = "text-xs text-white/80 transition-colors hover:text-white";
+const linkClass = "transition-opacity hover:opacity-70";
 
 async function CopyrightYear() {
   "use cache";
@@ -17,26 +17,28 @@ async function CopyrightYear() {
 }
 
 export function Footer() {
-  const { complaintServices, customerService } = siteConfig.contact;
+  const { address, email, customerService } = siteConfig.contact;
 
   return (
-    <footer className="bg-primary text-primary-foreground">
-      <Container className="py-16">
-        <div className="grid gap-10 lg:grid-cols-[1.5fr_repeat(3,1fr)_1.5fr]">
-          <div className="flex flex-col gap-4">
-            <Logo tone="light" />
-            <p className="max-w-52 text-xs text-white/80">
-              {siteConfig.tagline}
-            </p>
-            <SocialLinks variant="footer" />
+    <footer className="bg-white text-foreground">
+      <Container className="py-10">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[481fr_284fr_283fr_max-content] lg:gap-0">
+          <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
+            <Logo className="-mt-1.5" />
+            <p className="mt-[3px] max-w-64 text-base">{siteConfig.tagline}</p>
+            <SocialLinks variant="footer" className="mt-5" />
           </div>
 
           {footerColumns.map((column) => (
-            <nav key={column.title} aria-label={column.title}>
-              <h2 className="mb-4 text-xs font-semibold tracking-wide uppercase">
+            <nav
+              key={column.title}
+              aria-label={column.title}
+              className="flex flex-col gap-[9px]"
+            >
+              <h2 className="text-base font-semibold uppercase">
                 {column.title}
               </h2>
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-[9px]">
                 {column.links.map((link) => (
                   <li key={link.label}>
                     <Link href={link.href} className={linkClass}>
@@ -48,35 +50,30 @@ export function Footer() {
             </nav>
           ))}
 
-          <div className="flex flex-col gap-3 text-xs [overflow-wrap:anywhere]">
-            <h2 className="text-xs font-semibold">Contact us</h2>
-            <div className="flex flex-col gap-1">
-              <p className="text-accent">{complaintServices.label}</p>
-              <p className="text-white/80">
-                {complaintServices.phone} and{" "}
-                <a
-                  href={`mailto:${complaintServices.email}`}
-                  className="hover:text-white"
-                >
-                  {complaintServices.email}
+          <div className="flex flex-col gap-[9px]">
+            <h2 className="text-base font-semibold">Contact us</h2>
+            <ul className="flex flex-col gap-3">
+              <li>Address : {address}</li>
+              <li>
+                Email :{" "}
+                <a href={`mailto:${email}`} className={linkClass}>
+                  {email}
                 </a>
-              </p>
-            </div>
-            <div className="flex flex-col gap-1">
-              <p className="text-accent">{customerService.label}</p>
-              <p className="text-white/80">{customerService.phone}</p>
-            </div>
+              </li>
+              <li>{customerService.label}</li>
+              <li>{customerService.phone}</li>
+            </ul>
           </div>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-white/60 pt-6 text-[11px] text-white/80">
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-foreground pt-6 text-xs">
           <p>
             &copy; <CopyrightYear /> {siteConfig.name}
           </p>
-          <ul className="flex flex-wrap gap-6">
+          <ul className="flex flex-wrap gap-5">
             {footerLegalLinks.map((link) => (
               <li key={link.label}>
-                <Link href={link.href} className="hover:text-white">
+                <Link href={link.href} className={linkClass}>
                   {link.label}
                 </Link>
               </li>

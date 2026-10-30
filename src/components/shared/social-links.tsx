@@ -14,8 +14,8 @@ const socialIcons = {
 
 const variants = {
   footer: {
-    list: "gap-2",
-    link: "size-7 bg-white/15 text-white hover:bg-white/30",
+    list: "gap-2.5",
+    link: "size-[35px] bg-foreground text-white hover:bg-foreground/85",
   },
   contact: {
     list: "gap-3",

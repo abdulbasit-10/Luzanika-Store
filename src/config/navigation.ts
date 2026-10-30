@@ -41,14 +41,6 @@ export const footerColumns: { title: string; links: NavLink[] }[] = [
       { label: "Returns & Refunds", href: "/shipping-returns" },
     ],
   },
-  {
-    title: "About",
-    links: [
-      { label: "About Us", href: "/about" },
-      { label: "Privacy Policy", href: "/privacy" },
-      { label: "Terms & Conditions", href: "/terms" },
-    ],
-  },
 ];
 
 export const footerLegalLinks: NavLink[] = [
