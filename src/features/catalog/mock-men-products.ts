@@ -1,19 +1,10 @@
+import {
+  mockColors as colors,
+  mockPrices,
+} from "@/features/catalog/mock-helpers";
 import type { CatalogProduct } from "@/features/catalog/types";
-import type { RegionalPrice } from "@/types/region";
 
 /** Temporary Men catalog taken from the Figma Men Collection page. Replace with API data. */
-function mockPrices(amount: number): RegionalPrice[] {
-  return [
-    { region: "PK", currency: "PKR", amount },
-    { region: "DE", currency: "EUR", amount },
-  ];
-}
-
-const colors = [
-  { name: "Black", hex: "#252525" },
-  { name: "Forest", hex: "#1f6b50" },
-  { name: "Cream", hex: "#f4f1ea" },
-];
 
 export const mockMenProducts: CatalogProduct[] = [
   {
