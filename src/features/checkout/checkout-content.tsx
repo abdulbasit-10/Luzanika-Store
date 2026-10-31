@@ -20,17 +20,10 @@ import {
 import { ContactCard } from "@/features/checkout/contact-card";
 import { PaymentCard } from "@/features/checkout/payment-card";
 import { ShippingCard } from "@/features/checkout/shipping-card";
+import type { ConfirmedOrder } from "@/features/orders/types";
 import { useCartStore, type CartLine } from "@/stores/cart-store";
 import type { RegionCode } from "@/types/region";
 import { useEffect } from "react";
-
-export interface PlacedOrderSummary {
-  orderNumber: string;
-  email: string;
-  itemCount: number;
-  total: number;
-  region: RegionCode;
-}
 
 const FORM_ID = "checkout-form";
 
@@ -80,7 +73,7 @@ export function CheckoutContent({
   lines: CartLine[];
   totals: CartTotals;
   region: RegionCode;
-  onPlaced: (order: PlacedOrderSummary) => void;
+  onPlaced: (order: ConfirmedOrder) => void;
 }) {
   const removeSelected = useCartStore((state) => state.removeSelected);
   const regionCountry = REGIONS[region].name;
@@ -118,13 +111,20 @@ export function CheckoutContent({
 
   const { mutate, isPending, isError } = useMutation({
     mutationFn: placeOrder,
-    onSuccess: ({ orderNumber }, input) => {
+    onSuccess: (placed, input) => {
       onPlaced({
-        orderNumber,
-        email: input.contact.email,
-        itemCount: lines.reduce((sum, line) => sum + line.quantity, 0),
+        code: placed.code,
+        placedAt: placed.placedAt,
+        paymentStatus: placed.paymentStatus,
         total: totals.total,
         region,
+        paymentMethod: input.paymentMethod,
+        email: input.contact.email,
+        items: lines.map(({ name, image, quantity }) => ({
+          name,
+          image,
+          quantity,
+        })),
       });
       removeSelected();
     },

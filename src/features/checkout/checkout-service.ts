@@ -1,4 +1,5 @@
 import type { PaymentMethod } from "@/features/checkout/checkout-schema";
+import type { PaymentStatus } from "@/features/orders/types";
 
 export interface OrderAddress {
   country: string;
@@ -28,17 +29,26 @@ export interface PlaceOrderInput {
 }
 
 export interface PlacedOrder {
-  orderNumber: string;
+  /** Order code shown to the shopper, e.g. "#0123_45678". */
+  code: string;
+  /** ISO date-time. */
+  placedAt: string;
+  paymentStatus: PaymentStatus;
 }
 
 /**
  * Mock of POST /orders until the backend exists. It has the shape of the real
  * call (async, takes the order details), so only this function changes when
- * the API is wired up.
+ * the API is wired up. The mock always reports the payment as paid.
  */
 export async function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
   void input;
   await new Promise((resolve) => setTimeout(resolve, 900));
-  const digits = Math.floor(100000 + Math.random() * 900000);
-  return { orderNumber: `LZ-${digits}` };
+  const part = (digits: number) =>
+    String(Math.floor(Math.random() * 10 ** digits)).padStart(digits, "0");
+  return {
+    code: `#${part(4)}_${part(5)}`,
+    placedAt: new Date().toISOString(),
+    paymentStatus: "paid",
+  };
 }

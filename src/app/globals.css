@@ -24,6 +24,8 @@
   --stylist: #dbccbf;
   /* Dark navy used by the About page headings in Figma. */
   --navy: #05172a;
+  /* Order confirmation check and "Payment Successful". Figma's #1D9E34, slightly darker so small text keeps 4.5:1 contrast on white. */
+  --success: #16852d;
   /* Darker body copy used on the About page. */
   --copy: #4f4f50;
 
@@ -83,6 +85,7 @@
   --color-panel: var(--panel);
   --color-stylist: var(--stylist);
   --color-navy: var(--navy);
+  --color-success: var(--success);
   --color-copy: var(--copy);
 
   --font-sans: var(--font-sans-family), ui-sans-serif, system-ui, sans-serif;

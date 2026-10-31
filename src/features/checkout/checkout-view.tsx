@@ -1,27 +1,26 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { getCartTotals } from "@/features/cart/cart-totals";
-import {
-  CheckoutContent,
-  type PlacedOrderSummary,
-} from "@/features/checkout/checkout-content";
-import { OrderPlaced } from "@/features/checkout/order-placed";
+import { CheckoutContent } from "@/features/checkout/checkout-content";
+import type { ConfirmedOrder } from "@/features/orders/types";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useCartStore } from "@/stores/cart-store";
+import { useOrderStore } from "@/stores/order-store";
 import { useUiStore } from "@/stores/ui-store";
 
-function CheckoutSkeleton() {
+function CheckoutSkeleton({ label }: { label: string }) {
   return (
     <div role="status" className="animate-pulse space-y-3">
       <div className="h-36 rounded-xl bg-black/[0.04]" />
       <div className="h-40 rounded-xl bg-black/[0.04]" />
       <div className="h-64 rounded-xl bg-black/[0.04]" />
-      <span className="sr-only">Loading checkout…</span>
+      <span className="sr-only">{label}</span>
     </div>
   );
 }
@@ -29,23 +28,26 @@ function CheckoutSkeleton() {
 /**
  * The checkout page. It checks out the items selected in the cart, which only
  * exists in the browser, so the content waits for hydration; the server HTML
- * has the heading and a placeholder.
+ * has the heading and a placeholder. After an order is placed it hands the
+ * order to the confirmation page.
  */
 export function CheckoutView() {
+  const router = useRouter();
   const hydrated = useHydrated();
   const lines = useCartStore((state) => state.lines);
   const region = useUiStore((state) => state.region);
-  const [order, setOrder] = useState<PlacedOrderSummary | null>(null);
+  const setLastOrder = useOrderStore((state) => state.setLastOrder);
+  // True from the moment the order is placed until the confirmation page
+  // loads, so the emptied cart does not flash "Nothing to check out".
+  const [leaving, setLeaving] = useState(false);
 
   const selected = lines.filter((line) => line.selected);
   const totals = getCartTotals(lines, region);
 
-  if (order) {
-    return (
-      <Container className="py-12 lg:py-16">
-        <OrderPlaced order={order} />
-      </Container>
-    );
+  function handlePlaced(order: ConfirmedOrder) {
+    setLastOrder(order);
+    setLeaving(true);
+    router.push("/order-confirmation");
   }
 
   return (
@@ -64,8 +66,10 @@ export function CheckoutView() {
       </header>
 
       <div className="mt-6 lg:mt-[min(24px,2.8dvh)]">
-        {!hydrated ? (
-          <CheckoutSkeleton />
+        {leaving ? (
+          <CheckoutSkeleton label="Order placed. Opening your confirmation…" />
+        ) : !hydrated ? (
+          <CheckoutSkeleton label="Loading checkout…" />
         ) : selected.length === 0 ? (
           <EmptyState
             title="Nothing to check out"
@@ -77,7 +81,7 @@ export function CheckoutView() {
             lines={selected}
             totals={totals}
             region={region}
-            onPlaced={setOrder}
+            onPlaced={handlePlaced}
           />
         )}
       </div>
