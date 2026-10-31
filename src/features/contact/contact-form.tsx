@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 
 import { FormField } from "@/components/ui/form-field";
+import { toast } from "@/components/ui/toaster";
 import { contactForm } from "@/features/contact/contact-content";
 import {
   contactSchema,
@@ -31,9 +32,12 @@ export function ContactForm() {
     defaultValues: { name: "", email: "", phone: "", message: "" },
   });
 
-  const { mutate, isPending, isSuccess, isError } = useMutation({
+  const { mutate, isPending, isError } = useMutation({
     mutationFn: submitContactMessage,
-    onSuccess: () => reset(),
+    onSuccess: () => {
+      reset();
+      toast.success(contactForm.successMessage);
+    },
   });
 
   return (
@@ -116,11 +120,6 @@ export function ContactForm() {
         {isPending ? "Sending…" : contactForm.submitLabel}
       </button>
 
-      {isSuccess ? (
-        <p role="status" className="text-center text-sm text-white">
-          {contactForm.successMessage}
-        </p>
-      ) : null}
       {isError ? (
         <p role="alert" className="text-center text-sm text-red-300">
           {contactForm.errorMessage}

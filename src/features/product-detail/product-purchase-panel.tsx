@@ -1,12 +1,14 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { ColorSwatches } from "@/components/shared/color-swatches";
 import { SizeSelector } from "@/components/shared/size-selector";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { toast } from "@/components/ui/toaster";
 import { ProductActions } from "@/features/product-detail/product-actions";
 import { SizeGuideButton } from "@/features/product-detail/size-guide-dialog";
 import { blockGap } from "@/features/product-detail/spacing";
@@ -42,6 +44,7 @@ export function ProductPurchasePanel({
 }) {
   const { colors, sizes } = product;
   const addItem = useCartStore((state) => state.addItem);
+  const router = useRouter();
   const [color, setColor] = useState<string | null>(colors?.[0]?.name ?? null);
   const [size, setSize] = useState<string | null>(sizes?.[0] ?? null);
   const [quantity, setQuantity] = useState(1);
@@ -71,6 +74,11 @@ export function ProductPurchasePanel({
     setAdded(true);
     clearTimeout(resetTimer.current);
     resetTimer.current = setTimeout(() => setAdded(false), ADDED_MESSAGE_MS);
+    // One toast per product page: adding again updates it instead of stacking.
+    toast.success(`${product.name} added to your cart`, {
+      id: "cart-add",
+      action: { label: "View cart", onClick: () => router.push("/cart") },
+    });
   }
 
   return (
@@ -120,9 +128,6 @@ export function ProductPurchasePanel({
             "Add to Cart"
           )}
         </Button>
-        <span role="status" className="sr-only">
-          {added ? `${product.name} added to your cart` : ""}
-        </span>
       </div>
 
       <div className={blockGap}>

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { toast } from "@/components/ui/toaster";
 import {
   AuthInput,
   EmailInput,
@@ -42,7 +43,10 @@ export function SignupPanel() {
 
   const { mutate, isPending, isSuccess, error } = useMutation({
     mutationFn: registerUser,
-    onSuccess: (user) => setUser(user),
+    onSuccess: (user) => {
+      toast.success(`Account created. Welcome, ${user.firstName}!`);
+      setUser(user);
+    },
     onError: (failure) => {
       if (failure instanceof AuthError && failure.code === "email_taken") {
         setError("email", {
@@ -75,7 +79,7 @@ export function SignupPanel() {
       <div className="mt-[clamp(0.875rem,2.6dvh,1.5rem)]">
         <SocialSignIn />
       </div>
-      <p className="text-center text-[11px] text-muted-foreground">or</p>
+      <p className="mt-3 text-center text-[11px] text-muted-foreground">or</p>
 
       <form
         noValidate

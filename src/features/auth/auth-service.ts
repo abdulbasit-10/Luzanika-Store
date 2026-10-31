@@ -1,5 +1,6 @@
 import type {
   LoginFormValues,
+  ResetPasswordFormValues,
   SignupFormValues,
 } from "@/features/auth/auth-schema";
 
@@ -10,7 +11,8 @@ export interface AuthUser {
   email: string;
 }
 
-export type AuthErrorCode = "email_taken" | "invalid_credentials";
+export type AuthErrorCode =
+  "email_taken" | "invalid_credentials" | "invalid_reset_link";
 
 /** What the backend will answer with when sign up or login is refused. */
 export class AuthError extends Error {
@@ -108,4 +110,26 @@ export async function loginUser(values: LoginFormValues): Promise<AuthUser> {
     throw new AuthError("invalid_credentials");
   }
   return toUser(user);
+}
+
+/**
+ * Mock of POST /auth/reset-password. The real call also sends the token from
+ * the link in the reset email, which tells the backend whose password to
+ * change; rejects with "invalid_reset_link" when the token is wrong or
+ * expired. Without a backend there is no email, so the mock changes the
+ * password of the most recently created account.
+ */
+export async function resetPassword(
+  values: Pick<ResetPasswordFormValues, "password">,
+): Promise<void> {
+  await wait(800);
+  const users = readUsers();
+  const target = users.at(-1);
+
+  if (!target) throw new AuthError("invalid_reset_link");
+
+  const salt = randomId();
+  target.salt = salt;
+  target.passwordHash = mockHash(salt + values.password);
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
 }

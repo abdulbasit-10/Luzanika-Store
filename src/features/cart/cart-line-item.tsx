@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { toast } from "@/components/ui/toaster";
 import { getUnitPrice } from "@/features/cart/cart-totals";
 import { useCartStore, type CartLine } from "@/stores/cart-store";
 import type { RegionCode } from "@/types/region";
@@ -29,10 +30,26 @@ export function CartLineItem({
   const setQuantity = useCartStore((state) => state.setQuantity);
   const toggleSelected = useCartStore((state) => state.toggleSelected);
   const removeItem = useCartStore((state) => state.removeItem);
+  const addItem = useCartStore((state) => state.addItem);
 
   const href = `/products/${line.slug}`;
   const unitPrice = getUnitPrice(line, region);
   const description = describeLine(line);
+
+  function remove() {
+    removeItem(line.key);
+    toast(`${line.name} removed from your cart`, {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          const { key, quantity, selected, ...item } = line;
+          void key;
+          void selected;
+          addItem(item, quantity);
+        },
+      },
+    });
+  }
 
   return (
     <li className="grid grid-cols-[18px_64px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-3 border-t border-black/[0.06] py-3.5 first:border-t-0 first:pt-0 last:pb-0 lg:grid-cols-[18px_72px_minmax(0,1fr)_auto] lg:gap-x-[18px]">
@@ -96,7 +113,7 @@ export function CartLineItem({
         <button
           type="button"
           aria-label={`Remove ${line.name} from cart`}
-          onClick={() => removeItem(line.key)}
+          onClick={remove}
           className="flex size-9 cursor-pointer items-center justify-center rounded-lg border border-foreground transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Trash2 aria-hidden className="size-4" strokeWidth={1.5} />

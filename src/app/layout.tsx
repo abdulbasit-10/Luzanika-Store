@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 
+import { Toaster } from "@/components/ui/toaster";
 import { env } from "@/config/env";
 import { siteConfig } from "@/config/site";
 import { CookieConsentBanner } from "@/features/cookies/cookie-consent-banner";
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <QueryProvider>
           {children}
           <CookieConsentBanner />
+          <Toaster />{" "}
         </QueryProvider>
       </body>
     </html>

@@ -4,6 +4,7 @@ import { CircleHelp, Heart, Share2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { toast } from "@/components/ui/toaster";
 import { cn } from "@/utils/cn";
 
 const actionClass =
@@ -11,7 +12,6 @@ const actionClass =
 
 export function ProductActions({ productName }: { productName: string }) {
   const [wishlisted, setWishlisted] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   async function share() {
     const url = window.location.href;
@@ -25,10 +25,14 @@ export function ProductActions({ productName }: { productName: string }) {
     }
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      toast.success("Link copied to clipboard", { id: "share-link" });
     } catch {
-      // Clipboard access can be blocked; there is nothing else to do.
+      toast.error(
+        "Couldn't copy the link. Please copy it from the address bar.",
+        {
+          id: "share-link",
+        },
+      );
     }
   }
 
@@ -53,7 +57,7 @@ export function ProductActions({ productName }: { productName: string }) {
       </Link>
       <button type="button" onClick={share} className={actionClass}>
         <Share2 aria-hidden className="size-4" />
-        {copied ? "Link copied" : "Share"}
+        Share
       </button>
     </div>
   );

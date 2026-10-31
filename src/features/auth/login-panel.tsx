@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { toast } from "@/components/ui/toaster";
 import { EmailInput, PasswordInput } from "@/features/auth/auth-inputs";
 import { loginSchema, type LoginFormValues } from "@/features/auth/auth-schema";
 import { AuthError, loginUser } from "@/features/auth/auth-service";
@@ -28,7 +29,10 @@ export function LoginPanel() {
 
   const { mutate, isPending, isSuccess, error } = useMutation({
     mutationFn: loginUser,
-    onSuccess: (user) => setUser(user),
+    onSuccess: (user) => {
+      toast.success(`Welcome back, ${user.firstName}!`);
+      setUser(user);
+    },
   });
 
   if (redirecting) return null;
@@ -56,7 +60,7 @@ export function LoginPanel() {
       <form
         noValidate
         onSubmit={handleSubmit((values) => mutate(values))}
-        className="mt-[clamp(0.5rem,2dvh,1.25rem)] flex flex-col gap-[clamp(0.75rem,2dvh,1.25rem)]"
+        className="mt-[clamp(1rem,3.2dvh,1.75rem)] flex flex-col gap-[clamp(0.75rem,2dvh,1.25rem)]"
       >
         <Field id="login-email" label="Email" error={errors.email?.message}>
           <EmailInput
@@ -83,7 +87,7 @@ export function LoginPanel() {
             />
           </Field>
           <Link
-            href="/forgot-password"
+            href="/reset-password"
             className="mt-1.5 inline-block text-[11px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring"
           >
             Forgot password?
