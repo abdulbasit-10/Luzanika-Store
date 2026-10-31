@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Ruler } from "lucide-react";
+import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ColorSwatches } from "@/components/shared/color-swatches";
@@ -8,6 +8,7 @@ import { SizeSelector } from "@/components/shared/size-selector";
 import { Button } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { ProductActions } from "@/features/product-detail/product-actions";
+import { SizeGuideButton } from "@/features/product-detail/size-guide-dialog";
 import { blockGap } from "@/features/product-detail/spacing";
 import type { ProductDetail } from "@/features/product-detail/types";
 import { useCartStore } from "@/stores/cart-store";
@@ -23,6 +24,7 @@ type PurchaseProduct = Pick<
   | "colors"
   | "sizes"
   | "hasSizeGuide"
+  | "category"
   | "stock"
 >;
 
@@ -90,13 +92,7 @@ export function ProductPurchasePanel({
         className={`${blockGap} flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] font-medium tracking-wide uppercase`}
       >
         {product.hasSizeGuide ? (
-          <button
-            type="button"
-            className="flex items-center gap-2 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-          >
-            <Ruler aria-hidden className="size-4" />
-            Size guide
-          </button>
+          <SizeGuideButton category={product.category?.slug} />
         ) : null}
         <p className="flex items-center gap-2">
           <Check aria-hidden className="size-4" />
