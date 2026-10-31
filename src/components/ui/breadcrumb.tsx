@@ -10,14 +10,22 @@ export interface BreadcrumbItem {
 
 export function Breadcrumb({
   items,
+  plain,
   className,
 }: {
   items: BreadcrumbItem[];
+  /** Regular-case 15px text instead of the small uppercase default (products page). */
+  plain?: boolean;
   className?: string;
 }) {
   return (
     <nav aria-label="Breadcrumb" className={className}>
-      <ol className="flex flex-wrap items-center gap-2 text-xs">
+      <ol
+        className={cn(
+          "flex flex-wrap items-center gap-2",
+          plain ? "text-[15px]" : "text-xs",
+        )}
+      >
         {items.map((item, index) => {
           const isLast = index === items.length - 1;
           return (
@@ -29,7 +37,10 @@ export function Breadcrumb({
               ) : (
                 <span
                   aria-current={isLast ? "page" : undefined}
-                  className="tracking-wide text-foreground uppercase"
+                  className={cn(
+                    "text-foreground",
+                    !plain && "tracking-wide uppercase",
+                  )}
                 >
                   {item.label}
                 </span>

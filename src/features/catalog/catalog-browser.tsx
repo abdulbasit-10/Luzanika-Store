@@ -4,12 +4,10 @@ import { SlidersHorizontal } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
-import { ProductGrid } from "@/components/shared/product-grid";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { FilterPill, FilterPillLink } from "@/components/ui/filter-pill";
-import { Pagination } from "@/components/ui/pagination";
 import { Select } from "@/components/ui/select";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import {
@@ -17,6 +15,7 @@ import {
   CATEGORY_TABS,
   SORT_OPTIONS,
 } from "@/features/catalog/catalog-config";
+import { CatalogResults } from "@/features/catalog/catalog-results";
 import { FilterSidebar } from "@/features/catalog/filter-sidebar";
 import {
   getDefaultFilters,
@@ -193,46 +192,16 @@ export function CatalogBrowser({ category, facets, products }: Catalog) {
             className={cn(filtersOpen ? "flex" : "hidden", "lg:flex")}
           />
 
-          <div
-            ref={listTop}
-            className="scroll-mt-[calc(var(--header-height)+1rem)] rounded-xl bg-panel p-5 sm:p-8 xl:px-11 xl:pt-14 xl:pb-11"
-          >
-            {result.items.length > 0 ? (
-              <>
-                <ProductGrid
-                  products={result.items}
-                  variant="catalog"
-                  layout={view}
-                  columnsClassName="grid-cols-2 gap-x-4 md:grid-cols-3"
-                  sizes="(min-width: 1280px) 22vw, (min-width: 768px) 30vw, 50vw"
-                />
-                <div className="mt-10 flex flex-col items-center gap-3 text-center">
-                  <p
-                    aria-live="polite"
-                    className="text-xs tracking-widest uppercase"
-                  >
-                    Showing {result.shown} of {result.total} creations
-                  </p>
-                  <div
-                    aria-hidden
-                    className="h-1 w-80 max-w-full overflow-hidden rounded-full bg-black/10"
-                  >
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{
-                        width: `${(result.shown / result.total) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-                <Pagination
-                  className="mt-6"
-                  page={result.page}
-                  totalPages={result.totalPages}
-                  onPageChange={goToPage}
-                />
-              </>
-            ) : (
+          <CatalogResults
+            listRef={listTop}
+            items={result.items}
+            total={result.total}
+            shown={result.shown}
+            page={result.page}
+            totalPages={result.totalPages}
+            view={view}
+            onPageChange={goToPage}
+            empty={
               <EmptyState
                 title="No products match your filters"
                 description="Try removing a filter or choosing another subcategory."
@@ -242,8 +211,8 @@ export function CatalogBrowser({ category, facets, products }: Catalog) {
                   </Button>
                 }
               />
-            )}
-          </div>
+            }
+          />
         </div>
       </div>
     </Container>
