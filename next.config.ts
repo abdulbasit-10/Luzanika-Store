@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   partialPrefetching: true,
+  // Loaded from node_modules at runtime instead of being bundled, so the database driver can be found.
+  serverExternalPackages: ["sequelize", "pg", "pg-hstore"],
   turbopack: {
     rules: {
       "*.css": {
