@@ -4,7 +4,8 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/utils/cn";
 
 interface CheckboxProps extends Omit<ComponentProps<"input">, "type"> {
-  label: ReactNode;
+  /** Omit for a bare box; then pass `aria-label` so it still has a name. */
+  label?: ReactNode;
 }
 
 /** Native checkbox (keyboard and screen-reader friendly) with a custom box. */
@@ -23,7 +24,9 @@ export function Checkbox({ label, className, ...props }: CheckboxProps) {
       >
         <Check strokeWidth={3} className="size-3" />
       </span>
-      <span className="peer-checked:text-foreground">{label}</span>
+      {label ? (
+        <span className="peer-checked:text-foreground">{label}</span>
+      ) : null}
     </label>
   );
 }

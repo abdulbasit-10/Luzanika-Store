@@ -1,6 +1,7 @@
-import { Heart, Search, ShoppingBag, User } from "lucide-react";
+import { Heart, Search, User } from "lucide-react";
 import Link from "next/link";
 
+import { CartLink } from "@/components/layout/cart-link";
 import { MainNav } from "@/components/layout/main-nav";
 import {
   MobileNavPanel,
@@ -10,14 +11,32 @@ import { Logo } from "@/components/shared/logo";
 import { RegionSelector } from "@/components/shared/region-selector";
 import { Container } from "@/components/ui/container";
 import { headerActions } from "@/config/navigation";
-import { cn } from "@/utils/cn";
 
-const iconLinks = [
-  { ...headerActions.search, icon: Search, mobileHidden: true },
-  { ...headerActions.cart, icon: ShoppingBag, mobileHidden: false },
-  { ...headerActions.wishlist, icon: Heart, mobileHidden: true },
-  { ...headerActions.account, icon: User, mobileHidden: true },
+const searchLink = { ...headerActions.search, icon: Search };
+const trailingLinks = [
+  { ...headerActions.wishlist, icon: Heart },
+  { ...headerActions.account, icon: User },
 ];
+
+function IconLink({
+  label,
+  href,
+  icon: Icon,
+}: {
+  label: string;
+  href: string;
+  icon: typeof Search;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      className="hidden items-center justify-center sm:flex"
+    >
+      <Icon aria-hidden className="size-4.5" />
+    </Link>
+  );
+}
 
 export function Header() {
   return (
@@ -27,18 +46,10 @@ export function Header() {
         <MainNav />
         <div className="flex items-center gap-3 sm:gap-4">
           <RegionSelector />
-          {iconLinks.map(({ label, href, icon: Icon, mobileHidden }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className={cn(
-                "items-center justify-center",
-                mobileHidden ? "hidden sm:flex" : "flex",
-              )}
-            >
-              <Icon aria-hidden className="size-4.5" />
-            </Link>
+          <IconLink {...searchLink} />
+          <CartLink />
+          {trailingLinks.map((link) => (
+            <IconLink key={link.href} {...link} />
           ))}
           <MobileNavToggle />
         </div>

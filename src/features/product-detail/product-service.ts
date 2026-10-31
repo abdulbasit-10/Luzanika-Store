@@ -32,6 +32,7 @@ function fromSummary(
     slug: product.slug,
     name: product.name,
     tagline: product.notes?.join(" · "),
+    notes: product.notes,
     images: product.image ? [product.image] : [],
     prices: product.prices,
     rating: product.rating,
