@@ -12,15 +12,21 @@ import { EmailInput, PasswordInput } from "@/features/auth/auth-inputs";
 import { loginSchema, type LoginFormValues } from "@/features/auth/auth-schema";
 import { AuthError, loginUser } from "@/features/auth/auth-service";
 import { SocialSignIn } from "@/features/auth/social-sign-in";
-import { useRedirectWhenSignedIn } from "@/features/auth/use-redirect-when-signed-in";
+import {
+  useRedirectWhenSignedIn,
+  useNextPath,
+} from "@/features/auth/use-redirect-when-signed-in";
+import { withNextPath } from "@/features/auth/next-path";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function LoginPanel() {
   const redirecting = useRedirectWhenSignedIn();
+  const next = useNextPath();
   const setUser = useAuthStore((state) => state.setUser);
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -32,6 +38,8 @@ export function LoginPanel() {
     onSuccess: (user) => {
       toast.success(`Welcome back, ${user.firstName}!`);
       setUser(user);
+      // The page stays mounted in the background after the redirect; don't keep the password in it.
+      reset();
     },
   });
 
@@ -112,7 +120,7 @@ export function LoginPanel() {
       <p className="mt-[clamp(1.25rem,4dvh,2.5rem)] text-center text-xs text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
-          href="/signup"
+          href={withNextPath("/signup", next)}
           className="font-medium text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
           Sign Up

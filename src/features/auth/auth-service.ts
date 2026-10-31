@@ -3,16 +3,27 @@ import type {
   ResetPasswordFormValues,
   SignupFormValues,
 } from "@/features/auth/auth-schema";
+import type { Gender, Language } from "@/features/account/profile-options";
 
 export interface AuthUser {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
+  phone?: string;
+  gender?: Gender;
+  /** ISO date, e.g. "2000-06-06". */
+  dateOfBirth?: string;
+  language?: Language;
+  /** Small square photo as a data URL. The backend will store the file and return its URL. */
+  avatar?: string;
 }
 
 export type AuthErrorCode =
-  "email_taken" | "invalid_credentials" | "invalid_reset_link";
+  | "email_taken"
+  | "invalid_credentials"
+  | "invalid_reset_link"
+  | "account_not_found";
 
 /** What the backend will answer with when sign up or login is refused. */
 export class AuthError extends Error {
@@ -68,8 +79,11 @@ const randomId = () => Math.random().toString(36).slice(2, 12);
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function toUser({ id, firstName, lastName, email }: StoredUser): AuthUser {
-  return { id, firstName, lastName, email };
+function toUser(stored: StoredUser): AuthUser {
+  const { salt, passwordHash, ...user } = stored;
+  void salt;
+  void passwordHash;
+  return user;
 }
 
 /**
@@ -132,4 +146,62 @@ export async function resetPassword(
   target.salt = salt;
   target.passwordHash = mockHash(salt + values.password);
   localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+/** Fields the account page can change. An empty value or null clears an optional field. */
+export interface ProfilePatch {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  gender?: Gender | "";
+  dateOfBirth?: string;
+  language?: Language;
+  avatar?: string | null;
+}
+
+/**
+ * Mock of PATCH /account (the backend knows who is signed in from the session
+ * cookie, so it will not take the id). Returns the updated user and rejects
+ * with "email_taken" when another account already uses the new email.
+ */
+export async function updateProfile(
+  userId: string,
+  patch: ProfilePatch,
+): Promise<AuthUser> {
+  await wait(600);
+  const users = readUsers();
+  const index = users.findIndex((user) => user.id === userId);
+
+  if (index === -1) throw new AuthError("account_not_found");
+
+  const email = patch.email ? normalizeEmail(patch.email) : undefined;
+  if (
+    email &&
+    users.some((user) => user.id !== userId && user.email === email)
+  ) {
+    throw new AuthError("email_taken");
+  }
+
+  const next: Record<string, unknown> = { ...users[index] };
+  for (const [key, value] of Object.entries({ ...patch, email })) {
+    if (value === undefined) continue;
+    if (value === "" || value === null) delete next[key];
+    else next[key] = value;
+  }
+  users[index] = next as unknown as StoredUser;
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  return toUser(users[index]);
+}
+
+/** Mock of DELETE /account. */
+export async function deleteAccount(userId: string): Promise<void> {
+  await wait(600);
+  const users = readUsers().filter((user) => user.id !== userId);
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+/** Mock of POST /auth/logout, where the backend clears the session cookie. */
+export async function logoutUser(): Promise<void> {
+  await wait(300);
 }

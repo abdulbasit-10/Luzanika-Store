@@ -19,6 +19,7 @@ export function ResetPasswordPanel() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -27,6 +28,8 @@ export function ResetPasswordPanel() {
 
   const { mutate, isPending, isSuccess, error } = useMutation({
     mutationFn: resetPassword,
+    // The page stays mounted in the background; don't keep the password in it.
+    onSuccess: () => reset(),
   });
 
   if (isSuccess) {

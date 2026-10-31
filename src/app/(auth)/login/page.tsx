@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { Suspense } from "react";
 
 import { Logo } from "@/components/shared/logo";
 import { LoginPanel } from "@/features/auth/login-panel";
@@ -32,7 +33,9 @@ export default function LoginPage() {
       <div className="flex flex-1 flex-col px-gutter lg:px-[clamp(1.5rem,4vw,4rem)]">
         <Logo className="py-5 lg:hidden" />
         <div className="flex flex-1 items-center justify-center pt-4 pb-10 lg:py-8">
-          <LoginPanel />
+          <Suspense>
+            <LoginPanel />
+          </Suspense>
         </div>
       </div>
     </main>

@@ -15,6 +15,8 @@ interface FieldProps {
   hint?: string;
   error?: string;
   className?: string;
+  /** Replaces the default label size and weight. */
+  labelClassName?: string;
   children: ReactNode;
 }
 
@@ -29,6 +31,7 @@ export function Field({
   hint,
   error,
   className,
+  labelClassName,
   children,
 }: FieldProps) {
   const message = error ?? hint;
@@ -36,7 +39,10 @@ export function Field({
   return (
     <div className={cn("flex min-w-0 flex-col gap-1", className)}>
       <div className="flex items-baseline justify-between gap-2">
-        <label htmlFor={id} className="text-[13px] font-medium">
+        <label
+          htmlFor={id}
+          className={cn("text-[13px] font-medium", labelClassName)}
+        >
           {label}
         </label>
         {required ? (

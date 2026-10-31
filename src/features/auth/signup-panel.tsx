@@ -18,17 +18,23 @@ import {
   type SignupFormValues,
 } from "@/features/auth/auth-schema";
 import { AuthError, registerUser } from "@/features/auth/auth-service";
+import { withNextPath } from "@/features/auth/next-path";
 import { SocialSignIn } from "@/features/auth/social-sign-in";
-import { useRedirectWhenSignedIn } from "@/features/auth/use-redirect-when-signed-in";
+import {
+  useNextPath,
+  useRedirectWhenSignedIn,
+} from "@/features/auth/use-redirect-when-signed-in";
 import { useAuthStore } from "@/stores/auth-store";
 
 export function SignupPanel() {
   const redirecting = useRedirectWhenSignedIn();
+  const next = useNextPath();
   const setUser = useAuthStore((state) => state.setUser);
   const {
     register,
     handleSubmit,
     setError,
+    reset,
     formState: { errors },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
@@ -46,6 +52,8 @@ export function SignupPanel() {
     onSuccess: (user) => {
       toast.success(`Account created. Welcome, ${user.firstName}!`);
       setUser(user);
+      // The page stays mounted in the background after the redirect; don't keep the password in it.
+      reset();
     },
     onError: (failure) => {
       if (failure instanceof AuthError && failure.code === "email_taken") {
@@ -177,7 +185,7 @@ export function SignupPanel() {
       <p className="mt-[clamp(1rem,3dvh,2rem)] text-center text-xs text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href="/login"
+          href={withNextPath("/login", next)}
           className="font-medium text-blue-600 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
         >
           Login

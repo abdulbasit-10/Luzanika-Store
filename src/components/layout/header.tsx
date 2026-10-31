@@ -1,6 +1,7 @@
-import { Heart, Search, User } from "lucide-react";
+import { Heart, Search } from "lucide-react";
 import Link from "next/link";
 
+import { AccountLink } from "@/components/layout/account-link";
 import { CartLink } from "@/components/layout/cart-link";
 import { MainNav } from "@/components/layout/main-nav";
 import {
@@ -13,10 +14,7 @@ import { Container } from "@/components/ui/container";
 import { headerActions } from "@/config/navigation";
 
 const searchLink = { ...headerActions.search, icon: Search };
-const trailingLinks = [
-  { ...headerActions.wishlist, icon: Heart },
-  { ...headerActions.account, icon: User },
-];
+const wishlistLink = { ...headerActions.wishlist, icon: Heart };
 
 function IconLink({
   label,
@@ -48,9 +46,8 @@ export function Header() {
           <RegionSelector />
           <IconLink {...searchLink} />
           <CartLink />
-          {trailingLinks.map((link) => (
-            <IconLink key={link.href} {...link} />
-          ))}
+          <IconLink {...wishlistLink} />
+          <AccountLink />
           <MobileNavToggle />
         </div>
       </Container>
