@@ -10,7 +10,9 @@ import { getCartTotals } from "@/features/cart/cart-totals";
 import { CheckoutContent } from "@/features/checkout/checkout-content";
 import type { ConfirmedOrder } from "@/features/orders/types";
 import { useHydrated } from "@/hooks/use-hydrated";
+import { useAuthStore } from "@/stores/auth-store";
 import { useCartStore } from "@/stores/cart-store";
+import { useOrderHistoryStore } from "@/stores/order-history-store";
 import { useOrderStore } from "@/stores/order-store";
 import { useUiStore } from "@/stores/ui-store";
 
@@ -37,6 +39,8 @@ export function CheckoutView() {
   const lines = useCartStore((state) => state.lines);
   const region = useUiStore((state) => state.region);
   const setLastOrder = useOrderStore((state) => state.setLastOrder);
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const addToHistory = useOrderHistoryStore((state) => state.add);
   // True from the moment the order is placed until the confirmation page
   // loads, so the emptied cart does not flash "Nothing to check out".
   const [leaving, setLeaving] = useState(false);
@@ -46,6 +50,7 @@ export function CheckoutView() {
 
   function handlePlaced(order: ConfirmedOrder) {
     setLastOrder(order);
+    if (userId) addToHistory(userId, order);
     setLeaving(true);
     router.push("/order-confirmation");
   }

@@ -6,7 +6,10 @@ import Link from "next/link";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import type { PaymentMethod } from "@/features/checkout/checkout-schema";
+import {
+  orderDateFormat,
+  paymentMethodLabels,
+} from "@/features/orders/order-status";
 import { OrderItemThumbnails } from "@/features/orders/order-item-thumbnails";
 import type { PaymentStatus } from "@/features/orders/types";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -14,22 +17,10 @@ import { useOrderStore } from "@/stores/order-store";
 import { cn } from "@/utils/cn";
 import { formatRegionalPrice } from "@/utils/format-currency";
 
-const methodLabels: Record<PaymentMethod, string> = {
-  card: "Credit Card",
-  paypal: "PayPal",
-  "gift-card": "Gift Card",
-};
-
 const statusLabels: Record<PaymentStatus, string> = {
   paid: "Payment Successful",
   pending: "Payment Pending",
 };
-
-const dateFormat = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-});
 
 const DETAILS_ID = "order-details";
 
@@ -69,9 +60,9 @@ export function OrderConfirmationView() {
 
   const rows = [
     ["Order code:", order.code],
-    ["Date:", dateFormat.format(new Date(order.placedAt))],
+    ["Date:", orderDateFormat.format(new Date(order.placedAt))],
     ["Total:", formatRegionalPrice(order.total, order.region)],
-    ["Payment method:", methodLabels[order.paymentMethod]],
+    ["Payment method:", paymentMethodLabels[order.paymentMethod]],
   ];
 
   return (

@@ -120,10 +120,12 @@ export function CheckoutContent({
         region,
         paymentMethod: input.paymentMethod,
         email: input.contact.email,
-        items: lines.map(({ name, image, quantity }) => ({
+        items: lines.map(({ name, image, quantity, color, size }) => ({
           name,
           image,
           quantity,
+          color,
+          size,
         })),
       });
       removeSelected();
