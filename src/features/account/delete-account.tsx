@@ -7,6 +7,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/components/ui/toaster";
+import { DeleteAccountIllustration } from "@/features/account/delete-account-illustration";
 import { profileButtonClass } from "@/features/account/profile-fields";
 import { deleteAccount, type AuthUser } from "@/features/auth/auth-service";
 import { useAuthStore } from "@/stores/auth-store";
@@ -43,9 +44,12 @@ export function DeleteAccount({ user }: { user: AuthUser }) {
         onClose={() => setOpen(false)}
         onConfirm={() => mutate()}
         pending={isPending}
-        title="Delete your account?"
-        description="This permanently removes your account and saved details. It can't be undone."
-        confirmLabel="Delete account"
+        illustration={
+          <DeleteAccountIllustration className="h-[clamp(5rem,18dvh,9rem)] w-auto" />
+        }
+        title="Delete Account?"
+        description="Are you sure you want to delete your account?"
+        confirmLabel="Yes"
         pendingLabel="Deleting…"
       />
     </>

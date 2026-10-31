@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -15,9 +15,11 @@ interface ConfirmDialogProps {
   pendingLabel?: string;
   /** Disables the buttons and blocks closing while the action runs. */
   pending?: boolean;
+  /** Decorative picture above the title. */
+  illustration?: ReactNode;
 }
 
-/** Modal that asks before a destructive action. Uses the native <dialog>, so it traps focus and closes on Escape. */
+/** Centered modal that asks before an action that cannot be undone. Uses the native <dialog>, so it traps focus and closes on Escape. */
 export function ConfirmDialog({
   open,
   onClose,
@@ -27,8 +29,11 @@ export function ConfirmDialog({
   confirmLabel,
   pendingLabel = "Working…",
   pending,
+  illustration,
 }: ConfirmDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -40,33 +45,39 @@ export function ConfirmDialog({
   return (
     <dialog
       ref={ref}
-      aria-labelledby="confirm-dialog-title"
-      aria-describedby="confirm-dialog-description"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       onClose={onClose}
       onCancel={(event) => {
         if (pending) event.preventDefault();
       }}
-      className="m-auto w-[calc(100vw-2rem)] max-w-[420px] rounded-xl bg-white p-6 text-foreground shadow-overlay backdrop:bg-black/50"
+      // A click on the backdrop lands on the dialog itself, not on its content.
+      onClick={(event) => {
+        if (event.target === event.currentTarget && !pending) onClose();
+      }}
+      className="m-auto w-[calc(100vw-2rem)] max-w-[480px] rounded-2xl bg-white px-6 py-[clamp(1rem,3dvh,2rem)] text-center text-foreground shadow-overlay backdrop:bg-black/50 sm:px-10"
     >
+      {illustration ? (
+        <div aria-hidden className="flex justify-center">
+          {illustration}
+        </div>
+      ) : null}
       <h2
-        id="confirm-dialog-title"
-        className="font-heading text-xl font-medium"
+        id={titleId}
+        className="mt-[clamp(0.5rem,2dvh,1.25rem)] text-lg font-semibold"
       >
         {title}
       </h2>
-      <p
-        id="confirm-dialog-description"
-        className="mt-2 text-sm text-muted-foreground"
-      >
+      <p id={descriptionId} className="mt-1.5 text-xs text-muted-foreground">
         {description}
       </p>
-      <div className="mt-6 flex justify-end gap-3">
+      <div className="mt-[clamp(0.75rem,2.6dvh,1.5rem)] flex justify-center gap-3">
         <Button
           variant="secondary"
           size="sm"
           disabled={pending}
           onClick={onClose}
-          className="rounded-md px-4 py-2.5"
+          className="h-9 min-w-24 rounded-md border-black/15 px-5 py-0 text-xs font-medium"
         >
           Cancel
         </Button>
@@ -74,7 +85,7 @@ export function ConfirmDialog({
           size="sm"
           disabled={pending}
           onClick={onConfirm}
-          className="rounded-md bg-danger px-4 py-2.5 text-white hover:bg-danger/90"
+          className="h-9 min-w-24 rounded-md px-5 py-0 text-xs font-medium"
         >
           {pending ? pendingLabel : confirmLabel}
         </Button>
