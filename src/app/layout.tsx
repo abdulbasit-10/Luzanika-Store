@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { env } from "@/config/env";
 import { siteConfig } from "@/config/site";
+import { CookieConsentBanner } from "@/features/cookies/cookie-consent-banner";
 import { QueryProvider } from "@/providers/query-provider";
 
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Header />
           {children}
           <Footer />
+          <CookieConsentBanner />
         </QueryProvider>
       </body>
     </html>
