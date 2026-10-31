@@ -4,7 +4,8 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { CartLineItem } from "@/features/cart/cart-line-item";
-import { CartSummary } from "@/features/cart/cart-summary";
+import { CheckoutAction } from "@/features/cart/checkout-action";
+import { OrderSummary } from "@/features/cart/order-summary";
 import { getCartTotals, getItemCount } from "@/features/cart/cart-totals";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useCartStore } from "@/stores/cart-store";
@@ -88,7 +89,9 @@ export function CartView() {
           )}
         </section>
 
-        <CartSummary totals={totals} region={region} />
+        <OrderSummary totals={totals} region={region}>
+          <CheckoutAction canCheckout={totals.selectedCount > 0} />
+        </OrderSummary>
       </div>
     </Container>
   );

@@ -33,6 +33,8 @@ interface CartState {
   setQuantity: (key: string, quantity: number) => void;
   toggleSelected: (key: string) => void;
   removeItem: (key: string) => void;
+  /** Removes the selected lines, e.g. after they were paid for. */
+  removeSelected: () => void;
 }
 
 export function getLineKey({
@@ -112,6 +114,9 @@ export const useCartStore = create<CartState>()(
         set(({ lines }) => ({
           lines: lines.filter((line) => line.key !== key),
         })),
+
+      removeSelected: () =>
+        set(({ lines }) => ({ lines: lines.filter((line) => !line.selected) })),
     }),
     {
       name: "luzanika-cart",

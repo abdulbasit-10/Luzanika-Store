@@ -1,33 +1,30 @@
 "use client";
 
-import { buttonStyles } from "@/components/ui/button";
+import type { ReactNode } from "react";
+
 import type { CartTotals } from "@/features/cart/cart-totals";
 import type { RegionCode } from "@/types/region";
-import { cn } from "@/utils/cn";
 import { formatRegionalPrice } from "@/utils/format-currency";
-import Link from "next/link";
 
-const checkoutClass = buttonStyles({
-  className: "h-11 w-full rounded-lg px-4 py-0 text-[15px]",
-});
-
-export function CartSummary({
+/** The "Product Summary" card shared by the cart and checkout pages. `children` is the action under the total (Checkout, Pay Now). */
+export function OrderSummary({
   totals,
   region,
+  children,
 }: {
   totals: CartTotals;
   region: RegionCode;
+  children: ReactNode;
 }) {
   const money = (amount: number) => formatRegionalPrice(amount, region);
-  const canCheckout = totals.selectedCount > 0;
 
   return (
     <aside
-      aria-labelledby="cart-summary-title"
+      aria-labelledby="order-summary-title"
       className="rounded-xl bg-panel p-5 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:self-start"
     >
       <h2
-        id="cart-summary-title"
+        id="order-summary-title"
         className="border-b border-black/[0.06] pb-3 font-heading text-xl leading-8 font-semibold"
       >
         Product Summary
@@ -51,26 +48,7 @@ export function CartSummary({
         <p aria-live="polite">{money(totals.total)}</p>
       </div>
 
-      <div className="mt-5">
-        {canCheckout ? (
-          <Link href="/checkout" className={checkoutClass}>
-            Checkout
-          </Link>
-        ) : (
-          <button
-            type="button"
-            disabled
-            className={cn(checkoutClass, "cursor-not-allowed")}
-          >
-            Checkout
-          </button>
-        )}
-        {canCheckout ? null : (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Select at least one item to check out.
-          </p>
-        )}
-      </div>
+      <div className="mt-5">{children}</div>
     </aside>
   );
 }
