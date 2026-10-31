@@ -9,7 +9,13 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "db:migrate": "node --env-file-if-exists=.env.local db/migrate.mjs up",
+    "db:rollback": "node --env-file-if-exists=.env.local db/migrate.mjs down",
+    "db:status": "node --env-file-if-exists=.env.local db/migrate.mjs status",
+    "db:create": "node --env-file-if-exists=.env.local db/migrate.mjs create",
+    "db:migrate:test": "node --env-file-if-exists=.env.local db/migrate.mjs up --test",
+    "test:db": "node --env-file-if-exists=.env.local --test db/migrate.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",
@@ -26,7 +32,6 @@
     "server-only": "^0.0.1",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.7.0",
-    "umzug": "^3.8.3",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   },
