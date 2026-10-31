@@ -4,32 +4,33 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { AccountSidebar } from "@/features/account/account-sidebar";
-import { useHydrated } from "@/hooks/use-hydrated";
-import { useAuthStore } from "@/stores/auth-store";
+import { useAuthReady, useAuthStore } from "@/stores/auth-store";
 
 const pad = "px-(--page-pad) lg:px-[clamp(1.5rem,3.8vw,3.4rem)]";
 const columns = "lg:grid lg:grid-cols-[clamp(15rem,24vw,21.5rem)_1fr]";
 
 /*
  * Frame for the account pages: the links on a white column, the page on the
- * grey area. Visitors who are not signed in are sent to the login page and
- * brought back afterwards. With the real backend the server will also refuse
- * these pages without a session cookie; this check only decides what to show.
+ * grey area. The browser asks the server who is signed in; until it answers
+ * the page shows a placeholder, and visitors who are not signed in are sent to
+ * the login page and brought back afterwards. The API refuses account data
+ * without a session cookie anyway; this check only decides what to show.
  */
 export function AccountShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const hydrated = useHydrated();
+  const answered = useAuthReady();
   const signedIn = useAuthStore((state) => state.user !== null);
-  const ready = hydrated && signedIn;
+  const ready = answered && signedIn;
 
-  // Runs when the page loads or changes, not when the visitor logs out, so a
-  // logout that is heading to the home page is not turned into a login redirect.
+  // Runs when the server's answer arrives or the page changes, not when the
+  // visitor logs out, so a logout that is heading to the home page is not
+  // turned into a login redirect.
   useEffect(() => {
-    if (hydrated && !useAuthStore.getState().user) {
+    if (answered && !useAuthStore.getState().user) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     }
-  }, [hydrated, pathname, router]);
+  }, [answered, pathname, router]);
 
   return (
     <main

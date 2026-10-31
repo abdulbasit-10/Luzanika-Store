@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { newPasswordSchema } from "@/lib/password-policy";
+
 const email = z.email("Please enter a valid email address");
 
 const personName = (label: "first name" | "last name") =>
@@ -13,13 +15,8 @@ export const firstName = personName("first name");
 export const lastName = personName("last name");
 export { email };
 
-const newPassword = z
-  .string()
-  .max(128, "Please use 128 characters or fewer")
-  .regex(
-    /^(?=.*[A-Za-z])(?=.*\d).{8,}$/,
-    "Use at least 8 characters, with a letter and a number",
-  );
+// The same rules the server enforces (length, common passwords), shared from one place.
+const newPassword = newPasswordSchema;
 
 const confirmPassword = z.string().min(1, "Please re-enter your password");
 
@@ -58,3 +55,7 @@ export const resetPasswordSchema = z
   );
 
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
+export const forgotPasswordSchema = z.object({ email });
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;

@@ -587,33 +587,67 @@ describe("forgot and reset password", () => {
     expect(JSON.stringify(rows)).not.toContain(token);
   });
 
-  it("answers exactly the same for an unknown email and sends nothing", async () => {
-    const known = (await signUp()).email;
-    const a = await call(forgotPassword, { body: { email: known } });
-    const b = await call(forgotPassword, { body: { email: uniqueEmail() } });
+  it("tells the visitor when the email is not registered, and sends nothing", async () => {
+    const result = await call(forgotPassword, {
+      body: { email: uniqueEmail() },
+    });
 
-    expect(a.status).toBe(204);
-    expect(b.status).toBe(204);
-    expect(b.raw).toBe(a.raw);
-    expect(sent).toHaveLength(1);
+    expect(result.status).toBe(404);
+    expect(result.body.error.code).toBe("email_not_registered");
+    expect(result.body.error.fields.email).toMatch(/not registered/i);
+    expect(sent).toHaveLength(0);
   });
 
-  it("does not email a blocked account", async () => {
+  it("only ever emails the address the account was registered with", async () => {
+    const { email } = await signUp();
+    await call(forgotPassword, { body: { email: email.toUpperCase() } });
+
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to).toBe(email);
+  });
+
+  it("treats a blocked account as not registered and does not email it", async () => {
     const { email } = await signUp();
     await exec("UPDATE customers SET status = 'blocked' WHERE email = :email", {
       email,
     });
-    expect((await call(forgotPassword, { body: { email } })).status).toBe(204);
+    const result = await call(forgotPassword, { body: { email } });
+    expect(result.status).toBe(404);
     expect(sent).toHaveLength(0);
   });
 
-  it("is limited to 3 requests per hour per address, the same for unknown addresses", async () => {
-    for (const email of [(await signUp()).email, uniqueEmail()]) {
-      const statuses: number[] = [];
-      for (let i = 0; i < 4; i++)
-        statuses.push((await call(forgotPassword, { body: { email } })).status);
-      expect(statuses).toEqual([204, 204, 204, 429]);
+  it("tells the visitor when the email could not be sent, without leaking details", async () => {
+    const { email } = await signUp();
+    setEmailSender({
+      send: async () => {
+        throw new Error("SMTP password=hunter2 at smtp.internal:25");
+      },
+    });
+
+    const result = await call(forgotPassword, { body: { email } });
+    expect(result.status).toBe(503);
+    expect(result.body.error.code).toBe("service_unavailable");
+    expect(result.raw).not.toMatch(/hunter2|smtp/i);
+  });
+
+  it("is limited to 3 requests per hour per address, registered or not", async () => {
+    const registered = (await signUp()).email;
+    const first: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      first.push(
+        (await call(forgotPassword, { body: { email: registered } })).status,
+      );
     }
+    expect(first).toEqual([204, 204, 204, 429]);
+
+    const unknown = uniqueEmail();
+    const second: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      second.push(
+        (await call(forgotPassword, { body: { email: unknown } })).status,
+      );
+    }
+    expect(second).toEqual([404, 404, 404, 429]);
   });
 
   it("sets the new password with the link, signs out everywhere, and works once", async () => {

@@ -9,21 +9,53 @@ import { env } from "@/config/env";
 export class ApiError extends Error {
   readonly status: number | null;
   readonly data: unknown;
+  /** The API's error code, e.g. "email_taken" or "rate_limited". Null for network failures. */
+  readonly code: string | null;
+  /** Per-field messages for forms, when the API sent them. */
+  readonly fields: Record<string, string> | null;
 
   constructor(message: string, status: number | null, data?: unknown) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.data = data;
+    const detail = extractError(data);
+    this.code = detail?.code ?? null;
+    this.fields = detail?.fields ?? null;
   }
 }
 
-function extractMessage(data: unknown): string | null {
-  if (typeof data === "object" && data !== null && "message" in data) {
-    const { message } = data as { message: unknown };
-    if (typeof message === "string" && message.length > 0) return message;
+interface ErrorDetail {
+  code: string | null;
+  message: string | null;
+  fields: Record<string, string> | null;
+}
+
+/** Reads the API's error format: { error: { code, message, fields?, requestId } }. */
+function extractError(data: unknown): ErrorDetail | null {
+  if (typeof data !== "object" || data === null || !("error" in data)) {
+    return null;
   }
-  return null;
+  const { error } = data as { error: unknown };
+  if (typeof error !== "object" || error === null) return null;
+  const { code, message, fields } = error as Record<string, unknown>;
+
+  const cleanFields: Record<string, string> = {};
+  if (typeof fields === "object" && fields !== null) {
+    for (const [key, value] of Object.entries(fields)) {
+      if (typeof value === "string") cleanFields[key] = value;
+    }
+  }
+
+  return {
+    code: typeof code === "string" ? code : null,
+    message: typeof message === "string" && message ? message : null,
+    fields: Object.keys(cleanFields).length > 0 ? cleanFields : null,
+  };
+}
+
+function extractMessage(data: unknown): string | null {
+  return extractError(data)?.message ?? null;
 }
 
 function toApiError(error: unknown): ApiError {

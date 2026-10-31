@@ -18,18 +18,19 @@ import {
   type SignupFormValues,
 } from "@/features/auth/auth-schema";
 import { AuthError, registerUser } from "@/features/auth/auth-service";
+import { signupFailureMessage } from "@/features/auth/auth-messages";
 import { withNextPath } from "@/features/auth/next-path";
 import { SocialSignIn } from "@/features/auth/social-sign-in";
 import {
   useNextPath,
   useRedirectWhenSignedIn,
 } from "@/features/auth/use-redirect-when-signed-in";
-import { useAuthStore } from "@/stores/auth-store";
+import { useSignIn } from "@/features/auth/use-session";
 
 export function SignupPanel() {
   const redirecting = useRedirectWhenSignedIn();
   const next = useNextPath();
-  const setUser = useAuthStore((state) => state.setUser);
+  const signIn = useSignIn();
   const {
     register,
     handleSubmit,
@@ -51,26 +52,27 @@ export function SignupPanel() {
     mutationFn: registerUser,
     onSuccess: (user) => {
       toast.success(`Account created. Welcome, ${user.firstName}!`);
-      setUser(user);
+      signIn(user);
       // The page stays mounted in the background after the redirect; don't keep the password in it.
       reset();
     },
     onError: (failure) => {
-      if (failure instanceof AuthError && failure.code === "email_taken") {
-        setError("email", {
-          type: "server",
-          message: "An account with this email already exists",
-        });
+      if (!(failure instanceof AuthError)) return;
+      // Show each problem next to the field it belongs to.
+      for (const [field, message] of Object.entries(failure.fields ?? {})) {
+        if (field in signupSchema.shape) {
+          setError(field as keyof SignupFormValues, {
+            type: "server",
+            message,
+          });
+        }
       }
     },
   });
 
   if (redirecting) return null;
 
-  const failure =
-    error && !(error instanceof AuthError)
-      ? "Something went wrong. Please try again."
-      : null;
+  const failure = error ? signupFailureMessage(error) : null;
   const busy = isPending || isSuccess;
 
   return (

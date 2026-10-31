@@ -1,9 +1,9 @@
+import type { Gender, Language } from "@/features/account/profile-options";
 import type {
   LoginFormValues,
-  ResetPasswordFormValues,
   SignupFormValues,
 } from "@/features/auth/auth-schema";
-import type { Gender, Language } from "@/features/account/profile-options";
+import { ApiError, apiGet, apiPost } from "@/lib/api-client";
 
 export interface AuthUser {
   id: string;
@@ -15,137 +15,126 @@ export interface AuthUser {
   /** ISO date, e.g. "2000-06-06". */
   dateOfBirth?: string;
   language?: Language;
-  /** Small square photo as a data URL. The backend will store the file and return its URL. */
+  /** Small square photo as a data URL. Photo upload is not connected to the backend yet. */
   avatar?: string;
+}
+
+/** What the API's `user` looks like (see toUserDto on the server). */
+interface UserDto {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  language?: string;
 }
 
 export type AuthErrorCode =
   | "email_taken"
+  | "email_not_registered"
   | "invalid_credentials"
   | "invalid_reset_link"
-  | "account_not_found";
+  | "rate_limited"
+  | "validation_failed"
+  | "account_not_found"
+  | "not_available";
 
-/** What the backend will answer with when sign up or login is refused. */
+const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
+  "email_taken",
+  "email_not_registered",
+  "invalid_credentials",
+  "invalid_reset_link",
+  "rate_limited",
+  "validation_failed",
+]);
+
+/** A refusal the page can explain to the visitor, with per-field messages when the API gave them. */
 export class AuthError extends Error {
   readonly code: AuthErrorCode;
+  readonly fields: Record<string, string> | null;
 
-  constructor(code: AuthErrorCode) {
+  constructor(
+    code: AuthErrorCode,
+    fields: Record<string, string> | null = null,
+  ) {
     super(code);
     this.name = "AuthError";
     this.code = code;
+    this.fields = fields;
   }
 }
 
-/*
- * Mock accounts until the backend exists. They are kept in this browser only
- * (localStorage) and the password is stored as a salted hash, never as text.
- * The hash is NOT secure; the real backend hashes passwords with a proper
- * algorithm and never exposes them. Delete this block when the API is wired.
- */
-const USERS_KEY = "luzanika-mock-users";
-
-interface StoredUser extends AuthUser {
-  salt: string;
-  passwordHash: string;
-}
-
-function readUsers(): StoredUser[] {
+/** Turns the API's known error codes into AuthError; anything else (network, server) passes through. */
+async function request<T>(send: () => Promise<T>): Promise<T> {
   try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]") as StoredUser[];
-  } catch {
-    return [];
+    return await send();
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      error.code &&
+      KNOWN_CODES.has(error.code)
+    ) {
+      throw new AuthError(error.code as AuthErrorCode, error.fields);
+    }
+    throw error;
   }
 }
 
-// cyrb53, a small non-cryptographic string hash.
-function mockHash(text: string) {
-  let h1 = 0xdeadbeef;
-  let h2 = 0x41c6ce57;
-  for (let i = 0; i < text.length; i++) {
-    const code = text.charCodeAt(i);
-    h1 = Math.imul(h1 ^ code, 2654435761);
-    h2 = Math.imul(h2 ^ code, 1597334677);
-  }
-  h1 =
-    Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
-    Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 =
-    Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
-    Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+function toAuthUser(dto: UserDto): AuthUser {
+  return {
+    id: dto.id,
+    firstName: dto.firstName,
+    lastName: dto.lastName,
+    email: dto.email,
+    ...(dto.phone ? { phone: dto.phone } : {}),
+    ...(dto.gender ? { gender: dto.gender as Gender } : {}),
+    ...(dto.dateOfBirth ? { dateOfBirth: dto.dateOfBirth } : {}),
+    ...(dto.language ? { language: dto.language as Language } : {}),
+  };
 }
 
-const randomId = () => Math.random().toString(36).slice(2, 12);
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function toUser(stored: StoredUser): AuthUser {
-  const { salt, passwordHash, ...user } = stored;
-  void salt;
-  void passwordHash;
-  return user;
-}
-
-/**
- * Mock of POST /auth/register. Same shape as the real call (async, takes the
- * validated values, rejects with an AuthError), so only the body changes.
- */
+/** POST /auth/register: creates the account and signs the visitor in. */
 export async function registerUser(
   values: Omit<SignupFormValues, "confirmPassword">,
 ): Promise<AuthUser> {
-  await wait(800);
-  const users = readUsers();
-  const email = normalizeEmail(values.email);
-
-  if (users.some((user) => user.email === email)) {
-    throw new AuthError("email_taken");
-  }
-
-  const salt = randomId();
-  const user: StoredUser = {
-    id: randomId(),
-    firstName: values.firstName.trim(),
-    lastName: values.lastName.trim(),
-    email,
-    salt,
-    passwordHash: mockHash(salt + values.password),
-  };
-  localStorage.setItem(USERS_KEY, JSON.stringify([...users, user]));
-  return toUser(user);
+  const { user } = await request(() =>
+    apiPost<{ user: UserDto }>("/auth/register", values),
+  );
+  return toAuthUser(user);
 }
 
-/** Mock of POST /auth/login. Rejects with an AuthError for a wrong email or password. */
+/** POST /auth/login. Rejects with AuthError("invalid_credentials") for a wrong email or password. */
 export async function loginUser(values: LoginFormValues): Promise<AuthUser> {
-  await wait(800);
-  const email = normalizeEmail(values.email);
-  const user = readUsers().find((item) => item.email === email);
-
-  if (!user || user.passwordHash !== mockHash(user.salt + values.password)) {
-    throw new AuthError("invalid_credentials");
-  }
-  return toUser(user);
+  const { user } = await request(() =>
+    apiPost<{ user: UserDto }>("/auth/login", values),
+  );
+  return toAuthUser(user);
 }
 
-/**
- * Mock of POST /auth/reset-password. The real call also sends the token from
- * the link in the reset email, which tells the backend whose password to
- * change; rejects with "invalid_reset_link" when the token is wrong or
- * expired. Without a backend there is no email, so the mock changes the
- * password of the most recently created account.
- */
-export async function resetPassword(
-  values: Pick<ResetPasswordFormValues, "password">,
-): Promise<void> {
-  await wait(800);
-  const users = readUsers();
-  const target = users.at(-1);
+/** POST /auth/logout: ends the session on the server and clears the cookie. */
+export async function logoutUser(): Promise<void> {
+  await apiPost("/auth/logout");
+}
 
-  if (!target) throw new AuthError("invalid_reset_link");
+/** GET /auth/me: the signed-in user, or null for a visitor. The session itself is an httpOnly cookie. */
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const { user } = await apiGet<{ user: UserDto | null }>("/auth/me");
+  return user ? toAuthUser(user) : null;
+}
 
-  const salt = randomId();
-  target.salt = salt;
-  target.passwordHash = mockHash(salt + values.password);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+/** POST /auth/forgot-password: asks for a reset link. Always succeeds, whether or not the email has an account. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  await request(() => apiPost("/auth/forgot-password", { email }));
+}
+
+/** POST /auth/reset-password: sets a new password using the token from the emailed link. */
+export async function resetPassword(values: {
+  token: string;
+  password: string;
+}): Promise<void> {
+  await request(() => apiPost("/auth/reset-password", values));
 }
 
 /** Fields the account page can change. An empty value or null clears an optional field. */
@@ -160,48 +149,20 @@ export interface ProfilePatch {
   avatar?: string | null;
 }
 
-/**
- * Mock of PATCH /account (the backend knows who is signed in from the session
- * cookie, so it will not take the id). Returns the updated user and rejects
- * with "email_taken" when another account already uses the new email.
+/*
+ * Saving profile changes and deleting the account are not connected to the
+ * backend yet (next step). They refuse honestly instead of pretending to save.
  */
 export async function updateProfile(
   userId: string,
   patch: ProfilePatch,
 ): Promise<AuthUser> {
-  await wait(600);
-  const users = readUsers();
-  const index = users.findIndex((user) => user.id === userId);
-
-  if (index === -1) throw new AuthError("account_not_found");
-
-  const email = patch.email ? normalizeEmail(patch.email) : undefined;
-  if (
-    email &&
-    users.some((user) => user.id !== userId && user.email === email)
-  ) {
-    throw new AuthError("email_taken");
-  }
-
-  const next: Record<string, unknown> = { ...users[index] };
-  for (const [key, value] of Object.entries({ ...patch, email })) {
-    if (value === undefined) continue;
-    if (value === "" || value === null) delete next[key];
-    else next[key] = value;
-  }
-  users[index] = next as unknown as StoredUser;
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  return toUser(users[index]);
+  void userId;
+  void patch;
+  throw new AuthError("not_available");
 }
 
-/** Mock of DELETE /account. */
 export async function deleteAccount(userId: string): Promise<void> {
-  await wait(600);
-  const users = readUsers().filter((user) => user.id !== userId);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-/** Mock of POST /auth/logout, where the backend clears the session cookie. */
-export async function logoutUser(): Promise<void> {
-  await wait(300);
+  void userId;
+  throw new AuthError("not_available");
 }

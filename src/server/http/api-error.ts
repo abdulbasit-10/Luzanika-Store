@@ -14,6 +14,7 @@ const ERRORS = {
   not_found: [404, "We could not find what you were looking for."],
   conflict: [409, "This request conflicts with the current state."],
   email_taken: [409, "An account with this email already exists."],
+  email_not_registered: [404, "This email is not registered with us."],
   out_of_stock: [409, "This item is out of stock."],
   price_changed: [409, "The price of an item has changed."],
   invalid_status_transition: [409, "This status change is not allowed."],

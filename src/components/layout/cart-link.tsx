@@ -5,15 +5,16 @@ import Link from "next/link";
 
 import { headerActions } from "@/config/navigation";
 import { getItemCount } from "@/features/cart/cart-totals";
+import { useCart } from "@/features/cart/use-cart";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { useCartStore } from "@/stores/cart-store";
 
 const MAX_BADGE = 99;
 
 /** Header cart icon with the number of items in the cart. The cart only exists in the browser, so the badge waits for hydration. */
 export function CartLink() {
   const hydrated = useHydrated();
-  const count = useCartStore((state) => getItemCount(state.lines));
+  const { lines } = useCart();
+  const count = getItemCount(lines);
   const shown = hydrated ? count : 0;
 
   return (

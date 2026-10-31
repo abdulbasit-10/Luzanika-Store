@@ -1,17 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
 import { ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { getCartTotals } from "@/features/cart/cart-totals";
+import { useCart } from "@/features/cart/use-cart";
 import { CheckoutContent } from "@/features/checkout/checkout-content";
 import type { ConfirmedOrder } from "@/features/orders/types";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { useAuthStore } from "@/stores/auth-store";
-import { useCartStore } from "@/stores/cart-store";
+import { useAuthReady, useAuthStore } from "@/stores/auth-store";
 import { useOrderHistoryStore } from "@/stores/order-history-store";
 import { useOrderStore } from "@/stores/order-store";
 import { useUiStore } from "@/stores/ui-store";
@@ -36,14 +36,22 @@ function CheckoutSkeleton({ label }: { label: string }) {
 export function CheckoutView() {
   const router = useRouter();
   const hydrated = useHydrated();
-  const lines = useCartStore((state) => state.lines);
+  const { lines } = useCart();
   const region = useUiStore((state) => state.region);
   const setLastOrder = useOrderStore((state) => state.setLastOrder);
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const authReady = useAuthReady();
   const addToHistory = useOrderHistoryStore((state) => state.add);
   // True from the moment the order is placed until the confirmation page
   // loads, so the emptied cart does not flash "Nothing to check out".
   const [leaving, setLeaving] = useState(false);
+
+  // Only signed-in customers can check out; others log in and come straight back.
+  useEffect(() => {
+    if (authReady && !userId && !leaving) {
+      router.replace(`/login?next=${encodeURIComponent("/checkout")}`);
+    }
+  }, [authReady, userId, leaving, router]);
 
   const selected = lines.filter((line) => line.selected);
   const totals = getCartTotals(lines, region);
@@ -73,7 +81,7 @@ export function CheckoutView() {
       <div className="mt-6 lg:mt-[min(24px,2.8dvh)]">
         {leaving ? (
           <CheckoutSkeleton label="Order placed. Opening your confirmation…" />
-        ) : !hydrated ? (
+        ) : !hydrated || !authReady || !userId ? (
           <CheckoutSkeleton label="Loading checkout…" />
         ) : selected.length === 0 ? (
           <EmptyState

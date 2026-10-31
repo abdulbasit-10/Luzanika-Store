@@ -13,7 +13,7 @@ import { ProductActions } from "@/features/product-detail/product-actions";
 import { SizeGuideButton } from "@/features/product-detail/size-guide-dialog";
 import { blockGap } from "@/features/product-detail/spacing";
 import type { ProductDetail } from "@/features/product-detail/types";
-import { useCartStore } from "@/stores/cart-store";
+import { useCart } from "@/features/cart/use-cart";
 
 type PurchaseProduct = Pick<
   ProductDetail,
@@ -35,7 +35,7 @@ const ADDED_MESSAGE_MS = 2500;
 /**
  * Everything below the price: color, size, stock, quantity, add to cart and
  * the secondary actions. Selections live in local state; "Add to Cart" saves
- * the product in the guest cart (see cart-store).
+ * the product in the signed-in customer's cart (see cart-store).
  */
 export function ProductPurchasePanel({
   product,
@@ -43,7 +43,7 @@ export function ProductPurchasePanel({
   product: PurchaseProduct;
 }) {
   const { colors, sizes } = product;
-  const addItem = useCartStore((state) => state.addItem);
+  const { addItem } = useCart();
   const router = useRouter();
   const [color, setColor] = useState<string | null>(colors?.[0]?.name ?? null);
   const [size, setSize] = useState<string | null>(sizes?.[0] ?? null);
@@ -56,7 +56,7 @@ export function ProductPurchasePanel({
   useEffect(() => () => clearTimeout(resetTimer.current), []);
 
   function handleAddToCart() {
-    addItem(
+    const saved = addItem(
       {
         productId: product.id,
         slug: product.slug,
@@ -71,6 +71,8 @@ export function ProductPurchasePanel({
       },
       quantity,
     );
+    // Not signed in: addItem has already asked the visitor to log in.
+    if (!saved) return;
     setAdded(true);
     clearTimeout(resetTimer.current);
     resetTimer.current = setTimeout(() => setAdded(false), ADDED_MESSAGE_MS);

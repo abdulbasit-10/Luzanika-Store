@@ -7,8 +7,9 @@ import { CartLineItem } from "@/features/cart/cart-line-item";
 import { CheckoutAction } from "@/features/cart/checkout-action";
 import { OrderSummary } from "@/features/cart/order-summary";
 import { getCartTotals, getItemCount } from "@/features/cart/cart-totals";
+import { useCart } from "@/features/cart/use-cart";
 import { useHydrated } from "@/hooks/use-hydrated";
-import { useCartStore } from "@/stores/cart-store";
+import { useAuthReady } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
 
 /** Placeholder for the saved cart, which only exists in the browser. */
@@ -25,13 +26,14 @@ function CartListSkeleton() {
 }
 
 /**
- * The cart page. The guest cart lives in the browser (see cart-store), so the
- * list is only shown after hydration; the server HTML has the headings and a
- * placeholder.
+ * The cart page: the signed-in customer's own cart (see cart-store). It lives
+ * in the browser, so the list is only shown after hydration; the server HTML
+ * has the headings and a placeholder.
  */
 export function CartView() {
   const hydrated = useHydrated();
-  const lines = useCartStore((state) => state.lines);
+  const authReady = useAuthReady();
+  const { lines, signedIn } = useCart();
   const region = useUiStore((state) => state.region);
 
   const itemCount = getItemCount(lines);
@@ -60,8 +62,16 @@ export function CartView() {
           aria-label="Items in your cart"
           className="rounded-xl bg-panel p-4 sm:p-5 lg:px-5 lg:pt-5 lg:pb-4"
         >
-          {!hydrated ? (
+          {!hydrated || !authReady ? (
             <CartListSkeleton />
+          ) : !signedIn ? (
+            <EmptyState
+              title="Log in to see your cart"
+              description="Your cart is saved to your account, so you can pick up where you left off on any device."
+              action={
+                <ButtonLink href="/login?next=%2Fcart">Log in</ButtonLink>
+              }
+            />
           ) : lines.length === 0 ? (
             <EmptyState
               title="Your cart is empty"

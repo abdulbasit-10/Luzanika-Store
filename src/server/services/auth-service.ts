@@ -232,14 +232,21 @@ export async function changePassword(input: {
 }
 
 /**
- * Sends a reset link if the email belongs to an active account. It always
- * finishes the same way either way, so nobody can use it to find out who has an account.
+ * Sends a reset link to the email the account was registered with. An email
+ * that has no account is refused with a clear message (the sign-up form
+ * already tells people when an email is taken, so this adds no new exposure;
+ * the route's rate limits slow down anyone probing for addresses).
+ * If the email cannot be sent, the visitor is told instead of left waiting.
  */
 export async function requestPasswordReset(emailInput: string): Promise<void> {
   const customer = await customerRepository.findByEmail(
     normalizeEmail(emailInput),
   );
-  if (!customer || customer.status !== "active") return;
+  if (!customer || customer.status !== "active") {
+    throw new ApiError("email_not_registered", {
+      fields: { email: "This email is not registered with us" },
+    });
+  }
 
   const token = generateToken();
   await tokenRepository.replace({
@@ -250,21 +257,24 @@ export async function requestPasswordReset(emailInput: string): Promise<void> {
   });
 
   const link = `${getAuthEnv().NEXT_PUBLIC_SITE_URL}/reset-password?token=${token}`;
-  // Not awaited: a slow mail server must not make "email exists" answer slower than "email unknown".
-  getEmailSender()
-    .send(
+  try {
+    await getEmailSender().send(
       passwordResetEmail({
         to: customer.email,
         firstName: customer.firstName,
         link,
         validForMinutes: RESET_LINK_MINUTES,
       }),
-    )
-    .catch((error: unknown) => {
-      logger.error("password reset email failed", {
-        error: serializeError(error),
-      });
+    );
+  } catch (error) {
+    logger.error("password reset email failed", {
+      error: serializeError(error),
     });
+    throw new ApiError("service_unavailable", {
+      message:
+        "We couldn't send the email right now. Please try again shortly.",
+    });
+  }
 }
 
 export async function resetPassword(input: {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { ResetPasswordPanel } from "@/features/auth/reset-password-panel";
 
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
 export default function ResetPasswordPage() {
   return (
     <main className="flex flex-1 items-center justify-center bg-background px-gutter py-8 lg:min-h-[calc(100dvh-var(--header-height))] lg:py-10">
-      <ResetPasswordPanel />
+      <Suspense>
+        <ResetPasswordPanel />
+      </Suspense>
     </main>
   );
 }

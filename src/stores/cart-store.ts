@@ -28,13 +28,14 @@ export interface CartLine extends CartItemInput {
 }
 
 interface CartState {
-  lines: CartLine[];
-  addItem: (item: CartItemInput, quantity?: number) => void;
-  setQuantity: (key: string, quantity: number) => void;
-  toggleSelected: (key: string) => void;
-  removeItem: (key: string) => void;
+  /** Each signed-in customer's own cart, by user id. */
+  byUser: Record<string, CartLine[]>;
+  addItem: (userId: string, item: CartItemInput, quantity?: number) => void;
+  setQuantity: (userId: string, key: string, quantity: number) => void;
+  toggleSelected: (userId: string, key: string) => void;
+  removeItem: (userId: string, key: string) => void;
   /** Removes the selected lines, e.g. after they were paid for. */
-  removeSelected: () => void;
+  removeSelected: (userId: string) => void;
 }
 
 export function getLineKey({
@@ -45,25 +46,43 @@ export function getLineKey({
   return [productId, color ?? "", size ?? ""].join("::");
 }
 
+/** Applies a change to one customer's lines without touching anyone else's cart. */
+function updateLines(
+  byUser: Record<string, CartLine[]>,
+  userId: string,
+  change: (lines: CartLine[]) => CartLine[],
+) {
+  return { byUser: { ...byUser, [userId]: change(byUser[userId] ?? []) } };
+}
+
 /**
- * Guest cart, kept in the browser (localStorage). Product details are saved
- * when an item is added; the backend will re-price and validate them. Once the
- * Express cart API exists, logged-in shoppers use it instead and this store
- * becomes the guest fallback.
+ * Version 1 was one shared guest cart. Guests can no longer have a cart, so
+ * it is dropped rather than handed to whoever signs in first.
+ */
+export function migrateCartState(): { byUser: Record<string, CartLine[]> } {
+  return { byUser: {} };
+}
+
+/**
+ * Each customer's cart, kept in this browser (localStorage) under their user
+ * id, so two people sharing a device never see each other's items. Only
+ * signed-in customers have a cart. Product details are saved when an item is
+ * added; the backend will re-price and validate them. Once the cart API exists
+ * the cart is stored on the server and this store goes away.
  */
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
-      lines: [],
+      byUser: {},
 
-      addItem: (item, quantity = 1) =>
-        set(({ lines }) => {
-          const key = getLineKey(item);
-          const existing = lines.find((line) => line.key === key);
+      addItem: (userId, item, quantity = 1) =>
+        set(({ byUser }) =>
+          updateLines(byUser, userId, (lines) => {
+            const key = getLineKey(item);
+            const existing = lines.find((line) => line.key === key);
 
-          if (existing) {
-            return {
-              lines: lines.map((line) =>
+            if (existing) {
+              return lines.map((line) =>
                 line.key === key
                   ? {
                       ...line,
@@ -74,12 +93,10 @@ export const useCartStore = create<CartState>()(
                       ),
                     }
                   : line,
-              ),
-            };
-          }
+              );
+            }
 
-          return {
-            lines: [
+            return [
               ...lines,
               {
                 ...item,
@@ -87,42 +104,53 @@ export const useCartStore = create<CartState>()(
                 quantity: Math.min(item.maxQuantity, Math.max(1, quantity)),
                 selected: true,
               },
-            ],
-          };
-        }),
+            ];
+          }),
+        ),
 
-      setQuantity: (key, quantity) =>
-        set(({ lines }) => ({
-          lines: lines.map((line) =>
-            line.key === key
-              ? {
-                  ...line,
-                  quantity: Math.min(line.maxQuantity, Math.max(1, quantity)),
-                }
-              : line,
+      setQuantity: (userId, key, quantity) =>
+        set(({ byUser }) =>
+          updateLines(byUser, userId, (lines) =>
+            lines.map((line) =>
+              line.key === key
+                ? {
+                    ...line,
+                    quantity: Math.min(line.maxQuantity, Math.max(1, quantity)),
+                  }
+                : line,
+            ),
           ),
-        })),
+        ),
 
-      toggleSelected: (key) =>
-        set(({ lines }) => ({
-          lines: lines.map((line) =>
-            line.key === key ? { ...line, selected: !line.selected } : line,
+      toggleSelected: (userId, key) =>
+        set(({ byUser }) =>
+          updateLines(byUser, userId, (lines) =>
+            lines.map((line) =>
+              line.key === key ? { ...line, selected: !line.selected } : line,
+            ),
           ),
-        })),
+        ),
 
-      removeItem: (key) =>
-        set(({ lines }) => ({
-          lines: lines.filter((line) => line.key !== key),
-        })),
+      removeItem: (userId, key) =>
+        set(({ byUser }) =>
+          updateLines(byUser, userId, (lines) =>
+            lines.filter((line) => line.key !== key),
+          ),
+        ),
 
-      removeSelected: () =>
-        set(({ lines }) => ({ lines: lines.filter((line) => !line.selected) })),
+      removeSelected: (userId) =>
+        set(({ byUser }) =>
+          updateLines(byUser, userId, (lines) =>
+            lines.filter((line) => !line.selected),
+          ),
+        ),
     }),
     {
       name: "luzanika-cart",
-      version: 1,
+      version: 2,
+      migrate: migrateCartState,
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ lines }) => ({ lines }),
+      partialize: ({ byUser }) => ({ byUser }),
     },
   ),
 );

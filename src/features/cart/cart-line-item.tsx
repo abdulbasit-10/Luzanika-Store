@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { toast } from "@/components/ui/toaster";
 import { getUnitPrice } from "@/features/cart/cart-totals";
-import { useCartStore, type CartLine } from "@/stores/cart-store";
+import { useCart } from "@/features/cart/use-cart";
+import type { CartLine } from "@/stores/cart-store";
 import type { RegionCode } from "@/types/region";
 import { formatRegionalPrice } from "@/utils/format-currency";
 
@@ -27,10 +28,7 @@ export function CartLineItem({
   line: CartLine;
   region: RegionCode;
 }) {
-  const setQuantity = useCartStore((state) => state.setQuantity);
-  const toggleSelected = useCartStore((state) => state.toggleSelected);
-  const removeItem = useCartStore((state) => state.removeItem);
-  const addItem = useCartStore((state) => state.addItem);
+  const { setQuantity, toggleSelected, removeItem, addItem } = useCart();
 
   const href = `/products/${line.slug}`;
   const unitPrice = getUnitPrice(line, region);

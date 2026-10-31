@@ -10,19 +10,20 @@ import { Field } from "@/components/ui/field";
 import { toast } from "@/components/ui/toaster";
 import { EmailInput, PasswordInput } from "@/features/auth/auth-inputs";
 import { loginSchema, type LoginFormValues } from "@/features/auth/auth-schema";
-import { AuthError, loginUser } from "@/features/auth/auth-service";
+import { loginUser } from "@/features/auth/auth-service";
+import { loginFailureMessage } from "@/features/auth/auth-messages";
 import { SocialSignIn } from "@/features/auth/social-sign-in";
 import {
   useRedirectWhenSignedIn,
   useNextPath,
 } from "@/features/auth/use-redirect-when-signed-in";
+import { useSignIn } from "@/features/auth/use-session";
 import { withNextPath } from "@/features/auth/next-path";
-import { useAuthStore } from "@/stores/auth-store";
 
 export function LoginPanel() {
   const redirecting = useRedirectWhenSignedIn();
   const next = useNextPath();
-  const setUser = useAuthStore((state) => state.setUser);
+  const signIn = useSignIn();
   const {
     register,
     handleSubmit,
@@ -37,7 +38,7 @@ export function LoginPanel() {
     mutationFn: loginUser,
     onSuccess: (user) => {
       toast.success(`Welcome back, ${user.firstName}!`);
-      setUser(user);
+      signIn(user);
       // The page stays mounted in the background after the redirect; don't keep the password in it.
       reset();
     },
@@ -45,11 +46,7 @@ export function LoginPanel() {
 
   if (redirecting) return null;
 
-  const failure = error
-    ? error instanceof AuthError
-      ? "Incorrect email or password."
-      : "Something went wrong. Please try again."
-    : null;
+  const failure = error ? loginFailureMessage(error) : null;
   const busy = isPending || isSuccess;
 
   return (
@@ -95,7 +92,7 @@ export function LoginPanel() {
             />
           </Field>
           <Link
-            href="/reset-password"
+            href="/forgot-password"
             className="mt-1.5 inline-block text-[11px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-2 focus-visible:outline-ring"
           >
             Forgot password?

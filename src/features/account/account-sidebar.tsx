@@ -14,7 +14,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { toast } from "@/components/ui/toaster";
 import { logoutUser } from "@/features/auth/auth-service";
-import { useAuthStore } from "@/stores/auth-store";
+import { useSignOut } from "@/features/auth/use-session";
 import { cn } from "@/utils/cn";
 
 const items: { label: string; href: string; icon: LucideIcon }[] = [
@@ -31,15 +31,16 @@ const itemClass =
 export function AccountSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const clear = useAuthStore((state) => state.clear);
+  const signOut = useSignOut();
 
   const { mutate, isPending } = useMutation({
     mutationFn: logoutUser,
     onSuccess: () => {
-      clear();
+      signOut();
       toast("You've been logged out.");
       router.push("/");
     },
+    onError: () => toast.error("Couldn't log you out. Please try again."),
   });
 
   return (

@@ -21,12 +21,13 @@ const consoleSender: EmailSender = {
   },
 };
 
-/** Production without a provider: the email is NOT sent, and the problem is loud in the logs. */
+/** Production without a provider: the email cannot be sent, so fail loudly instead of pretending it was. */
 const missingProviderSender: EmailSender = {
   async send(message) {
     logger.error("email not sent: no email provider is configured", {
       subject: message.subject,
     });
+    throw new Error("No email provider is configured.");
   },
 };
 

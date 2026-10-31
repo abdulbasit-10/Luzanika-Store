@@ -21,7 +21,8 @@ import { ContactCard } from "@/features/checkout/contact-card";
 import { PaymentCard } from "@/features/checkout/payment-card";
 import { ShippingCard } from "@/features/checkout/shipping-card";
 import type { ConfirmedOrder } from "@/features/orders/types";
-import { useCartStore, type CartLine } from "@/stores/cart-store";
+import { useCart } from "@/features/cart/use-cart";
+import type { CartLine } from "@/stores/cart-store";
 import type { RegionCode } from "@/types/region";
 import { useEffect } from "react";
 
@@ -75,7 +76,7 @@ export function CheckoutContent({
   region: RegionCode;
   onPlaced: (order: ConfirmedOrder) => void;
 }) {
-  const removeSelected = useCartStore((state) => state.removeSelected);
+  const { removeSelected } = useCart();
   const regionCountry = REGIONS[region].name;
 
   const methods = useForm<CheckoutFormValues>({

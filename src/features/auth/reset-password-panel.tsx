@@ -3,11 +3,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { ButtonLink, Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { PasswordInput } from "@/features/auth/auth-inputs";
+import { resetFailureMessage } from "@/features/auth/auth-messages";
 import {
   resetPasswordSchema,
   type ResetPasswordFormValues,
@@ -15,11 +17,14 @@ import {
 import { AuthError, resetPassword } from "@/features/auth/auth-service";
 import { ForgotPasswordIllustration } from "@/features/auth/forgot-password-illustration";
 
+/** Choose a new password. The visitor gets here from the link in the reset email, which carries the token. */
 export function ResetPasswordPanel() {
+  const token = useSearchParams().get("token");
   const {
     register,
     handleSubmit,
     reset,
+    setError,
     formState: { errors },
   } = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
@@ -30,6 +35,11 @@ export function ResetPasswordPanel() {
     mutationFn: resetPassword,
     // The page stays mounted in the background; don't keep the password in it.
     onSuccess: () => reset(),
+    onError: (failure) => {
+      const message =
+        failure instanceof AuthError ? failure.fields?.password : undefined;
+      if (message) setError("password", { type: "server", message });
+    },
   });
 
   if (isSuccess) {
@@ -52,11 +62,30 @@ export function ResetPasswordPanel() {
     );
   }
 
-  const failure = error
-    ? error instanceof AuthError
-      ? "This reset link is invalid or has expired."
-      : "Something went wrong. Please try again."
-    : null;
+  const linkProblem =
+    !token ||
+    (error instanceof AuthError && error.code === "invalid_reset_link");
+  if (linkProblem) {
+    return (
+      <div className="w-full max-w-[400px] text-center">
+        <h1 className="text-[clamp(1.25rem,3dvh,1.5rem)] leading-tight font-semibold">
+          This link has expired
+        </h1>
+        <p role="alert" className="mt-2 text-sm text-muted-foreground">
+          This reset link is invalid or has expired. Request a new one and we
+          will email it to you.
+        </p>
+        <ButtonLink
+          href="/forgot-password"
+          className="mt-6 h-11 w-full rounded-md text-sm"
+        >
+          Request a new link
+        </ButtonLink>
+      </div>
+    );
+  }
+
+  const failure = error ? resetFailureMessage(error) : null;
 
   return (
     <div className="w-full max-w-[400px]">
@@ -73,7 +102,9 @@ export function ResetPasswordPanel() {
 
       <form
         noValidate
-        onSubmit={handleSubmit(({ password }) => mutate({ password }))}
+        onSubmit={handleSubmit(({ password }) =>
+          mutate({ token: token ?? "", password }),
+        )}
         className="mt-[clamp(0.75rem,2.4dvh,1.5rem)] flex flex-col gap-[clamp(0.625rem,1.8dvh,1.125rem)]"
       >
         <Field
