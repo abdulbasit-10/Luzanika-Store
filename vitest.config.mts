@@ -15,6 +15,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
-    env: { LOG_LEVEL: "silent" },
+    // Integration tests need a database; run them with `npm run test:integration`.
+    exclude: ["src/**/*.int.test.ts", "node_modules/**"],
+    // Fast hashing in tests only: the production minimum is enforced separately.
+    env: { LOG_LEVEL: "silent", BCRYPT_COST: "4" },
   },
 });

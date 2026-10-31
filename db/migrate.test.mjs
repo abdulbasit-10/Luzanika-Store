@@ -10,6 +10,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { readdirSync } from "node:fs";
 import {
   cp,
   mkdtemp,
@@ -28,6 +29,12 @@ import pg from "pg";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const RUNNER = path.join(HERE, "migrate.mjs");
 const REAL_MIGRATIONS = path.join(HERE, "migrations");
+// Read from the folder so adding a migration never breaks these tests.
+const ALL_MIGRATIONS = readdirSync(REAL_MIGRATIONS)
+  .filter((file) => file.endsWith(".up.sql"))
+  .map((file) => file.replace(".up.sql", ""))
+  .sort();
+const LATEST_MIGRATION = ALL_MIGRATIONS[ALL_MIGRATIONS.length - 1];
 const adminUrl =
   process.env.TEST_ADMIN_DATABASE_URL ?? process.env.DATABASE_URL;
 
@@ -142,7 +149,10 @@ describe("migration runner", { skip: skip() }, () => {
       const result = await run(["status"], { url: db.url });
       assert.equal(result.code, 0, result.output);
       assert.match(result.output, /pending 0001_extensions_and_helpers/);
-      assert.match(result.output, /0 applied, 3 pending/);
+      assert.match(
+        result.output,
+        new RegExp(`0 applied, ${ALL_MIGRATIONS.length} pending`),
+      );
     } finally {
       await db.close();
     }
@@ -153,19 +163,16 @@ describe("migration runner", { skip: skip() }, () => {
     try {
       const first = await run(["up"], { url: db.url });
       assert.equal(first.code, 0, first.output);
-      assert.match(first.output, /applied 0003_customer_sessions/);
-      assert.deepEqual(await appliedNames(db), [
-        "0001_extensions_and_helpers",
-        "0002_customers",
-        "0003_customer_sessions",
-      ]);
+      assert.match(first.output, new RegExp(`applied ${LATEST_MIGRATION}`));
+      assert.deepEqual(await appliedNames(db), ALL_MIGRATIONS);
       assert.ok(await tableExists(db, "customers"));
       assert.ok(await tableExists(db, "customer_sessions"));
+      assert.ok(await tableExists(db, "customer_tokens"));
 
       const second = await run(["up"], { url: db.url });
       assert.equal(second.code, 0, second.output);
       assert.match(second.output, /up to date/);
-      assert.equal((await appliedNames(db)).length, 3);
+      assert.equal((await appliedNames(db)).length, ALL_MIGRATIONS.length);
     } finally {
       await db.close();
     }
@@ -191,18 +198,27 @@ describe("migration runner", { skip: skip() }, () => {
 
       const reverted = await run(["down"], { url: db.url });
       assert.equal(reverted.code, 0, reverted.output);
-      assert.match(reverted.output, /reverted 0003_customer_sessions/);
-      assert.ok(!(await tableExists(db, "customer_sessions")));
-      assert.ok(await tableExists(db, "customers"));
+      assert.match(reverted.output, new RegExp(`reverted ${LATEST_MIGRATION}`));
+      assert.equal((await appliedNames(db)).length, ALL_MIGRATIONS.length - 1);
 
-      const twoSteps = await run(["down", "--steps", "2"], { url: db.url });
-      assert.equal(twoSteps.code, 0, twoSteps.output);
-      assert.ok(!(await tableExists(db, "customers")));
+      const rest = await run(
+        ["down", "--steps", String(ALL_MIGRATIONS.length - 1)],
+        { url: db.url },
+      );
+      assert.equal(rest.code, 0, rest.output);
+      for (const table of [
+        "customers",
+        "customer_sessions",
+        "customer_tokens",
+      ]) {
+        assert.ok(!(await tableExists(db, table)), `${table} should be gone`);
+      }
       assert.deepEqual(await appliedNames(db), []);
 
       const again = await run(["up"], { url: db.url });
       assert.equal(again.code, 0, again.output);
-      assert.ok(await tableExists(db, "customer_sessions"));
+      assert.deepEqual(await appliedNames(db), ALL_MIGRATIONS);
+      assert.ok(await tableExists(db, "customer_tokens"));
     } finally {
       await db.close();
     }
@@ -280,8 +296,8 @@ describe("migration runner", { skip: skip() }, () => {
       assert.equal(a.code, 0, a.output);
       assert.equal(b.code, 0, b.output);
       const appliedLines = `${a.output}${b.output}`.match(/^applied /gm) ?? [];
-      assert.equal(appliedLines.length, 3);
-      assert.equal((await appliedNames(db)).length, 3);
+      assert.equal(appliedLines.length, ALL_MIGRATIONS.length);
+      assert.equal((await appliedNames(db)).length, ALL_MIGRATIONS.length);
     } finally {
       await db.close();
     }
@@ -297,14 +313,14 @@ describe("migration runner", { skip: skip() }, () => {
       });
       assert.equal(refused.code, 1);
       assert.match(refused.output, /Refusing to roll back in production/);
-      assert.equal((await appliedNames(db)).length, 3);
+      assert.equal((await appliedNames(db)).length, ALL_MIGRATIONS.length);
 
       const allowed = await run(["down", "--allow-production"], {
         url: db.url,
         env: { NODE_ENV: "production" },
       });
       assert.equal(allowed.code, 0, allowed.output);
-      assert.equal((await appliedNames(db)).length, 2);
+      assert.equal((await appliedNames(db)).length, ALL_MIGRATIONS.length - 1);
     } finally {
       await db.close();
     }
@@ -393,8 +409,9 @@ describe("migration runner", { skip: skip() }, () => {
       const result = await run(["create", "Add Phone!"], { url: db.url, dir });
       assert.equal(result.code, 0, result.output);
       const files = await readdir(dir);
-      assert.ok(files.includes("0004_add_phone.up.sql"));
-      assert.ok(files.includes("0004_add_phone.down.sql"));
+      const next = String(ALL_MIGRATIONS.length + 1).padStart(4, "0");
+      assert.ok(files.includes(`${next}_add_phone.up.sql`));
+      assert.ok(files.includes(`${next}_add_phone.down.sql`));
     } finally {
       await db.close();
     }
@@ -550,6 +567,45 @@ describe("the real migrations", { skip: skip() }, () => {
     await db.query("DELETE FROM customers WHERE id = $1", [id]);
     const { rows } = await db.query(
       "SELECT count(*)::int AS n FROM customer_sessions WHERE customer_id = $1",
+      [id],
+    );
+    assert.equal(rows[0].n, 0);
+  });
+
+  test("one-time links are validated and removed with their customer", async () => {
+    const { id } = (await insertCustomer({ email: "links@example.com" }))
+      .rows[0];
+    const insertToken = (
+      tokenHash,
+      {
+        type = "reset_password",
+        expires = "now() + interval '30 minutes'",
+      } = {},
+    ) =>
+      db.query(
+        `INSERT INTO customer_tokens (customer_id, type, token_hash, expires_at) VALUES ($1, $2, $3, ${expires})`,
+        [id, type, tokenHash],
+      );
+
+    await insertToken("e".repeat(64));
+    await rejects(insertToken("e".repeat(64)), "23505");
+    await rejects(insertToken("not-a-hash"), "23514");
+    await rejects(insertToken("f".repeat(64), { type: "made_up" }), "23514");
+    await rejects(
+      insertToken("1".repeat(64), { expires: "now() - interval '1 day'" }),
+      "23514",
+    );
+    await rejects(
+      db.query(
+        "INSERT INTO customer_tokens (customer_id, type, token_hash, expires_at) VALUES ($1, 'reset_password', $2, now() + interval '1 day')",
+        [crypto.randomUUID(), "2".repeat(64)],
+      ),
+      "23503",
+    );
+
+    await db.query("DELETE FROM customers WHERE id = $1", [id]);
+    const { rows } = await db.query(
+      "SELECT count(*)::int AS n FROM customer_tokens WHERE customer_id = $1",
       [id],
     );
     assert.equal(rows[0].n, 0);

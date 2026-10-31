@@ -51,11 +51,22 @@ export interface ApiContext<P extends Params = Params> {
   json<T>(schema: ZodType<T>): Promise<T>;
   /** Validates the query string; throws a 400 with field messages on failure. */
   query<T>(schema: ZodType<T>): T;
+  /**
+   * An extra limit decided inside the handler, e.g. per account once the
+   * email is known. Throws `rate_limited` when exhausted. `key` must not
+   * contain raw personal data: use `fingerprint()`.
+   */
+  rateLimit(rule: {
+    name: string;
+    key: string;
+    limit: number;
+    windowSec: number;
+  }): void;
 }
 
 type Handler<P extends Params> = (
   context: ApiContext<P>,
-) => Response | Promise<Response>;
+) => NextResponse | Promise<NextResponse>;
 
 function newRequestId(): string {
   return `req_${randomUUID().replaceAll("-", "")}`;
@@ -139,6 +150,15 @@ export function route<P extends Params = Params>(
           ),
         query: (schema) =>
           parseWith(schema, queryToObject(request.nextUrl.searchParams)),
+        rateLimit: (rule) => {
+          enforceRateLimits(getRateLimiter(), [
+            {
+              key: `${rule.name}:${rule.key}`,
+              limit: rule.limit,
+              windowSec: rule.windowSec,
+            },
+          ]);
+        },
       });
     } catch (error) {
       // Next.js signals "this route is dynamic" and similar by throwing; those must pass through untouched.

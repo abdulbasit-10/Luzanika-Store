@@ -17,12 +17,14 @@
     "db:migrate:test": "node --env-file-if-exists=.env.local db/migrate.mjs up --test",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "node --env-file-if-exists=.env.local node_modules/vitest/vitest.mjs run --config vitest.integration.config.mts",
     "test:db": "node --env-file-if-exists=.env.local --test db/migrate.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.2",
     "@tanstack/react-query": "^5.105.0",
     "axios": "^1.21.0",
+    "bcrypt": "^6.0.0",
     "lucide-react": "^1.64.0",
     "next": "16.4.3",
     "pg": "^8.23.1",
@@ -39,6 +41,7 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
     "@types/react": "^19",

@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   // Do not advertise the framework in every response.
   poweredByHeader: false,
   // Loaded from node_modules at runtime instead of being bundled, so the database driver can be found.
-  serverExternalPackages: ["sequelize", "pg", "pg-hstore"],
+  serverExternalPackages: ["sequelize", "pg", "pg-hstore", "bcrypt"],
   async headers() {
     return securityHeaderRules({
       isDev: process.env.NODE_ENV !== "production",
