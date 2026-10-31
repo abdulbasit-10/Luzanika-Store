@@ -1,21 +1,21 @@
-import { NextResponse } from "next/server";
-
 import { pingDatabase } from "@/server/db/connection";
+import { json } from "@/server/http/responses";
+import { route } from "@/server/http/route";
 
 /**
  * GET /api/v1/health: tells a monitor (or you) whether the app and its
  * database are up. It reveals nothing about the setup: no versions, names or
  * credentials.
  */
-export async function GET() {
+export const GET = route({ name: "health", quiet: true }, async () => {
   const database = await pingDatabase();
-  const status = database.ok ? "ok" : "degraded";
 
-  return NextResponse.json(
-    { status, time: new Date().toISOString(), database },
+  return json(
     {
-      status: database.ok ? 200 : 503,
-      headers: { "Cache-Control": "no-store" },
+      status: database.ok ? "ok" : "degraded",
+      time: new Date().toISOString(),
+      database,
     },
+    { status: database.ok ? 200 : 503 },
   );
-}
+});
