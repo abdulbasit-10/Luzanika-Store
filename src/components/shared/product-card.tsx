@@ -131,10 +131,7 @@ export function ProductCard({
           </span>
         ) : null}
 
-        <WishlistButton
-          productName={product.name}
-          className="absolute top-3 right-3"
-        />
+        <WishlistButton product={product} className="absolute top-3 right-3" />
       </div>
 
       {variant === "detailed" ? (

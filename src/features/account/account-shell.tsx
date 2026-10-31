@@ -42,7 +42,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
         {ready ? <AccountSidebar /> : <SidebarSkeleton />}
       </aside>
       <div
-        className={`bg-background py-6 ${pad} lg:py-[clamp(0.75rem,3.2dvh,3.4rem)]`}
+        className={`${pathname === "/account" ? "bg-background" : "bg-muted"} py-6 ${pad} lg:py-[clamp(0.75rem,3.2dvh,3.4rem)]`}
       >
         {ready ? null : <ContentSkeleton />}
         {/* Always rendered so the page is part of the server HTML; hidden until the visitor is known to be signed in. */}

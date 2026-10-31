@@ -131,7 +131,15 @@ export function ProductPurchasePanel({
       </div>
 
       <div className={blockGap}>
-        <ProductActions productName={product.name} />
+        <ProductActions
+          product={{
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            image: product.images[0],
+            prices: product.prices,
+          }}
+        />
       </div>
     </div>
   );
