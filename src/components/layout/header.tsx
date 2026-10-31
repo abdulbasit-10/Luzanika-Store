@@ -1,4 +1,4 @@
-import { Heart, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
 
 import { AccountLink } from "@/components/layout/account-link";
@@ -8,13 +8,13 @@ import {
   MobileNavPanel,
   MobileNavToggle,
 } from "@/components/layout/mobile-nav";
+import { WishlistLink } from "@/components/layout/wishlist-link";
 import { Logo } from "@/components/shared/logo";
 import { RegionSelector } from "@/components/shared/region-selector";
 import { Container } from "@/components/ui/container";
 import { headerActions } from "@/config/navigation";
 
 const searchLink = { ...headerActions.search, icon: Search };
-const wishlistLink = { ...headerActions.wishlist, icon: Heart };
 
 function IconLink({
   label,
@@ -46,7 +46,7 @@ export function Header() {
           <RegionSelector />
           <IconLink {...searchLink} />
           <CartLink />
-          <IconLink {...wishlistLink} />
+          <WishlistLink />
           <AccountLink />
           <MobileNavToggle />
         </div>
