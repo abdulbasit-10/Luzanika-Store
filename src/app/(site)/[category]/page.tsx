@@ -5,17 +5,21 @@ import { Suspense } from "react";
 import { CatalogBrowser } from "@/features/catalog/catalog-browser";
 import { CatalogHero } from "@/features/catalog/catalog-hero";
 import { CatalogSkeleton } from "@/features/catalog/catalog-skeleton";
-import { getCatalog, listCategorySlugs } from "@/features/catalog/mock-catalog";
+import {
+  getCachedCatalog,
+  getCachedCategories,
+} from "@/server/catalog/catalog-queries";
 
-export function generateStaticParams() {
-  return listCategorySlugs().map((category) => ({ category }));
+export async function generateStaticParams() {
+  const categories = await getCachedCategories();
+  return categories.map(({ slug }) => ({ category: slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/[category]">): Promise<Metadata> {
   const { category: slug } = await params;
-  const catalog = getCatalog(slug);
+  const catalog = await getCachedCatalog(slug);
   if (!catalog) return {};
 
   return {
@@ -40,7 +44,7 @@ async function CategoryContent({
   params: PageProps<"/[category]">["params"];
 }) {
   const { category: slug } = await params;
-  const catalog = getCatalog(slug);
+  const catalog = await getCachedCatalog(slug);
   if (!catalog) notFound();
 
   return (

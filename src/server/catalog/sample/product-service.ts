@@ -1,12 +1,15 @@
-import { getCatalog, listCategorySlugs } from "@/features/catalog/mock-catalog";
+import {
+  getCatalog,
+  listCategorySlugs,
+} from "@/server/catalog/sample/mock-catalog";
 import type { CategoryDefinition } from "@/features/catalog/types";
-import { detailedProducts } from "@/features/product-detail/mock-product-details";
-import type { ProductDetail } from "@/features/product-detail/types";
+import { detailedProducts } from "@/server/catalog/sample/mock-product-details";
+import type { SampleProductDetail } from "@/server/catalog/sample/types";
 import {
   mockFeaturedProducts,
   mockNewArrivals,
   mockSpecialOffers,
-} from "@/features/products/mock-products";
+} from "@/server/catalog/sample/mock-products";
 import type { ProductSummary } from "@/types/product";
 
 /**
@@ -22,7 +25,7 @@ const MOCK_STOCK = 25;
 function fromSummary(
   product: ProductSummary & { subcategory?: string },
   category?: CategoryDefinition,
-): ProductDetail {
+): SampleProductDetail {
   const subcategory = category?.subcategories.find(
     (item) => item.slug === product.subcategory,
   );
@@ -48,12 +51,12 @@ function fromSummary(
   };
 }
 
-let index: Map<string, ProductDetail> | undefined;
+let index: Map<string, SampleProductDetail> | undefined;
 
 function getIndex() {
   if (index) return index;
 
-  const products = new Map<string, ProductDetail>();
+  const products = new Map<string, SampleProductDetail>();
 
   for (const summary of [
     ...mockFeaturedProducts,
@@ -78,7 +81,7 @@ function getIndex() {
   return products;
 }
 
-export function getProduct(slug: string): ProductDetail | undefined {
+export function getProduct(slug: string): SampleProductDetail | undefined {
   return getIndex().get(slug);
 }
 

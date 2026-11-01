@@ -21,7 +21,8 @@ export const useOrderStore = create<OrderState>()(
     }),
     {
       name: "luzanika-last-order",
-      version: 1,
+      version: 2,
+      migrate: () => ({ lastOrder: null }),
       storage: createJSONStorage(() => sessionStorage),
     },
   ),

@@ -2,9 +2,11 @@ import { ProductGrid } from "@/components/shared/product-grid";
 import { Section } from "@/components/ui/section";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { MockOfferCountdown } from "@/features/home/mock-offer-countdown";
-import { mockSpecialOffers } from "@/features/products/mock-products";
+import { getCachedHomeProducts } from "@/server/catalog/catalog-queries";
 
-export function SpecialOffersSection() {
+export async function SpecialOffersSection() {
+  const { specialOffers } = await getCachedHomeProducts();
+
   return (
     <Section tone="cream">
       <SectionHeading
@@ -18,7 +20,7 @@ export function SpecialOffersSection() {
         className="items-start"
       />
       <div className="mt-8">
-        <ProductGrid products={mockSpecialOffers} variant="compact" />
+        <ProductGrid products={specialOffers} variant="compact" />
       </div>
     </Section>
   );

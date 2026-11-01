@@ -19,6 +19,7 @@ export interface RegionConfig {
 export interface RegionalPrice {
   region: RegionCode;
   currency: CurrencyCode;
+  /** Minor units (cents/paisa): 85000 is 850.00. */
   amount: number;
   compareAtAmount?: number;
 }

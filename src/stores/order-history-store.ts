@@ -28,7 +28,8 @@ export const useOrderHistoryStore = create<OrderHistoryState>()(
     }),
     {
       name: "luzanika-orders",
-      version: 1,
+      version: 2,
+      migrate: () => ({ byUser: {} }),
       storage: createJSONStorage(() => localStorage),
       partialize: ({ byUser }) => ({ byUser }),
     },

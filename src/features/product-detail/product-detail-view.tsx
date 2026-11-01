@@ -1,5 +1,3 @@
-import { Eye } from "lucide-react";
-
 import { ProductPrice } from "@/components/shared/product-price";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/breadcrumb";
 import { Container } from "@/components/ui/container";
@@ -57,14 +55,6 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
               prices={product.prices}
               className={`${blockGap} block text-[clamp(1.375rem,3.6dvh,2rem)] leading-tight font-bold`}
             />
-            {product.viewersNow ? (
-              <p
-                className={`${blockGap} flex items-center gap-2 text-xs font-medium`}
-              >
-                <Eye aria-hidden className="size-4" />
-                {product.viewersNow} people are looking at this product
-              </p>
-            ) : null}
             <hr className={`${blockGap} border-black/[0.06]`} />
             <div className={blockGap}>
               <ProductPurchasePanel product={product} />

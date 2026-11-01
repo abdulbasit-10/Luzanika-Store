@@ -4,9 +4,11 @@ import { ProductGrid } from "@/components/shared/product-grid";
 import { ButtonLink } from "@/components/ui/button";
 import { Section } from "@/components/ui/section";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { mockFeaturedProducts } from "@/features/products/mock-products";
+import { getCachedHomeProducts } from "@/server/catalog/catalog-queries";
 
-export function FeaturedProductsSection() {
+export async function FeaturedProductsSection() {
+  const { featured } = await getCachedHomeProducts();
+
   return (
     <Section tone="cream">
       <SectionHeading
@@ -20,7 +22,7 @@ export function FeaturedProductsSection() {
         }
       />
       <div className="mt-8">
-        <ProductGrid products={mockFeaturedProducts} />
+        <ProductGrid products={featured} />
       </div>
     </Section>
   );

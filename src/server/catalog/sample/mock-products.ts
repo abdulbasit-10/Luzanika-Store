@@ -1,17 +1,10 @@
 import type { ProductSummary } from "@/types/product";
-import type { RegionalPrice } from "@/types/region";
+import { mockPrices } from "@/server/catalog/sample/mock-helpers";
 
 /**
  * Temporary data taken from the Figma home page. Replace with API data once
  * the backend exists. Amounts are the Figma values in both regional currencies.
  */
-function mockPrices(amount: number): RegionalPrice[] {
-  return [
-    { region: "PK", currency: "PKR", amount },
-    { region: "DE", currency: "EUR", amount },
-  ];
-}
-
 export const mockFeaturedProducts: ProductSummary[] = [
   {
     id: "featured-1",

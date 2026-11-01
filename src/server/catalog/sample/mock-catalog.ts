@@ -1,8 +1,8 @@
-import { mockBagsProducts } from "@/features/catalog/mock-bags-products";
-import { mockFragrancesProducts } from "@/features/catalog/mock-fragrances-products";
-import { mockKidsProducts } from "@/features/catalog/mock-kids-products";
-import { mockLadiesProducts } from "@/features/catalog/mock-ladies-products";
-import { mockMenProducts } from "@/features/catalog/mock-men-products";
+import { mockBagsProducts } from "@/server/catalog/sample/mock-bags-products";
+import { mockFragrancesProducts } from "@/server/catalog/sample/mock-fragrances-products";
+import { mockKidsProducts } from "@/server/catalog/sample/mock-kids-products";
+import { mockLadiesProducts } from "@/server/catalog/sample/mock-ladies-products";
+import { mockMenProducts } from "@/server/catalog/sample/mock-men-products";
 import {
   ALL_SUBCATEGORY,
   type Catalog,
@@ -25,9 +25,9 @@ const sharedAvailability: CatalogFacets["availability"] = [
 ];
 // The same numbers are used for PKR and EUR for now; the backend will return a range per region.
 const sharedPriceRange: CatalogFacets["priceRange"] = {
-  min: 500,
-  max: 5000,
-  step: 50,
+  min: 50_000,
+  max: 500_000,
+  step: 5_000,
 };
 
 const catalogs: Partial<Record<CategorySlug, Catalog>> = {

@@ -1,5 +1,5 @@
-import { mockPrices } from "@/features/catalog/mock-helpers";
-import type { ProductDetail } from "@/features/product-detail/types";
+import { mockPrices } from "@/server/catalog/sample/mock-helpers";
+import type { SampleProductDetail } from "@/server/catalog/sample/types";
 import type { ProductColor, ProductImage } from "@/types/product";
 
 /**
@@ -39,7 +39,7 @@ const common = {
   stock: 673,
 };
 
-export const detailedProducts: ProductDetail[] = [
+export const detailedProducts: SampleProductDetail[] = [
   {
     ...common,
     id: "pd-men-1",

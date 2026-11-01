@@ -1,10 +1,13 @@
-import { getCatalog, listCategorySlugs } from "@/features/catalog/mock-catalog";
+import {
+  getCatalog,
+  listCategorySlugs,
+} from "@/server/catalog/sample/mock-catalog";
 import type { CatalogFacets, FilterOption } from "@/features/catalog/types";
 import {
   mockFeaturedProducts,
   mockNewArrivals,
   mockSpecialOffers,
-} from "@/features/products/mock-products";
+} from "@/server/catalog/sample/mock-products";
 import type { ListedProduct, ProductListing } from "@/features/products/types";
 
 /**

@@ -1,7 +1,7 @@
 import {
   mockColors as colors,
   mockPrices,
-} from "@/features/catalog/mock-helpers";
+} from "@/server/catalog/sample/mock-helpers";
 import type { CatalogProduct } from "@/features/catalog/types";
 
 /** Temporary Ladies catalog taken from the Figma Ladies Collection page. Replace with API data. */

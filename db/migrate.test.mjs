@@ -211,6 +211,12 @@ describe("migration runner", { skip: skip() }, () => {
         "customer_sessions",
         "customer_tokens",
         "addresses",
+        "categories",
+        "products",
+        "product_variants",
+        "inventory",
+        "stock_movements",
+        "home_features",
       ]) {
         assert.ok(!(await tableExists(db, table)), `${table} should be gone`);
       }
@@ -657,5 +663,195 @@ describe("the real migrations", { skip: skip() }, () => {
       [id],
     );
     assert.equal(rows[0].n, 0);
+  });
+
+  test("catalogue: prices, stock and variants cannot be stored in an invalid state", async () => {
+    const q = (text, values) => db.query(text, values);
+    const category = (
+      await q(
+        `INSERT INTO categories (slug, label, hero_title, title, description,
+           hero_image_src, hero_image_alt, all_label, price_min, price_max, price_step)
+         VALUES ('cat-a', 'A', 'A', 'A', 'A', '/a.jpg', 'a', 'ALL A', 100, 1000, 10)
+         RETURNING id`,
+      )
+    ).rows[0].id;
+    const otherCategory = (
+      await q(
+        `INSERT INTO categories (slug, label, hero_title, title, description,
+           hero_image_src, hero_image_alt, all_label, price_min, price_max, price_step)
+         VALUES ('cat-b', 'B', 'B', 'B', 'B', '/b.jpg', 'b', 'ALL B', 100, 1000, 10)
+         RETURNING id`,
+      )
+    ).rows[0].id;
+    const sub = (
+      await q(
+        "INSERT INTO subcategories (category_id, slug, label) VALUES ($1, 'sub', 'SUB') RETURNING id",
+        [category],
+      )
+    ).rows[0].id;
+    const product = async (slug, overrides = {}) => {
+      const row = { slug, name: "Item", ...overrides };
+      return (
+        await q(
+          `INSERT INTO products (${Object.keys(row).join(", ")})
+           VALUES (${Object.keys(row)
+             .map((_, i) => `$${i + 1}`)
+             .join(", ")}) RETURNING id`,
+          Object.values(row),
+        )
+      ).rows[0].id;
+    };
+
+    await rejects(
+      q(
+        `INSERT INTO categories (slug, label, hero_title, title, description,
+           hero_image_src, hero_image_alt, all_label, price_min, price_max, price_step)
+         VALUES ('bad', 'B', 'B', 'B', 'B', '/b.jpg', 'b', 'ALL', 500, 100, 10)`,
+      ),
+      "23514",
+    );
+
+    const id = await product("item-one", { category_id: category });
+    await rejects(product("item-one"), "23505");
+    await rejects(product("Bad Slug"), "23514");
+    await rejects(product("item-x", { status: "live" }), "23514");
+    await rejects(product("item-x", { availability: "maybe" }), "23514");
+    await rejects(product("item-x", { badge_label: "NEW" }), "23514"); // a badge needs its tone too
+    await rejects(product("item-x", { rating_avg: 5.5 }), "23514");
+
+    // A subcategory must belong to the product's own category, and needs a category at all.
+    await product("item-sub", { category_id: category, subcategory_id: sub });
+    await rejects(
+      product("item-cross", {
+        category_id: otherCategory,
+        subcategory_id: sub,
+      }),
+      "23503",
+    );
+    await rejects(product("item-orphan", { subcategory_id: sub }), "23514");
+
+    // Prices: one per market, in that market's currency, never negative.
+    const price = (market, currency, amount, compareAt = null) =>
+      q(
+        `INSERT INTO product_prices (product_id, market, currency, amount, compare_at_amount)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, market, currency, amount, compareAt],
+      );
+    await price("PK", "PKR", 85000);
+    await price("DE", "EUR", 8500, 9900);
+    await rejects(price("PK", "PKR", 1), "23505");
+    await rejects(price("DE", "PKR", 100), "23514");
+    await rejects(price("PK", "EUR", 100), "23514");
+    await rejects(price("FR", "EUR", 100), "23514");
+    const other = await product("item-two");
+    await rejects(
+      q(
+        "INSERT INTO product_prices (product_id, market, currency, amount) VALUES ($1, 'PK', 'PKR', -1)",
+        [other],
+      ),
+      "23514",
+    );
+    await rejects(
+      q(
+        "INSERT INTO product_prices (product_id, market, currency, amount, compare_at_amount) VALUES ($1, 'PK', 'PKR', 500, 500)",
+        [other],
+      ),
+      "23514",
+    ); // a "was" price must be higher
+
+    // Variants: no duplicate colour/size combination (NULL counts as "none"), valid colour.
+    const variant = (sku, color, hex, size) =>
+      q(
+        `INSERT INTO product_variants (product_id, sku, color_name, color_hex, size_label)
+         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [id, sku, color, hex, size],
+      );
+    const first = (await variant("SKU-1", "Black", "#252525", "M")).rows[0].id;
+    await variant("SKU-2", "Black", "#252525", "L");
+    await rejects(variant("SKU-3", "Black", "#252525", "M"), "23505");
+    await rejects(variant("SKU-1", "Red", "#ff0000", "M"), "23505");
+    await rejects(variant("SKU-4", "Red", "red", "M"), "23514");
+    await rejects(variant("SKU-5", "Red", null, "M"), "23514");
+    const plainOne = other;
+    const plain = (sku) =>
+      q("INSERT INTO product_variants (product_id, sku) VALUES ($1, $2)", [
+        plainOne,
+        sku,
+      ]);
+    await plain("PLAIN-1");
+    await rejects(plain("PLAIN-2"), "23505");
+
+    // Stock: never negative, never more reserved than on hand, one row per variant and market.
+    const stock = (market, onHand, reserved = 0) =>
+      q(
+        "INSERT INTO inventory (variant_id, market, on_hand, reserved) VALUES ($1, $2, $3, $4)",
+        [first, market, onHand, reserved],
+      );
+    await stock("PK", 25);
+    await rejects(stock("PK", 5), "23505");
+    await rejects(stock("DE", -1), "23514");
+    await rejects(stock("DE", 2, 3), "23514");
+    await rejects(stock("XX", 1), "23514");
+    await rejects(
+      q(
+        "UPDATE inventory SET on_hand = 1, reserved = 2 WHERE variant_id = $1",
+        [first],
+      ),
+      "23514",
+    );
+
+    await rejects(
+      q(
+        "INSERT INTO stock_movements (variant_id, market, delta, reason) VALUES ($1, 'PK', 0, 'adjustment')",
+        [first],
+      ),
+      "23514",
+    );
+    await rejects(
+      q(
+        "INSERT INTO stock_movements (variant_id, market, delta, reason) VALUES ($1, 'PK', 5, 'gift')",
+        [first],
+      ),
+      "23514",
+    );
+    await q(
+      "INSERT INTO stock_movements (variant_id, market, delta, reason) VALUES ($1, 'PK', 25, 'initial_import')",
+      [first],
+    );
+    // A product with stock history cannot be hard-deleted away from its ledger.
+    await rejects(
+      q("DELETE FROM product_variants WHERE id = $1", [first]),
+      "23001",
+    );
+
+    // Home sections: a known section, and one product once per section.
+    await q(
+      "INSERT INTO home_features (section, product_id, sort) VALUES ('featured', $1, 0)",
+      [other],
+    );
+    await rejects(
+      q(
+        "INSERT INTO home_features (section, product_id, sort) VALUES ('featured', $1, 1)",
+        [other],
+      ),
+      "23505",
+    );
+    await rejects(
+      q(
+        "INSERT INTO home_features (section, product_id, sort) VALUES ('sale', $1, 0)",
+        [id],
+      ),
+      "23514",
+    );
+
+    // Removing a product removes its prices, photos, variants and stock with it
+    // (here the ledger entry blocks it, so clear that first as an admin purge would).
+    await q("DELETE FROM stock_movements WHERE variant_id = $1", [first]);
+    await q("DELETE FROM products WHERE id = $1", [id]);
+    const { rows } = await q(
+      "SELECT (SELECT count(*) FROM product_prices WHERE product_id = $1)::int AS prices, (SELECT count(*) FROM inventory WHERE variant_id = $2)::int AS stock",
+      [id, first],
+    );
+    assert.deepEqual(rows[0], { prices: 0, stock: 0 });
   });
 });

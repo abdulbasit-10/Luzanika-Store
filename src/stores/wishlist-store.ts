@@ -56,7 +56,8 @@ export const useWishlistStore = create<WishlistState>()(
     }),
     {
       name: "luzanika-wishlist",
-      version: 1,
+      version: 2,
+      migrate: () => ({ byUser: {} }),
       storage: createJSONStorage(() => localStorage),
       partialize: ({ byUser }) => ({ byUser }),
     },

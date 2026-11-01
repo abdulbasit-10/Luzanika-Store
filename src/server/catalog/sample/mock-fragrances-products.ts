@@ -1,4 +1,4 @@
-import { mockPrices } from "@/features/catalog/mock-helpers";
+import { mockPrices } from "@/server/catalog/sample/mock-helpers";
 import type { CatalogProduct } from "@/features/catalog/types";
 
 /**

@@ -56,8 +56,9 @@ function updateLines(
 }
 
 /**
- * Version 1 was one shared guest cart. Guests can no longer have a cart, so
- * it is dropped rather than handed to whoever signs in first.
+ * Version 1 was one shared guest cart, which is dropped rather than handed to
+ * whoever signs in first. Version 3 switched prices to minor units and product
+ * ids to the database ids, so older carts no longer match the catalogue.
  */
 export function migrateCartState(): { byUser: Record<string, CartLine[]> } {
   return { byUser: {} };
@@ -147,7 +148,7 @@ export const useCartStore = create<CartState>()(
     }),
     {
       name: "luzanika-cart",
-      version: 2,
+      version: 3,
       migrate: migrateCartState,
       storage: createJSONStorage(() => localStorage),
       partialize: ({ byUser }) => ({ byUser }),

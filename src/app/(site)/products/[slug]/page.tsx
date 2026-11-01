@@ -5,19 +5,20 @@ import { Suspense } from "react";
 import { ProductDetailSkeleton } from "@/features/product-detail/product-detail-skeleton";
 import { ProductDetailView } from "@/features/product-detail/product-detail-view";
 import {
-  getProduct,
-  listProductSlugs,
-} from "@/features/product-detail/product-service";
+  getCachedProduct,
+  getCachedProductSlugs,
+} from "@/server/catalog/catalog-queries";
 
-export function generateStaticParams() {
-  return listProductSlugs().map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  const slugs = await getCachedProductSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
   params,
 }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await getCachedProduct(slug);
   if (!product) return {};
 
   const image = product.images[0];
@@ -46,7 +47,7 @@ async function ProductContent({
   params: PageProps<"/products/[slug]">["params"];
 }) {
   const { slug } = await params;
-  const product = getProduct(slug);
+  const product = await getCachedProduct(slug);
   if (!product) notFound();
 
   return <ProductDetailView product={product} />;

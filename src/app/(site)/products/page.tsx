@@ -3,7 +3,7 @@ import { Suspense } from "react";
 
 import { ProductsBrowser } from "@/features/products/products-browser";
 import { ProductsSkeleton } from "@/features/products/products-skeleton";
-import { getProductListing } from "@/features/products/product-listing";
+import { getCachedProductListing } from "@/server/catalog/catalog-queries";
 
 export const metadata: Metadata = {
   title: "Products",
@@ -12,14 +12,17 @@ export const metadata: Metadata = {
 };
 
 export default function ProductsPage() {
-  const listing = getProductListing();
-
   return (
     <main className="flex-1">
       {/* The search text is read from the URL on the client, which needs a Suspense boundary. */}
       <Suspense fallback={<ProductsSkeleton />}>
-        <ProductsBrowser {...listing} />
+        <ProductsContent />
       </Suspense>
     </main>
   );
+}
+
+async function ProductsContent() {
+  const listing = await getCachedProductListing();
+  return <ProductsBrowser {...listing} />;
 }

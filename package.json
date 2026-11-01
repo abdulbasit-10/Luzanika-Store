@@ -14,6 +14,7 @@
     "db:rollback": "node --env-file-if-exists=.env.local db/migrate.mjs down",
     "db:status": "node --env-file-if-exists=.env.local db/migrate.mjs status",
     "db:create": "node --env-file-if-exists=.env.local db/migrate.mjs create",
+    "db:seed-catalog": "tsx --env-file-if-exists=.env.local db/seed-catalog.ts",
     "db:migrate:test": "node --env-file-if-exists=.env.local db/migrate.mjs up --test",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -53,6 +54,7 @@
     "prettier": "^3.9.10",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^4.1.12"
   }

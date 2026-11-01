@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -14,6 +14,7 @@ import { SizeGuideButton } from "@/features/product-detail/size-guide-dialog";
 import { blockGap } from "@/features/product-detail/spacing";
 import type { ProductDetail } from "@/features/product-detail/types";
 import { useCart } from "@/features/cart/use-cart";
+import { useUiStore } from "@/stores/ui-store";
 
 type PurchaseProduct = Pick<
   ProductDetail,
@@ -27,14 +28,15 @@ type PurchaseProduct = Pick<
   | "sizes"
   | "hasSizeGuide"
   | "category"
-  | "stock"
+  | "variants"
 >;
 
 const ADDED_MESSAGE_MS = 2500;
 
 /**
  * Everything below the price: color, size, stock, quantity, add to cart and
- * the secondary actions. Selections live in local state; "Add to Cart" saves
+ * the secondary actions. Selections live in local state and pick one variant,
+ * whose stock in the selected region limits the quantity. "Add to Cart" saves
  * the product in the signed-in customer's cart (see cart-store).
  */
 export function ProductPurchasePanel({
@@ -42,12 +44,13 @@ export function ProductPurchasePanel({
 }: {
   product: PurchaseProduct;
 }) {
-  const { colors, sizes } = product;
+  const { colors, sizes, variants } = product;
+  const region = useUiStore((state) => state.region);
   const { addItem } = useCart();
   const router = useRouter();
   const [color, setColor] = useState<string | null>(colors?.[0]?.name ?? null);
   const [size, setSize] = useState<string | null>(sizes?.[0] ?? null);
-  const [quantity, setQuantity] = useState(1);
+  const [chosenQuantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
@@ -55,7 +58,25 @@ export function ProductPurchasePanel({
 
   useEffect(() => () => clearTimeout(resetTimer.current), []);
 
+  const variant = variants.find(
+    (item) =>
+      (!colors?.length || item.color === color) &&
+      (!sizes?.length || item.size === size),
+  );
+  const stock = variant?.stock[region] ?? 0;
+  const inStock = stock > 0;
+  // Clearing a choice leaves no variant; that is "pick an option", not "sold out".
+  const missingChoice =
+    colors?.length && color === null
+      ? "colour"
+      : sizes?.length && size === null
+        ? "size"
+        : null;
+  // A smaller stock after changing size, colour or region must never leave a larger quantity selected.
+  const quantity = Math.min(chosenQuantity, Math.max(stock, 1));
+
   function handleAddToCart() {
+    if (!inStock) return;
     const saved = addItem(
       {
         productId: product.id,
@@ -67,7 +88,7 @@ export function ProductPurchasePanel({
         // The color only distinguishes cart lines when there is a choice.
         color: colors && colors.length > 1 ? (color ?? undefined) : undefined,
         size: size ?? undefined,
-        maxQuantity: product.stock,
+        maxQuantity: stock,
       },
       quantity,
     );
@@ -105,8 +126,19 @@ export function ProductPurchasePanel({
           <SizeGuideButton category={product.category?.slug} />
         ) : null}
         <p className="flex items-center gap-2">
-          <Check aria-hidden className="size-4" />
-          {product.stock} in stock
+          {missingChoice ? (
+            `Select a ${missingChoice}`
+          ) : inStock ? (
+            <>
+              <Check aria-hidden className="size-4" />
+              {stock} in stock
+            </>
+          ) : (
+            <>
+              <X aria-hidden className="size-4" />
+              Out of stock
+            </>
+          )}
         </p>
       </div>
 
@@ -114,11 +146,12 @@ export function ProductPurchasePanel({
         <QuantityStepper
           value={quantity}
           onChange={setQuantity}
-          max={product.stock}
+          max={Math.max(stock, 1)}
           className="w-36 shrink-0"
         />
         <Button
           onClick={handleAddToCart}
+          disabled={!inStock}
           className="h-11 flex-1 rounded-sm text-base font-medium"
         >
           {added ? (

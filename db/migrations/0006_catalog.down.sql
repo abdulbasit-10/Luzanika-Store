@@ -1,0 +1,12 @@
+DROP TABLE home_features;
+DROP TABLE stock_movements;
+DROP TABLE inventory;
+DROP TABLE product_variants;
+DROP TABLE product_detail_sections;
+DROP TABLE product_images;
+DROP TABLE product_prices;
+DROP TABLE products;
+DROP TABLE category_collections;
+DROP TABLE collections;
+DROP TABLE subcategories;
+DROP TABLE categories;

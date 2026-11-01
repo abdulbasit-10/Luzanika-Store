@@ -29,7 +29,7 @@ interface FormatOptions {
 }
 
 /**
- * Formats an amount in the given currency. The locale (language/number
+ * Formats an amount given in minor units (cents/paisa) in the given currency. The locale (language/number
  * conventions) is independent of the currency, so a German-speaking visitor
  * can still see PKR prices and vice versa.
  */
@@ -39,7 +39,7 @@ export function formatCurrency(
   locale: Locale,
   { fractionDigits = 2 }: FormatOptions = {},
 ): string {
-  return getFormatter(locale, currency, fractionDigits).format(amount);
+  return getFormatter(locale, currency, fractionDigits).format(amount / 100);
 }
 
 /** Formats an amount using a region's currency and default locale. */

@@ -1,6 +1,7 @@
 import type { ProductSummary } from "@/types/product";
 
-export type CategorySlug = "men" | "ladies" | "kids" | "bags" | "fragrances";
+/** Categories are data (the admin panel can add more), so a slug is any string. */
+export type CategorySlug = string;
 
 /** Sentinel subcategory meaning "no subcategory filter". */
 export const ALL_SUBCATEGORY = "all";
