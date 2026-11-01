@@ -37,6 +37,7 @@ export function useSignOut() {
     queryClient.removeQueries({ queryKey: ["addresses"] });
     queryClient.removeQueries({ queryKey: ["cart"] });
     queryClient.removeQueries({ queryKey: ["wishlist"] });
+    queryClient.removeQueries({ queryKey: ["orders"] });
     clear();
   }, [queryClient, clear]);
 }

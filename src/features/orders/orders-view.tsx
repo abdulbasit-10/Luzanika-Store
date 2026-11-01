@@ -3,15 +3,12 @@
 import { useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { FilterPill } from "@/components/ui/filter-pill";
-import { getOrderStatus, ORDER_STATUSES } from "@/features/orders/order-status";
+import { ORDER_STATUSES } from "@/features/orders/order-status";
 import { OrderRow } from "@/features/orders/order-row";
-import type { OrderStatus } from "@/features/orders/types";
-import { useHydrated } from "@/hooks/use-hydrated";
-import { useAuthStore } from "@/stores/auth-store";
-import { useOrderHistoryStore } from "@/stores/order-history-store";
-import type { ConfirmedOrder } from "@/features/orders/types";
+import type { Order, OrderStatus } from "@/features/orders/types";
+import { useOrders } from "@/features/orders/use-orders";
 
 type Filter = "all" | OrderStatus;
 
@@ -20,22 +17,18 @@ const filters: { value: Filter; label: string }[] = [
   ...ORDER_STATUSES,
 ];
 
-const NO_ORDERS: ConfirmedOrder[] = [];
+const NO_ORDERS: Order[] = [];
 
 /** The signed-in user's orders, newest first, with a filter by status. */
 export function OrdersView() {
-  const hydrated = useHydrated();
-  const userId = useAuthStore((state) => state.user?.id ?? null);
-  const saved = useOrderHistoryStore((state) =>
-    userId ? state.byUser[userId] : undefined,
-  );
+  const { orders: loaded, isLoading, isError, refetch } = useOrders();
   const [filter, setFilter] = useState<Filter>("all");
 
-  const orders = hydrated && saved ? saved : NO_ORDERS;
+  const orders = loaded ?? NO_ORDERS;
   const shown =
     filter === "all"
       ? orders
-      : orders.filter((order) => getOrderStatus(order) === filter);
+      : orders.filter((order) => order.status === filter);
 
   return (
     <div className="mx-auto w-full max-w-[740px] lg:mx-0">
@@ -65,7 +58,21 @@ export function OrdersView() {
         })}
       </div>
 
-      {orders.length === 0 ? (
+      {isLoading ? (
+        <div role="status" className="mt-5 animate-pulse space-y-3">
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="h-[84px] rounded-lg bg-white" />
+          ))}
+          <span className="sr-only">Loading your orders…</span>
+        </div>
+      ) : isError ? (
+        <EmptyState
+          className="mt-5 rounded-2xl bg-white"
+          title="We couldn't load your orders"
+          description="Please check your connection and try again."
+          action={<Button onClick={() => void refetch()}>Try again</Button>}
+        />
+      ) : orders.length === 0 ? (
         <EmptyState
           className="mt-5 rounded-2xl bg-white"
           title="No orders yet"
@@ -81,7 +88,7 @@ export function OrdersView() {
       ) : (
         <ul className="mt-[clamp(0.75rem,2.4dvh,1.25rem)] flex flex-col gap-3">
           {shown.map((order) => (
-            <OrderRow key={order.code} order={order} />
+            <OrderRow key={order.number} order={order} />
           ))}
         </ul>
       )}

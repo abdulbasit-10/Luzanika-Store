@@ -49,6 +49,8 @@ export type AuthErrorCode =
   | "unauthenticated"
   | "unprocessable"
   | "out_of_stock"
+  | "cart_changed"
+  | "conflict"
   | "not_found";
 
 const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
@@ -61,6 +63,8 @@ const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
   "unauthenticated",
   "unprocessable",
   "out_of_stock",
+  "cart_changed",
+  "conflict",
   "not_found",
 ]);
 

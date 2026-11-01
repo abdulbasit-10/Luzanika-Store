@@ -1,15 +1,11 @@
 import Image from "next/image";
 
-import type { ConfirmedOrderItem } from "@/features/orders/types";
+import type { OrderItem } from "@/features/orders/types";
 
 const MAX_SHOWN = 5;
 
 /** Product photos of the order, each with its quantity in a small badge. */
-export function OrderItemThumbnails({
-  items,
-}: {
-  items: ConfirmedOrderItem[];
-}) {
+export function OrderItemThumbnails({ items }: { items: OrderItem[] }) {
   const shown = items.slice(0, MAX_SHOWN);
   const hidden = items.length - shown.length;
 

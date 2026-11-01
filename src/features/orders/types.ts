@@ -1,39 +1,62 @@
-import type { PaymentMethod } from "@/features/checkout/checkout-schema";
 import type { ProductImage } from "@/types/product";
-import type { RegionCode } from "@/types/region";
+import type { CurrencyCode, RegionCode } from "@/types/region";
 
-export type PaymentStatus = "paid" | "pending";
-
-/** Where an order is in its life, as shown in the order history. */
+/** Where an order is in its life. Set by the server, never by the browser. */
 export type OrderStatus =
-  "waiting_payment" | "processing" | "in_delivery" | "completed";
+  | "waiting_payment"
+  | "processing"
+  | "in_delivery"
+  | "completed"
+  | "cancelled"
+  | "refunded";
 
-export interface ConfirmedOrderItem {
+export type PaymentStatus =
+  "pending" | "paid" | "failed" | "refunded" | "partially_refunded";
+
+export interface OrderItem {
+  slug: string;
   name: string;
   image?: ProductImage;
-  quantity: number;
   /** The variant that was bought, e.g. "Army" and "XL". */
   color?: string;
   size?: string;
+  quantity: number;
+  /** Minor units, as they were when the order was placed. */
+  unitAmount: number;
+  lineTotal: number;
 }
 
-/**
- * What the confirmation page and the order history show. The backend will
- * return this shape from GET /orders/:id and GET /orders; until then it is
- * built when the mock order is placed.
- */
-export interface ConfirmedOrder {
-  /** Order code shown to the shopper, e.g. "#0123_45678". */
-  code: string;
-  /** ISO date-time. */
-  placedAt: string;
-  /** Total in the region's currency. */
-  total: number;
-  region: RegionCode;
-  paymentMethod: PaymentMethod;
+export interface OrderAddress {
+  country: string;
+  city: string;
+  address: string;
+  zip: string;
+}
+
+/** An order exactly as the server holds it. Amounts are minor units (cents/paisa). */
+export interface Order {
+  /** Shown to the shopper and used in URLs, e.g. "LZ-PK-000123". */
+  number: string;
+  market: RegionCode;
+  currency: CurrencyCode;
+  status: OrderStatus;
   paymentStatus: PaymentStatus;
-  /** Set by the backend as the order moves along. Orders placed before it existed have none; see getOrderStatus. */
-  status?: OrderStatus;
+  paymentMethod: "card";
+  /** "simulated" only in development; null when no payment was started. */
+  paymentProvider: string | null;
+  /** ISO 8601. */
+  placedAt: string;
+  paidAt: string | null;
+  /** While unpaid: when the held stock is given back. */
+  reservationExpiresAt: string | null;
+  subtotal: number;
+  discountTotal: number;
+  shippingTotal: number;
+  taxTotal: number;
+  total: number;
   email: string;
-  items: ConfirmedOrderItem[];
+  phone: string;
+  shipping: OrderAddress & { name: string; company?: string };
+  billing: OrderAddress | null;
+  items: OrderItem[];
 }

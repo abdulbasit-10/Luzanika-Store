@@ -7,21 +7,19 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toaster";
 import { DeleteAccountIllustration } from "@/features/account/delete-account-illustration";
-import { forgetUserData } from "@/features/account/forget-user-data";
 import { PasswordConfirmDialog } from "@/features/account/password-confirm-dialog";
 import { profileButtonClass } from "@/features/account/profile-fields";
 import {
   AuthError,
   deleteAccount,
   isSessionEnded,
-  type AuthUser,
 } from "@/features/auth/auth-service";
 import {
   useHandleSessionExpired,
   useSignOut,
 } from "@/features/auth/use-session";
 
-export function DeleteAccount({ user }: { user: AuthUser }) {
+export function DeleteAccount() {
   const router = useRouter();
   const signOut = useSignOut();
   const handleSessionExpired = useHandleSessionExpired();
@@ -31,7 +29,6 @@ export function DeleteAccount({ user }: { user: AuthUser }) {
   const { mutate, isPending } = useMutation({
     mutationFn: deleteAccount,
     onSuccess: () => {
-      forgetUserData(user.id);
       signOut();
       setOpen(false);
       toast.success("Your account has been deleted.");

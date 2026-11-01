@@ -17,6 +17,7 @@ const ERRORS = {
   email_not_registered: [404, "This email is not registered with us."],
   out_of_stock: [409, "This item is out of stock."],
   price_changed: [409, "The price of an item has changed."],
+  cart_changed: [409, "Your cart has changed. Please review it and try again."],
   invalid_status_transition: [409, "This status change is not allowed."],
   invalid_reset_link: [410, "This link is invalid or has expired."],
   payload_too_large: [413, "The request is too large."],

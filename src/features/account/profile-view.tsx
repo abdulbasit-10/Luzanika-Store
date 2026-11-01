@@ -24,7 +24,7 @@ export function ProfileView() {
       <div className="grid items-end gap-x-4 gap-y-3 sm:grid-cols-2">
         <GeneralSection user={user} />
         <div className="sm:justify-self-end">
-          <DeleteAccount user={user} />
+          <DeleteAccount />
         </div>
       </div>
     </div>

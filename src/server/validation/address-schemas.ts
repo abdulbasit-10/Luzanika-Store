@@ -3,7 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 // A name or street can contain letters, digits and punctuation in any language, but never control characters.
-const text = (label: string, max: number) =>
+export const text = (label: string, max: number) =>
   z
     .string()
     .trim()
@@ -11,13 +11,15 @@ const text = (label: string, max: number) =>
     .max(max, `Please keep it under ${max} characters`)
     .regex(/^[^\p{Cc}]+$/u, `Please enter a valid ${label}`);
 
+// Same rule as the profile phone number: 6 to 19 digits and separators, optional leading "+".
+export const phone = z
+  .string()
+  .trim()
+  .regex(/^\+?[\d\s()-]{6,19}$/, "Please enter a valid phone number");
+
 const fields = {
   fullName: text("full name", 80),
-  // Same rule as the profile phone number: 6 to 19 digits and separators, optional leading "+".
-  phone: z
-    .string()
-    .trim()
-    .regex(/^\+?[\d\s()-]{6,19}$/, "Please enter a valid phone number"),
+  phone,
   country: text("country", 60),
   city: text("city", 60),
   address: text("street address", 160),

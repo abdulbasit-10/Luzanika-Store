@@ -13,6 +13,7 @@ function row(overrides: Partial<CartLineRow> = {}): CartLineRow {
     slug: "linen-shirt",
     name: "Linen Shirt",
     notes: [],
+    sku: "LINEN-SHIRT-BLACK-M",
     color_name: "Black",
     size_label: "M",
     color_count: 3,

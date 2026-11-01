@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { Suspense } from "react";
+
 import { OrderConfirmationView } from "@/features/orders/order-confirmation-view";
 
 export const metadata: Metadata = {
@@ -12,7 +14,10 @@ export const metadata: Metadata = {
 export default function OrderConfirmationPage() {
   return (
     <main className="flex-1">
-      <OrderConfirmationView />
+      {/* The order number is read from the address, which needs a Suspense boundary. */}
+      <Suspense>
+        <OrderConfirmationView />
+      </Suspense>
     </main>
   );
 }

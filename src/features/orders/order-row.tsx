@@ -7,16 +7,12 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatRegionalPrice } from "@/utils/format-currency";
 import {
-  getOrderStatus,
   orderDateFormat,
   orderStatusLabels,
   paymentMethodLabels,
 } from "@/features/orders/order-status";
-import type {
-  ConfirmedOrder,
-  ConfirmedOrderItem,
-  OrderStatus,
-} from "@/features/orders/types";
+import { OrderPaymentPanel } from "@/features/orders/order-payment-panel";
+import type { Order, OrderItem, OrderStatus } from "@/features/orders/types";
 import { cn } from "@/utils/cn";
 
 const dotColors: Record<OrderStatus, string> = {
@@ -24,17 +20,19 @@ const dotColors: Record<OrderStatus, string> = {
   processing: "bg-accent",
   in_delivery: "bg-blue-600",
   completed: "bg-success",
+  cancelled: "bg-black/30",
+  refunded: "bg-black/30",
 };
 
-const describeVariant = ({ color, size }: ConfirmedOrderItem) =>
+const describeVariant = ({ color, size }: OrderItem) =>
   [color, size].filter(Boolean).join(" • ");
 
 /** One order: its first item as in the design, and a Detail button that opens everything about the order. */
-export function OrderRow({ order }: { order: ConfirmedOrder }) {
+export function OrderRow({ order }: { order: Order }) {
   const [open, setOpen] = useState(false);
   const detailsId = useId();
   const [first, ...others] = order.items;
-  const status = getOrderStatus(order);
+  const status = order.status;
   const variant = first ? describeVariant(first) : "";
 
   return (
@@ -83,7 +81,7 @@ export function OrderRow({ order }: { order: ConfirmedOrder }) {
 
         <div className="flex shrink-0 flex-col items-end gap-2">
           <p className="text-lg leading-6 font-bold sm:text-xl">
-            {formatRegionalPrice(order.total, order.region)}
+            {formatRegionalPrice(order.total, order.market)}
           </p>
           <Button
             variant="secondary"
@@ -105,7 +103,7 @@ export function OrderRow({ order }: { order: ConfirmedOrder }) {
         >
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5">
             <dt className="text-muted-foreground">Order code</dt>
-            <dd className="font-medium">{order.code}</dd>
+            <dd className="font-medium">{order.number}</dd>
             <dt className="text-muted-foreground">Date</dt>
             <dd className="font-medium">
               {orderDateFormat.format(new Date(order.placedAt))}
@@ -117,6 +115,7 @@ export function OrderRow({ order }: { order: ConfirmedOrder }) {
             <dt className="text-muted-foreground">Status</dt>
             <dd className="font-medium">{orderStatusLabels[status]}</dd>
           </dl>
+          <OrderPaymentPanel order={order} />
           <ul className="mt-3 flex flex-col gap-1.5 border-t border-black/[0.06] pt-3">
             {order.items.map((item, index) => (
               <li key={index} className="flex justify-between gap-3">
@@ -130,7 +129,8 @@ export function OrderRow({ order }: { order: ConfirmedOrder }) {
                   ) : null}
                 </span>
                 <span className="shrink-0 text-muted-foreground">
-                  × {item.quantity}
+                  × {item.quantity} ·{" "}
+                  {formatRegionalPrice(item.lineTotal, order.market)}
                 </span>
               </li>
             ))}

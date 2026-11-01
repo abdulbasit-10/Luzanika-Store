@@ -15,6 +15,7 @@ import {
 import { sessionRepository } from "@/server/repositories/session-repository";
 import { addressRepository } from "@/server/repositories/address-repository";
 import { cartRepository } from "@/server/repositories/cart-repository";
+import { cancelOpenOrders } from "@/server/services/order-service";
 import { wishlistRepository } from "@/server/repositories/wishlist-repository";
 import { tokenRepository } from "@/server/repositories/token-repository";
 import { verifyPassword } from "@/server/security/password";
@@ -168,6 +169,9 @@ export async function deleteAccount(input: {
   if (!(await verifyPassword(password, customer.passwordHash))) {
     throw wrongPassword("password");
   }
+
+  // Orders nobody has paid yet are cancelled first, so the stock they hold goes back on sale.
+  await cancelOpenOrders(customer.id);
 
   await withTransaction(async (tx) => {
     await customerRepository.anonymise(customer.id, new Date(), tx);

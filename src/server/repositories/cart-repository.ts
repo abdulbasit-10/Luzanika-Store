@@ -13,6 +13,7 @@ export interface CartLineRow {
   slug: string;
   name: string;
   notes: string[];
+  sku: string;
   color_name: string | null;
   size_label: string | null;
   /** How many colours the product comes in; the colour is only worth showing when there is a choice. */
@@ -51,7 +52,7 @@ export const cartRepository = {
     return selectRows<CartLineRow>(
       `SELECT ci.variant_id, ci.quantity, ci.selected,
          p.id AS product_id, p.slug, p.name, p.notes,
-         v.color_name, v.size_label,
+         v.sku, v.color_name, v.size_label,
          (SELECT count(DISTINCT color_name)::int FROM product_variants
             WHERE product_id = p.id AND active) AS color_count,
          (v.active AND p.status = 'active' AND p.deleted_at IS NULL

@@ -219,6 +219,11 @@ describe("migration runner", { skip: skip() }, () => {
         "home_features",
         "cart_items",
         "wishlist_items",
+        "orders",
+        "order_items",
+        "order_status_history",
+        "payments",
+        "order_counters",
       ]) {
         assert.ok(!(await tableExists(db, table)), `${table} should be gone`);
       }
@@ -914,5 +919,223 @@ describe("the real migrations", { skip: skip() }, () => {
     await q("DELETE FROM products WHERE id = $1", [product]);
     assert.equal(await count("cart_items", other), 0);
     assert.equal(await count("wishlist_items", other), 0);
+  });
+
+  test("orders: consistent amounts, status and stock state, snapshots that survive deletions", async () => {
+    const q = (text, values) => db.query(text, values);
+    const customer = (await insertCustomer({ email: "order1@example.com" }))
+      .rows[0].id;
+    const base = {
+      number: "T-1",
+      market: "PK",
+      currency: "PKR",
+      customer_id: customer,
+      email: "a@example.com",
+      phone: "+92 300 1234567",
+      payment_method: "card",
+      subtotal: 1000,
+      total: 1000,
+      ship_name: "Ada",
+      ship_country: "Pakistan",
+      ship_city: "Lahore",
+      ship_address: "Street 1",
+      ship_zip: "54000",
+      accepted_terms_at: new Date(),
+    };
+    const order = async (overrides = {}) => {
+      const row = { ...base, ...overrides };
+      return (
+        await q(
+          `INSERT INTO orders (${Object.keys(row).join(", ")})
+           VALUES (${Object.keys(row)
+             .map((_, i) => `$${i + 1}`)
+             .join(", ")}) RETURNING id`,
+          Object.values(row),
+        )
+      ).rows[0].id;
+    };
+
+    const id = await order();
+    await rejects(order(), "23505"); // the number is unique
+    await rejects(
+      order({ number: "T-2", market: "PK", currency: "EUR" }),
+      "23514",
+    );
+    await rejects(
+      order({ number: "T-2", market: "DE", currency: "PKR" }),
+      "23514",
+    );
+    await rejects(order({ number: "T-2", total: 999 }), "23514"); // total must add up
+    await rejects(order({ number: "T-2", subtotal: -1, total: -1 }), "23514");
+    await rejects(order({ number: "T-2", payment_method: "cheque" }), "23514");
+    await rejects(order({ number: "T-2", status: "shipped" }), "23514");
+    await rejects(order({ number: "T-2", bill_country: "Germany" }), "23514"); // billing is all or nothing
+    // Shipping and a discount keep the total honest; tax is only added when it is not included.
+    await order({
+      number: "T-3",
+      subtotal: 1000,
+      shipping_total: 200,
+      discount_total: 100,
+      total: 1100,
+    });
+    await order({
+      number: "T-4",
+      subtotal: 1000,
+      tax_total: 190,
+      tax_included: false,
+      total: 1190,
+    });
+    await order({
+      number: "T-5",
+      subtotal: 1000,
+      tax_total: 190,
+      tax_included: true,
+      total: 1000,
+    });
+
+    // Stock state has to match the status: a waiting order holds stock, a cancelled one never does.
+    await rejects(
+      q("UPDATE orders SET stock_state = 'released' WHERE id = $1", [id]),
+      "23514",
+    );
+    await rejects(
+      q("UPDATE orders SET status = 'processing' WHERE id = $1", [id]),
+      "23514",
+    );
+    await q(
+      "UPDATE orders SET status = 'processing', stock_state = 'committed' WHERE id = $1",
+      [id],
+    );
+    await rejects(
+      q(
+        "UPDATE orders SET status = 'cancelled', stock_state = 'released' WHERE id = $1",
+        [id],
+      ),
+      "23514", // a cancelled order needs its time
+    );
+
+    // One order per idempotency key and customer.
+    await order({ number: "T-6", idempotency_key: "key-1" });
+    await rejects(order({ number: "T-7", idempotency_key: "key-1" }), "23505");
+    const other = (await insertCustomer({ email: "order2@example.com" }))
+      .rows[0].id;
+    await order({
+      number: "T-7",
+      idempotency_key: "key-1",
+      customer_id: other,
+    });
+    await order({ number: "T-8" }); // no key: any number of them
+
+    // Items: the line adds up, quantity is sane, and they outlive a deleted product.
+    const product = (
+      await q(
+        "INSERT INTO products (slug, name) VALUES ('order-item', 'Item') RETURNING id",
+      )
+    ).rows[0].id;
+    const variant = (
+      await q(
+        "INSERT INTO product_variants (product_id, sku) VALUES ($1, 'ORD-1') RETURNING id",
+        [product],
+      )
+    ).rows[0].id;
+    const item = (overrides = {}) => {
+      const row = {
+        order_id: id,
+        product_id: product,
+        variant_id: variant,
+        product_slug: "order-item",
+        name: "Item",
+        sku: "ORD-1",
+        quantity: 2,
+        unit_amount: 500,
+        line_total: 1000,
+        ...overrides,
+      };
+      return q(
+        `INSERT INTO order_items (${Object.keys(row).join(", ")})
+         VALUES (${Object.keys(row)
+           .map((_, i) => `$${i + 1}`)
+           .join(", ")})`,
+        Object.values(row),
+      );
+    };
+    await item();
+    await rejects(item({ line_total: 999 }), "23514");
+    await rejects(item({ quantity: 0, line_total: 0 }), "23514");
+    await rejects(item({ quantity: 100, line_total: 50000 }), "23514");
+
+    // Payments: valid status and currency, one provider reference once.
+    const payment = (overrides = {}) => {
+      const row = {
+        order_id: id,
+        provider: "stripe",
+        method: "card",
+        amount: 1000,
+        currency: "PKR",
+        ...overrides,
+      };
+      return q(
+        `INSERT INTO payments (${Object.keys(row).join(", ")})
+         VALUES (${Object.keys(row)
+           .map((_, i) => `$${i + 1}`)
+           .join(", ")})`,
+        Object.values(row),
+      );
+    };
+    await payment({ provider_ref: "pi_1" });
+    await rejects(payment({ provider_ref: "pi_1" }), "23505");
+    await payment({ provider_ref: "pi_2" });
+    await payment(); // several attempts without a reference are fine
+    await rejects(payment({ status: "maybe" }), "23514");
+    await rejects(payment({ currency: "USD" }), "23514");
+
+    // History entries need a known actor.
+    await q(
+      "INSERT INTO order_status_history (order_id, to_status, actor_type) VALUES ($1, 'waiting_payment', 'customer')",
+      [id],
+    );
+    await rejects(
+      q(
+        "INSERT INTO order_status_history (order_id, to_status, actor_type) VALUES ($1, 'waiting_payment', 'robot')",
+        [id],
+      ),
+      "23514",
+    );
+
+    // Numbers come from a counter per market, and only the two markets exist.
+    await rejects(
+      q("INSERT INTO order_counters (market) VALUES ('FR')"),
+      "23514",
+    );
+    const counters = await q(
+      "SELECT market FROM order_counters ORDER BY market",
+    );
+    assert.deepEqual(
+      counters.rows.map((row) => row.market),
+      ["DE", "PK"],
+    );
+
+    // The order is a record: a purged product leaves the item (and its snapshot) in place.
+    await q("DELETE FROM products WHERE id = $1", [product]);
+    const left = await q(
+      "SELECT product_id, variant_id, name FROM order_items WHERE order_id = $1",
+      [id],
+    );
+    assert.deepEqual(left.rows, [
+      { product_id: null, variant_id: null, name: "Item" },
+    ]);
+
+    // So is an order when the customer row is removed; and removing the order removes its parts.
+    await q("DELETE FROM customers WHERE id = $1", [other]);
+    const kept = await q("SELECT customer_id FROM orders WHERE number = 'T-7'");
+    assert.equal(kept.rows[0].customer_id, null);
+    await q("DELETE FROM orders WHERE id = $1", [id]);
+    for (const table of ["order_items", "payments", "order_status_history"]) {
+      const { rows } = await q(
+        `SELECT count(*)::int AS n FROM ${table} WHERE order_id = $1`,
+        [id],
+      );
+      assert.equal(rows[0].n, 0, `${table} should be removed with the order`);
+    }
   });
 });

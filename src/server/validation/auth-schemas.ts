@@ -2,7 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
-const email = z
+export const email = z
   .string()
   .max(254, "Please enter a valid email address")
   .trim()

@@ -1,22 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import type { ChangeEvent } from "react";
-import {
-  useFormContext,
-  useWatch,
-  type UseFormRegisterReturn,
-} from "react-hook-form";
+import { useFormContext, useWatch } from "react-hook-form";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, fieldControlClass } from "@/components/ui/field";
 import { Radio } from "@/components/ui/radio";
-import { CardBrands } from "@/features/checkout/card-brands";
-import {
-  formatCardNumber,
-  formatCvv,
-  formatExpiry,
-} from "@/features/checkout/card-format";
 import {
   PAYMENT_METHODS,
   type CheckoutFormValues,
@@ -36,24 +25,10 @@ const unavailableNotes: Record<Exclude<PaymentMethod, "card">, string> = {
   "gift-card": "Gift cards are not available yet. Please pay by credit card.",
 };
 
-/** Applies a formatter to what is typed before react-hook-form stores it. */
-function withFormat(
-  field: UseFormRegisterReturn,
-  format: (value: string) => string,
-) {
-  return {
-    ...field,
-    onChange: (event: ChangeEvent<HTMLInputElement>) => {
-      event.target.value = format(event.target.value);
-      return field.onChange(event);
-    },
-  };
-}
-
 /*
- * Payment choice and card form. Card details live only in this form's memory:
- * they are not saved, logged or sent anywhere (see checkout-service). A real
- * integration replaces these inputs with the payment provider's secure fields.
+ * Payment choice and billing address. There is no card form: card details are
+ * typed into the payment provider's secure fields after the order is placed,
+ * so they never pass through this page or our server.
  */
 export function PaymentCard() {
   const {
@@ -89,80 +64,11 @@ export function PaymentCard() {
       </div>
 
       {method === "card" ? (
-        <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
-          <Field
-            id="checkout-card-name"
-            label="Name on card"
-            error={errors.cardName?.message}
-          >
-            <input
-              id="checkout-card-name"
-              type="text"
-              autoComplete="cc-name"
-              placeholder="Eduard Franz"
-              aria-invalid={Boolean(errors.cardName)}
-              aria-describedby="checkout-card-name-message"
-              className={fieldControlClass}
-              {...register("cardName")}
-            />
-          </Field>
-          <Field
-            id="checkout-card-number"
-            label="Card Number"
-            error={errors.cardNumber?.message}
-          >
-            <div className="relative">
-              <input
-                id="checkout-card-number"
-                type="text"
-                inputMode="numeric"
-                autoComplete="cc-number"
-                placeholder="1234 5678 9012 3456"
-                aria-invalid={Boolean(errors.cardNumber)}
-                aria-describedby="checkout-card-number-message"
-                className={`${fieldControlClass} pr-28`}
-                {...withFormat(register("cardNumber"), formatCardNumber)}
-              />
-              <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2">
-                <CardBrands />
-              </span>
-            </div>
-          </Field>
-          <Field
-            id="checkout-card-expiry"
-            label="Expiry date"
-            error={errors.cardExpiry?.message}
-          >
-            <input
-              id="checkout-card-expiry"
-              type="text"
-              inputMode="numeric"
-              autoComplete="cc-exp"
-              placeholder="MM/YY"
-              aria-invalid={Boolean(errors.cardExpiry)}
-              aria-describedby="checkout-card-expiry-message"
-              className={fieldControlClass}
-              {...withFormat(register("cardExpiry"), formatExpiry)}
-            />
-          </Field>
-          <Field
-            id="checkout-card-cvv"
-            label="CVV"
-            error={errors.cardCvv?.message}
-          >
-            <input
-              id="checkout-card-cvv"
-              type="text"
-              inputMode="numeric"
-              autoComplete="cc-csc"
-              placeholder="123"
-              aria-invalid={Boolean(errors.cardCvv)}
-              aria-describedby="checkout-card-cvv-message"
-              className={fieldControlClass}
-              {...withFormat(register("cardCvv"), formatCvv)}
-            />
-          </Field>
-        </div>
+        <p role="status" className="mt-2.5 text-sm text-muted-foreground">
+          You enter your card details on our payment provider&apos;s secure page
+          right after you place the order. Your card number is never sent to, or
+          stored by, Luzanika.
+        </p>
       ) : (
         <p role="status" className="mt-2.5 text-sm text-muted-foreground">
           {unavailableNotes[method]}
