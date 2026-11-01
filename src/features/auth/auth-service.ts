@@ -3,7 +3,14 @@ import type {
   LoginFormValues,
   SignupFormValues,
 } from "@/features/auth/auth-schema";
-import { ApiError, apiGet, apiPost } from "@/lib/api-client";
+import {
+  ApiError,
+  apiDelete,
+  apiGet,
+  apiPatch,
+  apiPost,
+  apiPut,
+} from "@/lib/api-client";
 
 export interface AuthUser {
   id: string;
@@ -15,8 +22,8 @@ export interface AuthUser {
   /** ISO date, e.g. "2000-06-06". */
   dateOfBirth?: string;
   language?: Language;
-  /** Small square photo as a data URL. Photo upload is not connected to the backend yet. */
-  avatar?: string;
+  /** Address of the customer's profile photo (served only to them). */
+  avatarUrl?: string;
 }
 
 /** What the API's `user` looks like (see toUserDto on the server). */
@@ -29,6 +36,7 @@ interface UserDto {
   gender?: string;
   dateOfBirth?: string;
   language?: string;
+  avatarUrl?: string;
 }
 
 export type AuthErrorCode =
@@ -38,8 +46,7 @@ export type AuthErrorCode =
   | "invalid_reset_link"
   | "rate_limited"
   | "validation_failed"
-  | "account_not_found"
-  | "not_available";
+  | "unauthenticated";
 
 const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
   "email_taken",
@@ -48,6 +55,7 @@ const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
   "invalid_reset_link",
   "rate_limited",
   "validation_failed",
+  "unauthenticated",
 ]);
 
 /** A refusal the page can explain to the visitor, with per-field messages when the API gave them. */
@@ -64,6 +72,11 @@ export class AuthError extends Error {
     this.code = code;
     this.fields = fields;
   }
+}
+
+/** True when the request failed because the session has ended (already handled by the shared hooks). */
+export function isSessionEnded(error: unknown): boolean {
+  return error instanceof AuthError && error.code === "unauthenticated";
 }
 
 /** Turns the API's known error codes into AuthError; anything else (network, server) passes through. */
@@ -92,6 +105,7 @@ function toAuthUser(dto: UserDto): AuthUser {
     ...(dto.gender ? { gender: dto.gender as Gender } : {}),
     ...(dto.dateOfBirth ? { dateOfBirth: dto.dateOfBirth } : {}),
     ...(dto.language ? { language: dto.language as Language } : {}),
+    ...(dto.avatarUrl ? { avatarUrl: dto.avatarUrl } : {}),
   };
 }
 
@@ -137,7 +151,7 @@ export async function resetPassword(values: {
   await request(() => apiPost("/auth/reset-password", values));
 }
 
-/** Fields the account page can change. An empty value or null clears an optional field. */
+/** Fields the account page can change. An empty value clears an optional field. */
 export interface ProfilePatch {
   firstName?: string;
   lastName?: string;
@@ -146,23 +160,37 @@ export interface ProfilePatch {
   gender?: Gender | "";
   dateOfBirth?: string;
   language?: Language;
-  avatar?: string | null;
+  /** Required by the server when the email changes. */
+  currentPassword?: string;
 }
 
-/*
- * Saving profile changes and deleting the account are not connected to the
- * backend yet (next step). They refuse honestly instead of pretending to save.
- */
-export async function updateProfile(
-  userId: string,
-  patch: ProfilePatch,
-): Promise<AuthUser> {
-  void userId;
-  void patch;
-  throw new AuthError("not_available");
+/** PATCH /account: saves the fields that are sent and returns the updated user. */
+export async function updateProfile(patch: ProfilePatch): Promise<AuthUser> {
+  const { user } = await request(() =>
+    apiPatch<{ user: UserDto }>("/account", patch),
+  );
+  return toAuthUser(user);
 }
 
-export async function deleteAccount(userId: string): Promise<void> {
-  void userId;
-  throw new AuthError("not_available");
+/** PUT /account/avatar: uploads a profile photo. The server resizes and cleans it. */
+export async function uploadAvatar(file: File): Promise<AuthUser> {
+  const form = new FormData();
+  form.set("photo", file);
+  const { user } = await request(() =>
+    apiPut<{ user: UserDto }>("/account/avatar", form),
+  );
+  return toAuthUser(user);
+}
+
+/** DELETE /account/avatar */
+export async function removeAvatar(): Promise<AuthUser> {
+  const { user } = await request(() =>
+    apiDelete<{ user: UserDto }>("/account/avatar"),
+  );
+  return toAuthUser(user);
+}
+
+/** DELETE /account: deletes the account after the password is confirmed. */
+export async function deleteAccount(password: string): Promise<void> {
+  await request(() => apiDelete("/account", { data: { password } }));
 }

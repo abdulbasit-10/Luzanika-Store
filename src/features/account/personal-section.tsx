@@ -20,7 +20,7 @@ import {
   type PersonalFormValues,
 } from "@/features/account/profile-schema";
 import { useUpdateProfile } from "@/features/account/use-update-profile";
-import type { AuthUser } from "@/features/auth/auth-service";
+import { isSessionEnded, type AuthUser } from "@/features/auth/auth-service";
 
 const toValues = (user: AuthUser): PersonalFormValues => ({
   firstName: user.firstName,
@@ -63,8 +63,10 @@ export function PersonalSection({ user }: { user: AuthUser }) {
             setEditing(false);
             toast.success("Personal information updated");
           },
-          onError: () =>
-            toast.error("Couldn't save your changes. Please try again."),
+          onError: (failure) => {
+            if (isSessionEnded(failure)) return;
+            toast.error("Couldn't save your changes. Please try again.");
+          },
         }),
       )}
     >

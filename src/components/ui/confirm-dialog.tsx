@@ -15,8 +15,12 @@ interface ConfirmDialogProps {
   pendingLabel?: string;
   /** Disables the buttons and blocks closing while the action runs. */
   pending?: boolean;
+  /** Keeps the confirm button off until the dialog's own content (e.g. a password) is filled in. */
+  confirmDisabled?: boolean;
   /** Decorative picture above the title. */
   illustration?: ReactNode;
+  /** Extra content between the description and the buttons, such as a password field. */
+  children?: ReactNode;
 }
 
 /** Centered modal that asks before an action that cannot be undone. Uses the native <dialog>, so it traps focus and closes on Escape. */
@@ -29,7 +33,9 @@ export function ConfirmDialog({
   confirmLabel,
   pendingLabel = "Working…",
   pending,
+  confirmDisabled,
   illustration,
+  children,
 }: ConfirmDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -71,6 +77,7 @@ export function ConfirmDialog({
       <p id={descriptionId} className="mt-1.5 text-xs text-muted-foreground">
         {description}
       </p>
+      {children ? <div className="mt-4 text-left">{children}</div> : null}
       <div className="mt-[clamp(0.75rem,2.6dvh,1.5rem)] flex justify-center gap-3">
         <Button
           variant="secondary"
@@ -83,7 +90,7 @@ export function ConfirmDialog({
         </Button>
         <Button
           size="sm"
-          disabled={pending}
+          disabled={pending || confirmDisabled}
           onClick={onConfirm}
           className="h-9 min-w-24 rounded-md px-5 py-0 text-xs font-medium"
         >

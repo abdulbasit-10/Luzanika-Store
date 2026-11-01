@@ -5,13 +5,12 @@ import {
   type Gender,
 } from "@/features/account/profile-options";
 import { email, firstName, lastName } from "@/features/auth/auth-schema";
+import { isInFuture, isRealIsoDate } from "@/lib/iso-date";
 
 const genders = GENDER_OPTIONS.map((option) => option.value) as [
   Gender,
   ...Gender[],
 ];
-
-const MIN_BIRTH_YEAR = 1900;
 
 export const personalSchema = z.object({
   firstName,
@@ -20,15 +19,11 @@ export const personalSchema = z.object({
   dateOfBirth: z
     .string()
     .refine(
-      (value) =>
-        value === "" ||
-        (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
-          !Number.isNaN(Date.parse(value)) &&
-          Number(value.slice(0, 4)) >= MIN_BIRTH_YEAR),
+      (value) => value === "" || isRealIsoDate(value),
       "Please enter a valid date",
     )
     .refine(
-      (value) => value === "" || new Date(value) <= new Date(),
+      (value) => value === "" || !isInFuture(value),
       "Date of birth can't be in the future",
     ),
 });
@@ -39,7 +34,8 @@ export const contactSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^(\+?[\d\s()-]{6,20})?$/, "Please enter a valid phone number"),
+    // Same rule as the server: 6 to 19 digits and separators, with an optional leading "+" (20 characters at most).
+    .regex(/^(\+?[\d\s()-]{6,19})?$/, "Please enter a valid phone number"),
   email,
 });
 

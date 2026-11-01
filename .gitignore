@@ -50,3 +50,6 @@ GEMINI.md
 .cursorrules
 .cursor/
 .windsurfrules
+
+# uploaded files (profile photos, ...)
+/.uploads/

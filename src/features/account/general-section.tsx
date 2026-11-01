@@ -14,7 +14,7 @@ import {
   type Language,
 } from "@/features/account/profile-options";
 import { useUpdateProfile } from "@/features/account/use-update-profile";
-import type { AuthUser } from "@/features/auth/auth-service";
+import { isSessionEnded, type AuthUser } from "@/features/auth/auth-service";
 
 /*
  * The language is saved as soon as it changes (there is no Edit button in the
@@ -31,8 +31,9 @@ export function GeneralSection({ user }: { user: AuthUser }) {
       { language: next },
       {
         onSuccess: () => toast.success("Language updated"),
-        onError: () => {
+        onError: (failure) => {
           setLanguage(saved);
+          if (isSessionEnded(failure)) return;
           toast.error("Couldn't save your language. Please try again.");
         },
       },

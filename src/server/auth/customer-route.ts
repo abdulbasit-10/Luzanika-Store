@@ -7,7 +7,11 @@ import { route, type ApiContext, type RouteOptions } from "@/server/http/route";
 import type { CustomerRecord } from "@/server/repositories/customer-repository";
 import { authenticate } from "@/server/services/auth-service";
 
-import { readSessionToken, setSessionCookie } from "./session-cookie";
+import {
+  readSessionToken,
+  setSessionCookie,
+  sessionCookieName,
+} from "./session-cookie";
 
 type Params = Record<string, string | string[]>;
 
@@ -41,7 +45,12 @@ export function customerRoute<P extends Params = Params>(
       customer: auth.customer,
       sessionId: auth.sessionId,
     });
-    if (auth.renewedUntil) setSessionCookie(response, token, auth.renewedUntil);
+    // A handler that ended the session (account deletion) has already cleared the cookie; don't bring it back.
+    const cookieAlreadySet =
+      response.cookies.get(sessionCookieName()) !== undefined;
+    if (auth.renewedUntil && !cookieAlreadySet) {
+      setSessionCookie(response, token, auth.renewedUntil);
+    }
     return response;
   });
 }

@@ -102,6 +102,12 @@ export const tokenRepository = {
     });
   },
 
+  /** Removes every link of a customer, of any kind (used when the account is deleted). */
+  async deleteAllForCustomer(customerId: string, tx: Tx): Promise<void> {
+    ensureModels();
+    await CustomerToken.destroy({ where: { customerId }, transaction: tx });
+  },
+
   /** Housekeeping: removes links that can never be used again. Returns how many. */
   async deleteExpired(now: Date): Promise<number> {
     ensureModels();

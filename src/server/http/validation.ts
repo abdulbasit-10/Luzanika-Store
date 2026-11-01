@@ -26,26 +26,22 @@ export function parseWith<T>(schema: ZodType<T>, data: unknown): T {
 }
 
 /**
- * Reads the JSON body with hard limits: must be application/json, must not
- * exceed `maxBytes` (counted while streaming, not trusted from the header),
- * and must parse.
+ * Reads the whole request body with a hard size limit. The limit is counted
+ * while streaming, so a lying Content-Length (or none at all) cannot get past it.
  */
-export async function readJsonBody(
+export async function readLimitedBody(
   request: Request,
-  maxBytes: number = DEFAULT_MAX_BODY_BYTES,
-): Promise<unknown> {
-  const contentType = request.headers.get("content-type") ?? "";
-  if (!/^application\/json\s*(;|$)/i.test(contentType)) {
-    throw new ApiError("unsupported_media_type");
-  }
-
+  maxBytes: number,
+): Promise<Uint8Array> {
   const declared = Number(request.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     throw new ApiError("payload_too_large");
   }
 
   if (!request.body) {
-    throw new ApiError("bad_request", { message: "A JSON body is required." });
+    throw new ApiError("bad_request", {
+      message: "A request body is required.",
+    });
   }
 
   const reader = request.body.getReader();
@@ -68,6 +64,23 @@ export async function readJsonBody(
     bytes.set(chunk, offset);
     offset += chunk.byteLength;
   }
+  return bytes;
+}
+
+/**
+ * Reads the JSON body with hard limits: must be application/json, must not
+ * exceed `maxBytes`, and must parse.
+ */
+export async function readJsonBody(
+  request: Request,
+  maxBytes: number = DEFAULT_MAX_BODY_BYTES,
+): Promise<unknown> {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!/^application\/json\s*(;|$)/i.test(contentType)) {
+    throw new ApiError("unsupported_media_type");
+  }
+
+  const bytes = await readLimitedBody(request, maxBytes);
 
   let text: string;
   try {

@@ -27,6 +27,8 @@ export interface CallOptions {
   method?: string;
   path?: string;
   body?: unknown;
+  /** A multipart upload. The content type (with its boundary) is set automatically. */
+  form?: FormData;
   /** Value of the session cookie to send. */
   cookie?: string;
   ip?: string;
@@ -38,6 +40,8 @@ export interface CallResult {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: any;
   raw: string;
+  /** The response body exactly as sent, for images and other binary answers. */
+  bytes: Buffer;
   headers: Headers;
   /** Session cookie set by the response: its value, "" when cleared, undefined when untouched. */
   cookie: string | undefined;
@@ -65,12 +69,15 @@ export async function call(
       method,
       headers,
       body:
-        options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        options.form ??
+        (options.body !== undefined ? JSON.stringify(options.body) : undefined),
     },
   );
 
   const response = await handler(request);
-  const raw = await response.text();
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const raw = bytes.toString("utf8");
+  const isJson = (response.headers.get("content-type") ?? "").includes("json");
   const setCookie = response.headers.get("set-cookie");
   const match = setCookie
     ? /(?:^|,\s*)lz_session=([^;]*)/.exec(setCookie)
@@ -78,8 +85,9 @@ export async function call(
 
   return {
     status: response.status,
-    body: raw ? JSON.parse(raw) : null,
+    body: isJson && raw ? JSON.parse(raw) : null,
     raw,
+    bytes,
     headers: response.headers,
     cookie: match ? match[1] : undefined,
   };

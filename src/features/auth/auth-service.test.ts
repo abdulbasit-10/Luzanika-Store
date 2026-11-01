@@ -4,22 +4,32 @@ import { ApiError } from "@/lib/api-client";
 
 const apiPost = vi.fn();
 const apiGet = vi.fn();
+const apiPatch = vi.fn();
+const apiPut = vi.fn();
+const apiDelete = vi.fn();
 
 vi.mock("@/lib/api-client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api-client")>()),
   apiPost: (...args: unknown[]) => apiPost(...args),
   apiGet: (...args: unknown[]) => apiGet(...args),
+  apiPatch: (...args: unknown[]) => apiPatch(...args),
+  apiPut: (...args: unknown[]) => apiPut(...args),
+  apiDelete: (...args: unknown[]) => apiDelete(...args),
 }));
 
 import {
   AuthError,
+  deleteAccount,
   getCurrentUser,
+  isSessionEnded,
   loginUser,
   logoutUser,
   registerUser,
+  removeAvatar,
   requestPasswordReset,
   resetPassword,
   updateProfile,
+  uploadAvatar,
 } from "./auth-service";
 
 const dto = {
@@ -41,6 +51,9 @@ function apiError(
 beforeEach(() => {
   apiPost.mockReset();
   apiGet.mockReset();
+  apiPatch.mockReset();
+  apiPut.mockReset();
+  apiDelete.mockReset();
 });
 
 describe("auth service", () => {
@@ -191,11 +204,122 @@ describe("auth service", () => {
     await logoutUser();
     expect(apiPost).toHaveBeenCalledWith("/auth/logout");
   });
+});
 
-  it("does not pretend to save profile changes that have no backend yet", async () => {
-    await expect(updateProfile("id", { firstName: "X" })).rejects.toMatchObject(
-      { code: "not_available" },
+describe("account calls", () => {
+  const withPhoto = {
+    ...dto,
+    avatarUrl: "/api/v1/account/avatar?v=abc123abc123",
+  };
+
+  it("saves profile changes through PATCH /account and returns the updated user", async () => {
+    apiPatch.mockResolvedValue({ user: { ...dto, firstName: "Grace" } });
+    const user = await updateProfile({ firstName: "Grace", phone: "" });
+
+    expect(apiPatch).toHaveBeenCalledWith("/account", {
+      firstName: "Grace",
+      phone: "",
+    });
+    expect(user.firstName).toBe("Grace");
+  });
+
+  it("sends the current password along with an email change", async () => {
+    apiPatch.mockResolvedValue({ user: dto });
+    await updateProfile({
+      email: "new@example.com",
+      currentPassword: "secret-pw-1",
+    });
+    expect(apiPatch).toHaveBeenCalledWith("/account", {
+      email: "new@example.com",
+      currentPassword: "secret-pw-1",
+    });
+  });
+
+  it("keeps the server's message for a wrong password so the dialog can show it", async () => {
+    apiPatch.mockRejectedValue(
+      apiError("validation_failed", 400, {
+        currentPassword: "Your current password is incorrect",
+      }),
     );
-    expect(apiPost).not.toHaveBeenCalled();
+    const failure = await updateProfile({
+      email: "x@y.co",
+      currentPassword: "nope",
+    }).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(AuthError);
+    expect((failure as AuthError).fields).toEqual({
+      currentPassword: "Your current password is incorrect",
+    });
+  });
+
+  it("reports a taken email and an ended session as AuthErrors the screens can handle", async () => {
+    apiPatch.mockRejectedValueOnce(
+      apiError("email_taken", 409, {
+        email: "An account with this email already exists",
+      }),
+    );
+    expect(
+      await updateProfile({ email: "a@b.co" }).catch((e: unknown) => e),
+    ).toMatchObject({
+      code: "email_taken",
+    });
+
+    apiPatch.mockRejectedValueOnce(apiError("unauthenticated", 401));
+    const ended = await updateProfile({ firstName: "X" }).catch(
+      (e: unknown) => e,
+    );
+    expect(ended).toMatchObject({ code: "unauthenticated" });
+    expect(isSessionEnded(ended)).toBe(true);
+    expect(isSessionEnded(new Error("x"))).toBe(false);
+  });
+
+  it("uploads the photo as multipart form data in the field the server reads", async () => {
+    apiPut.mockResolvedValue({ user: withPhoto });
+    const file = new File([new Uint8Array([1, 2, 3])], "me.jpg", {
+      type: "image/jpeg",
+    });
+    const user = await uploadAvatar(file);
+
+    const [url, body] = apiPut.mock.calls[0];
+    expect(url).toBe("/account/avatar");
+    expect(body).toBeInstanceOf(FormData);
+    expect((body as FormData).get("photo")).toBeInstanceOf(File);
+    expect(user.avatarUrl).toBe(withPhoto.avatarUrl);
+  });
+
+  it("shows the server's reason when a photo is refused", async () => {
+    apiPut.mockRejectedValue(
+      apiError("validation_failed", 400, {
+        photo: "Please choose a JPG, PNG or WebP image.",
+      }),
+    );
+    const failure = await uploadAvatar(new File(["x"], "x.gif")).catch(
+      (e: unknown) => e,
+    );
+    expect((failure as AuthError).fields?.photo).toMatch(/JPG, PNG or WebP/);
+  });
+
+  it("removes the photo through DELETE /account/avatar", async () => {
+    apiDelete.mockResolvedValue({ user: dto });
+    const user = await removeAvatar();
+    expect(apiDelete).toHaveBeenCalledWith("/account/avatar");
+    expect(user).not.toHaveProperty("avatarUrl");
+  });
+
+  it("deletes the account with the password in the request body", async () => {
+    apiDelete.mockResolvedValue(undefined);
+    await deleteAccount("my-password-1");
+    expect(apiDelete).toHaveBeenCalledWith("/account", {
+      data: { password: "my-password-1" },
+    });
+  });
+
+  it("keeps the 'wrong password' message when deleting the account", async () => {
+    apiDelete.mockRejectedValue(
+      apiError("validation_failed", 400, {
+        password: "Your current password is incorrect",
+      }),
+    );
+    const failure = await deleteAccount("nope").catch((e: unknown) => e);
+    expect((failure as AuthError).fields?.password).toMatch(/incorrect/);
   });
 });

@@ -118,6 +118,12 @@ export const sessionRepository = {
     );
   },
 
+  /** Removes every session of a customer, including its IP and browser details (used when the account is deleted). */
+  async deleteAllForCustomer(customerId: string, tx: Tx): Promise<void> {
+    ensureModels();
+    await CustomerSession.destroy({ where: { customerId }, transaction: tx });
+  },
+
   /** Housekeeping: removes sessions that can never be used again. Returns how many. */
   async deleteExpired(now: Date, absoluteCutoff: Date): Promise<number> {
     ensureModels();
