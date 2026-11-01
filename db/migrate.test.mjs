@@ -210,6 +210,7 @@ describe("migration runner", { skip: skip() }, () => {
         "customers",
         "customer_sessions",
         "customer_tokens",
+        "addresses",
       ]) {
         assert.ok(!(await tableExists(db, table)), `${table} should be gone`);
       }
@@ -606,6 +607,53 @@ describe("the real migrations", { skip: skip() }, () => {
     await db.query("DELETE FROM customers WHERE id = $1", [id]);
     const { rows } = await db.query(
       "SELECT count(*)::int AS n FROM customer_tokens WHERE customer_id = $1",
+      [id],
+    );
+    assert.equal(rows[0].n, 0);
+  });
+
+  test("addresses: one default per customer, length limits, removed with the customer", async () => {
+    const { id } = (await insertCustomer({ email: "addr1@example.com" }))
+      .rows[0];
+    const other = (await insertCustomer({ email: "addr2@example.com" })).rows[0]
+      .id;
+    const insert = (customerId, overrides = {}) => {
+      const row = {
+        customer_id: customerId,
+        full_name: "Ada",
+        phone: "+49 170 1234567",
+        country: "Germany",
+        city: "Berlin",
+        address: "Street 1",
+        zip: "10117",
+        is_default: false,
+        ...overrides,
+      };
+      return db.query(
+        `INSERT INTO addresses (${Object.keys(row).join(", ")})
+         VALUES (${Object.keys(row)
+           .map((_, i) => `$${i + 1}`)
+           .join(", ")})`,
+        Object.values(row),
+      );
+    };
+
+    await insert(id, { is_default: true });
+    await insert(id); // any number of non-default addresses
+    await insert(id);
+    await rejects(insert(id, { is_default: true }), "23505");
+    await insert(other, { is_default: true }); // another customer has their own default
+
+    await rejects(insert(id, { full_name: "  " }), "23514");
+    await rejects(insert(id, { full_name: "x".repeat(81) }), "23514");
+    await rejects(insert(id, { phone: "123" }), "23514");
+    await rejects(insert(id, { zip: "1".repeat(13) }), "23514");
+    await rejects(insert(id, { address: "x".repeat(161) }), "23514");
+    await rejects(insert(crypto.randomUUID()), "23503");
+
+    await db.query("DELETE FROM customers WHERE id = $1", [id]);
+    const { rows } = await db.query(
+      "SELECT count(*)::int AS n FROM addresses WHERE customer_id = $1",
       [id],
     );
     assert.equal(rows[0].n, 0);

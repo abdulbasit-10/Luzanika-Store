@@ -46,7 +46,9 @@ export type AuthErrorCode =
   | "invalid_reset_link"
   | "rate_limited"
   | "validation_failed"
-  | "unauthenticated";
+  | "unauthenticated"
+  | "unprocessable"
+  | "not_found";
 
 const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
   "email_taken",
@@ -56,21 +58,27 @@ const KNOWN_CODES: ReadonlySet<string> = new Set<AuthErrorCode>([
   "rate_limited",
   "validation_failed",
   "unauthenticated",
+  "unprocessable",
+  "not_found",
 ]);
 
 /** A refusal the page can explain to the visitor, with per-field messages when the API gave them. */
 export class AuthError extends Error {
   readonly code: AuthErrorCode;
   readonly fields: Record<string, string> | null;
+  /** The API's own explanation, safe to show (e.g. "You can save up to 20 addresses"). */
+  readonly serverMessage: string | null;
 
   constructor(
     code: AuthErrorCode,
     fields: Record<string, string> | null = null,
+    serverMessage: string | null = null,
   ) {
     super(code);
     this.name = "AuthError";
     this.code = code;
     this.fields = fields;
+    this.serverMessage = serverMessage;
   }
 }
 
@@ -89,11 +97,18 @@ async function request<T>(send: () => Promise<T>): Promise<T> {
       error.code &&
       KNOWN_CODES.has(error.code)
     ) {
-      throw new AuthError(error.code as AuthErrorCode, error.fields);
+      throw new AuthError(
+        error.code as AuthErrorCode,
+        error.fields,
+        error.message,
+      );
     }
     throw error;
   }
 }
+
+/** For other features that talk to the signed-in API (addresses, later cart and orders): same error handling as the account calls. */
+export const withKnownErrors = request;
 
 function toAuthUser(dto: UserDto): AuthUser {
   return {

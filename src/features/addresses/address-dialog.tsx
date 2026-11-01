@@ -14,7 +14,8 @@ import {
   addressSchema,
   type AddressFormValues,
 } from "@/features/addresses/address-schema";
-import type { SavedAddress } from "@/stores/address-store";
+import type { SavedAddress } from "@/features/addresses/address-service";
+import { AuthError } from "@/features/auth/auth-service";
 
 const EMPTY: AddressFormValues = {
   fullName: "",
@@ -46,7 +47,8 @@ interface AddressDialogProps {
   /** True when this will be the visitor's first address, which becomes the default. */
   first: boolean;
   onClose: () => void;
-  onSave: (values: AddressFormValues) => void;
+  /** Saves the address. Throw an AuthError with `fields` to show the server's messages next to the fields. */
+  onSave: (values: AddressFormValues) => Promise<void>;
 }
 
 /** Modal form to add or edit an address. Uses the native <dialog>, so it traps focus and closes on Escape. */
@@ -64,7 +66,8 @@ export function AddressDialog({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    setError,
+    formState: { errors, isSubmitting },
   } = useForm<AddressFormValues>({
     resolver: zodResolver(addressSchema),
     defaultValues: EMPTY,
@@ -97,12 +100,27 @@ export function AddressDialog({
     >
       <form
         noValidate
-        onSubmit={handleSubmit((values) =>
-          onSave({
-            ...values,
-            isDefault: lockedDefault || values.isDefault,
-          }),
-        )}
+        onSubmit={handleSubmit(async (values) => {
+          try {
+            await onSave({
+              ...values,
+              isDefault: lockedDefault || values.isDefault,
+            });
+          } catch (failure) {
+            if (!(failure instanceof AuthError)) return;
+            // Put the server's message next to the field it is about.
+            for (const [field, message] of Object.entries(
+              failure.fields ?? {},
+            )) {
+              if (field in EMPTY) {
+                setError(field as keyof AddressFormValues, {
+                  type: "server",
+                  message,
+                });
+              }
+            }
+          }
+        })}
         className="relative p-5 sm:p-6"
       >
         <button
@@ -235,8 +253,13 @@ export function AddressDialog({
           >
             Cancel
           </Button>
-          <Button type="submit" size="sm" className="rounded-md px-4 py-2.5">
-            Save address
+          <Button
+            type="submit"
+            size="sm"
+            disabled={isSubmitting}
+            className="rounded-md px-4 py-2.5"
+          >
+            {isSubmitting ? "Saving…" : "Save address"}
           </Button>
         </div>
       </form>

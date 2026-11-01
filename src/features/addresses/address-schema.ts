@@ -12,7 +12,8 @@ export const addressSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^\+?[\d\s()-]{6,20}$/, "Please enter a valid phone number"),
+    // Same rule as the server: 6 to 19 digits and separators, optional leading "+".
+    .regex(/^\+?[\d\s()-]{6,19}$/, "Please enter a valid phone number"),
   country: required("Please enter the country", 60),
   city: required("Please enter the city", 60),
   address: required("Please enter the street address", 160),

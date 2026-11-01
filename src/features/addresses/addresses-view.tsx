@@ -9,9 +9,10 @@ import { Radio } from "@/components/ui/radio";
 import { toast } from "@/components/ui/toaster";
 import { AddressDialog } from "@/features/addresses/address-dialog";
 import type { AddressFormValues } from "@/features/addresses/address-schema";
-import { useHydrated } from "@/hooks/use-hydrated";
-import { useAuthStore } from "@/stores/auth-store";
-import { useAddressStore, type SavedAddress } from "@/stores/address-store";
+import type { SavedAddress } from "@/features/addresses/address-service";
+import { useAddresses } from "@/features/addresses/use-addresses";
+import { AuthError } from "@/features/auth/auth-service";
+import { useHandleSessionExpired } from "@/features/auth/use-session";
 
 const NO_ADDRESSES: SavedAddress[] = [];
 
@@ -34,16 +35,52 @@ function matches(address: SavedAddress, query: string) {
 }
 
 const actionClass =
-  "text-[11px] font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+  "text-[11px] font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50";
 
-/** The signed-in user's saved delivery addresses: search, add, edit, delete and pick the default. */
-export function AddressesView() {
-  const hydrated = useHydrated();
-  const userId = useAuthStore((state) => state.user?.id ?? null);
-  const saved = useAddressStore((state) =>
-    userId ? state.byUser[userId] : undefined,
+function ListSkeleton() {
+  return (
+    <div
+      role="status"
+      className="mt-4 animate-pulse space-y-3 rounded-2xl bg-white p-5"
+    >
+      {[0, 1].map((row) => (
+        <div key={row} className="h-20 rounded-lg bg-black/[0.04]" />
+      ))}
+      <span className="sr-only">Loading your addresses…</span>
+    </div>
   );
-  const { add, update, remove, restore, setDefault } = useAddressStore();
+}
+
+/** Message for a failed change: what the server said when it is something the customer can act on, otherwise a general one. */
+function failureMessage(failure: unknown, fallback: string) {
+  if (failure instanceof AuthError) {
+    if (failure.code === "rate_limited") {
+      return "Too many changes. Please wait a moment and try again.";
+    }
+    if (failure.code === "unprocessable" && failure.serverMessage) {
+      return failure.serverMessage;
+    }
+    if (failure.code === "not_found") {
+      return "That address no longer exists. The list has been refreshed.";
+    }
+  }
+  return fallback;
+}
+
+/** The signed-in customer's saved delivery addresses: search, add, edit, delete and pick the default. Saved on the server. */
+export function AddressesView() {
+  const {
+    addresses: loaded,
+    isLoading,
+    isError,
+    refetch,
+    busy,
+    create,
+    update,
+    remove,
+    makeDefault,
+  } = useAddresses();
+  const handleSessionExpired = useHandleSessionExpired();
 
   const [query, setQuery] = useState("");
   const [dialog, setDialog] = useState<{
@@ -51,7 +88,7 @@ export function AddressesView() {
     address: SavedAddress | null;
   }>({ open: false, address: null });
 
-  const addresses = hydrated && saved ? saved : NO_ADDRESSES;
+  const addresses = loaded ?? NO_ADDRESSES;
   const shown = query.trim()
     ? addresses.filter((address) => matches(address, query))
     : addresses;
@@ -60,28 +97,68 @@ export function AddressesView() {
     setDialog({ open: true, address });
   const closeDialog = () => setDialog((state) => ({ ...state, open: false }));
 
-  function save(values: AddressFormValues) {
-    if (!userId) return;
-    if (dialog.address) {
-      update(userId, dialog.address.id, values);
-      toast.success("Address updated");
-    } else {
-      add(userId, values);
-      toast.success("Address saved");
+  /** Common handling for a failed change. Returns true when the caller should stop (session ended). */
+  function handleFailure(failure: unknown, fallback: string) {
+    if (handleSessionExpired(failure)) return;
+    if (failure instanceof AuthError && failure.code === "not_found")
+      void refetch();
+    toast.error(failureMessage(failure, fallback));
+  }
+
+  /** Throws (so the dialog can show the messages) when the server found a problem with a field. */
+  async function save(values: AddressFormValues) {
+    try {
+      if (dialog.address) {
+        await update.mutateAsync({ id: dialog.address.id, values });
+        toast.success("Address updated");
+      } else {
+        await create.mutateAsync(values);
+        toast.success("Address saved");
+      }
+      closeDialog();
+    } catch (failure) {
+      if (failure instanceof AuthError && failure.fields) throw failure;
+      handleFailure(failure, "Couldn't save the address. Please try again.");
     }
-    closeDialog();
   }
 
   function deleteAddress(address: SavedAddress) {
-    if (!userId) return;
-    const index = addresses.findIndex((item) => item.id === address.id);
-    remove(userId, address.id);
-    toast(`Address for ${address.fullName} deleted`, {
-      id: `address-${address.id}`,
-      action: {
-        label: "Undo",
-        onClick: () => restore(userId, address, index),
+    remove.mutate(address.id, {
+      onSuccess: () => {
+        toast(`Address for ${address.fullName} deleted`, {
+          id: `address-${address.id}`,
+          action: {
+            label: "Undo",
+            // Saved again as a new address (it goes to the end of the list).
+            onClick: () => {
+              const { id, ...values } = address;
+              void id;
+              create.mutate(values, {
+                onError: (failure) =>
+                  handleFailure(failure, "Couldn't restore the address."),
+              });
+            },
+          },
+        });
       },
+      onError: (failure) =>
+        handleFailure(
+          failure,
+          "Couldn't delete the address. Please try again.",
+        ),
+    });
+  }
+
+  function chooseDefault(address: SavedAddress) {
+    if (address.isDefault) return;
+    makeDefault.mutate(address.id, {
+      onSuccess: () =>
+        toast.success("Default address updated", { id: "default-address" }),
+      onError: (failure) =>
+        handleFailure(
+          failure,
+          "Couldn't change the default. Please try again.",
+        ),
     });
   }
 
@@ -106,6 +183,7 @@ export function AddressesView() {
         </div>
         <Button
           onClick={() => openDialog(null)}
+          disabled={isLoading || isError}
           className="h-[clamp(2rem,5.2dvh,2.5rem)] rounded-md px-4 py-0 text-sm font-medium"
         >
           <Plus aria-hidden className="size-4" />
@@ -113,7 +191,16 @@ export function AddressesView() {
         </Button>
       </div>
 
-      {addresses.length === 0 ? (
+      {isLoading ? (
+        <ListSkeleton />
+      ) : isError ? (
+        <EmptyState
+          className="mt-4 rounded-2xl bg-white"
+          title="We couldn't load your addresses"
+          description="Please check your connection and try again."
+          action={<Button onClick={() => void refetch()}>Try again</Button>}
+        />
+      ) : addresses.length === 0 ? (
         <EmptyState
           className="mt-4 rounded-2xl bg-white"
           title="No saved addresses"
@@ -151,6 +238,7 @@ export function AddressesView() {
                   <div className="mt-1 flex gap-4">
                     <button
                       type="button"
+                      disabled={busy}
                       onClick={() => openDialog(address)}
                       aria-label={`Edit address for ${address.fullName}`}
                       className={`${actionClass} text-blue-600`}
@@ -159,6 +247,7 @@ export function AddressesView() {
                     </button>
                     <button
                       type="button"
+                      disabled={busy}
                       onClick={() => deleteAddress(address)}
                       aria-label={`Delete address for ${address.fullName}`}
                       className={`${actionClass} text-danger`}
@@ -170,13 +259,8 @@ export function AddressesView() {
                 <Radio
                   name="default-address"
                   checked={address.isDefault}
-                  onChange={() => {
-                    if (!userId || address.isDefault) return;
-                    setDefault(userId, address.id);
-                    toast.success("Default address updated", {
-                      id: "default-address",
-                    });
-                  }}
+                  disabled={busy}
+                  onChange={() => chooseDefault(address)}
                   label={
                     <span className="sr-only">
                       Use the address for {address.fullName} as default

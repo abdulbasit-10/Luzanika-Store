@@ -33,6 +33,8 @@ export function useSignOut() {
 
   return useCallback(() => {
     queryClient.setQueryData(ME_QUERY_KEY, null);
+    // Nothing the signed-in customer loaded may linger for whoever uses this browser next.
+    queryClient.removeQueries({ queryKey: ["addresses"] });
     clear();
   }, [queryClient, clear]);
 }

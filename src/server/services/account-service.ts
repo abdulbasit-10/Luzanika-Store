@@ -13,6 +13,7 @@ import {
   type ProfileColumns,
 } from "@/server/repositories/customer-repository";
 import { sessionRepository } from "@/server/repositories/session-repository";
+import { addressRepository } from "@/server/repositories/address-repository";
 import { tokenRepository } from "@/server/repositories/token-repository";
 import { verifyPassword } from "@/server/security/password";
 import { getStorage } from "@/server/storage";
@@ -170,6 +171,8 @@ export async function deleteAccount(input: {
     await customerRepository.anonymise(customer.id, new Date(), tx);
     await sessionRepository.deleteAllForCustomer(customer.id, tx);
     await tokenRepository.deleteAllForCustomer(customer.id, tx);
+    // A saved address book is personal data; orders keep their own copy of where they shipped.
+    await addressRepository.deleteAllForCustomer(customer.id, tx);
   });
 
   await removeFileQuietly(customer.avatarKey);

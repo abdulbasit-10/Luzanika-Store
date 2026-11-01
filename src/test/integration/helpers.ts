@@ -20,12 +20,14 @@ export function newIp(): string {
 
 type RouteHandler = (
   request: NextRequest,
-  context?: never,
+  context?: { params: Promise<never> },
 ) => Promise<Response>;
 
 export interface CallOptions {
   method?: string;
   path?: string;
+  /** URL segments such as { id } for routes like /addresses/[id]. */
+  params?: Record<string, string>;
   body?: unknown;
   /** A multipart upload. The content type (with its boundary) is set automatically. */
   form?: FormData;
@@ -74,7 +76,12 @@ export async function call(
     },
   );
 
-  const response = await handler(request);
+  const response = await handler(
+    request,
+    options.params
+      ? { params: Promise.resolve(options.params) as Promise<never> }
+      : undefined,
+  );
   const bytes = Buffer.from(await response.arrayBuffer());
   const raw = bytes.toString("utf8");
   const isJson = (response.headers.get("content-type") ?? "").includes("json");

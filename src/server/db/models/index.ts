@@ -2,11 +2,12 @@ import "server-only";
 
 import { getSequelize } from "@/server/db/connection";
 
+import { Address, initAddress } from "./address";
 import { Customer, initCustomer } from "./customer";
 import { CustomerSession, initCustomerSession } from "./customer-session";
 import { CustomerToken, initCustomerToken } from "./customer-token";
 
-export { Customer, CustomerSession, CustomerToken };
+export { Address, Customer, CustomerSession, CustomerToken };
 export type { CustomerStatus } from "./customer";
 export type { CustomerTokenType } from "./customer-token";
 
@@ -25,11 +26,14 @@ export function ensureModels(): void {
   initCustomer(sequelize);
   initCustomerSession(sequelize);
   initCustomerToken(sequelize);
+  initAddress(sequelize);
 
   Customer.hasMany(CustomerSession, { foreignKey: "customerId" });
   CustomerSession.belongsTo(Customer, { foreignKey: "customerId" });
   Customer.hasMany(CustomerToken, { foreignKey: "customerId" });
   CustomerToken.belongsTo(Customer, { foreignKey: "customerId" });
+  Customer.hasMany(Address, { foreignKey: "customerId" });
+  Address.belongsTo(Customer, { foreignKey: "customerId" });
 
   initialised = sequelize;
 }
