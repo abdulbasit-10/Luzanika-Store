@@ -22,6 +22,7 @@ export interface PlaceOrderInput {
   paymentMethod: PaymentMethod;
   items: {
     productId: string;
+    variantId: string;
     quantity: number;
     size?: string;
     color?: string;

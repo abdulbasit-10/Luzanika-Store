@@ -23,7 +23,6 @@ type PurchaseProduct = Pick<
   | "name"
   | "images"
   | "prices"
-  | "notes"
   | "colors"
   | "sizes"
   | "hasSizeGuide"
@@ -52,6 +51,7 @@ export function ProductPurchasePanel({
   const [size, setSize] = useState<string | null>(sizes?.[0] ?? null);
   const [chosenQuantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
@@ -75,24 +75,16 @@ export function ProductPurchasePanel({
   // A smaller stock after changing size, colour or region must never leave a larger quantity selected.
   const quantity = Math.min(chosenQuantity, Math.max(stock, 1));
 
-  function handleAddToCart() {
-    if (!inStock) return;
-    const saved = addItem(
-      {
-        productId: product.id,
-        slug: product.slug,
-        name: product.name,
-        image: product.images[0],
-        prices: product.prices,
-        notes: product.notes,
-        // The color only distinguishes cart lines when there is a choice.
-        color: colors && colors.length > 1 ? (color ?? undefined) : undefined,
-        size: size ?? undefined,
-        maxQuantity: stock,
-      },
+  async function handleAddToCart() {
+    if (!variant || !inStock || adding) return;
+    setAdding(true);
+    // addItem has already told the visitor why when it cannot add (not signed in, not enough stock).
+    const saved = await addItem({
+      variantId: variant.id,
       quantity,
-    );
-    // Not signed in: addItem has already asked the visitor to log in.
+      name: product.name,
+    });
+    setAdding(false);
     if (!saved) return;
     setAdded(true);
     clearTimeout(resetTimer.current);
@@ -151,7 +143,7 @@ export function ProductPurchasePanel({
         />
         <Button
           onClick={handleAddToCart}
-          disabled={!inStock}
+          disabled={!inStock || adding}
           className="h-11 flex-1 rounded-sm text-base font-medium"
         >
           {added ? (

@@ -217,6 +217,8 @@ describe("migration runner", { skip: skip() }, () => {
         "inventory",
         "stock_movements",
         "home_features",
+        "cart_items",
+        "wishlist_items",
       ]) {
         assert.ok(!(await tableExists(db, table)), `${table} should be gone`);
       }
@@ -853,5 +855,64 @@ describe("the real migrations", { skip: skip() }, () => {
       [id, first],
     );
     assert.deepEqual(rows[0], { prices: 0, stock: 0 });
+  });
+
+  test("cart and wishlist: one line per variant, sane quantities, removed with the customer or product", async () => {
+    const q = (text, values) => db.query(text, values);
+    const customer = (await insertCustomer({ email: "cart1@example.com" }))
+      .rows[0].id;
+    const other = (await insertCustomer({ email: "cart2@example.com" })).rows[0]
+      .id;
+    const product = (
+      await q(
+        "INSERT INTO products (slug, name) VALUES ('cart-item', 'Item') RETURNING id",
+      )
+    ).rows[0].id;
+    const variant = (
+      await q(
+        "INSERT INTO product_variants (product_id, sku) VALUES ($1, 'CART-1') RETURNING id",
+        [product],
+      )
+    ).rows[0].id;
+    const line = (customerId, variantId, quantity) =>
+      q(
+        "INSERT INTO cart_items (customer_id, variant_id, quantity) VALUES ($1, $2, $3)",
+        [customerId, variantId, quantity],
+      );
+
+    await line(customer, variant, 2);
+    await line(other, variant, 1); // another customer has their own line for the same variant
+    await rejects(line(customer, variant, 1), "23505");
+    await rejects(line(other, variant, 0), "23514");
+    await rejects(line(other, variant, 100), "23514");
+    await rejects(line(crypto.randomUUID(), variant, 1), "23503");
+    await rejects(line(customer, crypto.randomUUID(), 1), "23503");
+
+    const wish = (customerId, productId) =>
+      q(
+        "INSERT INTO wishlist_items (customer_id, product_id) VALUES ($1, $2)",
+        [customerId, productId],
+      );
+    await wish(customer, product);
+    await wish(other, product);
+    await rejects(wish(customer, product), "23505");
+    await rejects(wish(customer, crypto.randomUUID()), "23503");
+
+    await q("DELETE FROM customers WHERE id = $1", [customer]);
+    const count = async (table, id) =>
+      (
+        await q(
+          `SELECT count(*)::int AS n FROM ${table} WHERE customer_id = $1`,
+          [id],
+        )
+      ).rows[0].n;
+    assert.equal(await count("cart_items", customer), 0);
+    assert.equal(await count("wishlist_items", customer), 0);
+    assert.equal(await count("cart_items", other), 1);
+
+    // A product that is purged takes its saved entries and cart lines with it.
+    await q("DELETE FROM products WHERE id = $1", [product]);
+    assert.equal(await count("cart_items", other), 0);
+    assert.equal(await count("wishlist_items", other), 0);
   });
 });

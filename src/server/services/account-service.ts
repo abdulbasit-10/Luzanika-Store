@@ -14,6 +14,8 @@ import {
 } from "@/server/repositories/customer-repository";
 import { sessionRepository } from "@/server/repositories/session-repository";
 import { addressRepository } from "@/server/repositories/address-repository";
+import { cartRepository } from "@/server/repositories/cart-repository";
+import { wishlistRepository } from "@/server/repositories/wishlist-repository";
 import { tokenRepository } from "@/server/repositories/token-repository";
 import { verifyPassword } from "@/server/security/password";
 import { getStorage } from "@/server/storage";
@@ -173,6 +175,8 @@ export async function deleteAccount(input: {
     await tokenRepository.deleteAllForCustomer(customer.id, tx);
     // A saved address book is personal data; orders keep their own copy of where they shipped.
     await addressRepository.deleteAllForCustomer(customer.id, tx);
+    await cartRepository.deleteAllForCustomer(customer.id, tx);
+    await wishlistRepository.deleteAllForCustomer(customer.id, tx);
   });
 
   await removeFileQuietly(customer.avatarKey);

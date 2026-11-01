@@ -35,6 +35,8 @@ export function useSignOut() {
     queryClient.setQueryData(ME_QUERY_KEY, null);
     // Nothing the signed-in customer loaded may linger for whoever uses this browser next.
     queryClient.removeQueries({ queryKey: ["addresses"] });
+    queryClient.removeQueries({ queryKey: ["cart"] });
+    queryClient.removeQueries({ queryKey: ["wishlist"] });
     clear();
   }, [queryClient, clear]);
 }

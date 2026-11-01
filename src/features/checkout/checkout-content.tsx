@@ -22,7 +22,7 @@ import { PaymentCard } from "@/features/checkout/payment-card";
 import { ShippingCard } from "@/features/checkout/shipping-card";
 import type { ConfirmedOrder } from "@/features/orders/types";
 import { useCart } from "@/features/cart/use-cart";
-import type { CartLine } from "@/stores/cart-store";
+import type { CartLine } from "@/features/cart/cart-service";
 import type { RegionCode } from "@/types/region";
 import { useEffect } from "react";
 
@@ -53,6 +53,7 @@ function toOrderInput(
     // Card details are deliberately left out (see checkout-service).
     items: lines.map((line) => ({
       productId: line.productId,
+      variantId: line.variantId,
       quantity: line.quantity,
       size: line.size,
       color: line.color,

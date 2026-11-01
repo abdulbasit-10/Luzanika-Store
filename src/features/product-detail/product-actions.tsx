@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { toast } from "@/components/ui/toaster";
 import { useWishlist } from "@/features/wishlist/use-wishlist";
-import type { WishlistProduct } from "@/stores/wishlist-store";
+import type { WishlistProduct } from "@/features/wishlist/wishlist-service";
 import { cn } from "@/utils/cn";
 
 const actionClass =

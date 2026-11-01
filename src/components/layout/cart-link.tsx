@@ -10,7 +10,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 
 const MAX_BADGE = 99;
 
-/** Header cart icon with the number of items in the cart. The cart only exists in the browser, so the badge waits for hydration. */
+/** Header cart icon with the number of items in the cart. The cart is read from the server after hydration, so the badge starts at 0. */
 export function CartLink() {
   const hydrated = useHydrated();
   const { lines } = useCart();

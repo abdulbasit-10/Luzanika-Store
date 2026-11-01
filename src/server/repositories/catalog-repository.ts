@@ -177,6 +177,15 @@ export const catalogRepository = {
     return rows[0];
   },
 
+  /** Visible products (listed or not) by id, for lists that keep their own order such as the wishlist. */
+  listProductsByIds(productIds: string[]): Promise<ProductRow[]> {
+    if (productIds.length === 0) return Promise.resolve([]);
+    return select<ProductRow>(
+      `SELECT ${PRODUCT_COLUMNS} FROM products p ${PRODUCT_JOINS}
+       WHERE ${VISIBLE} AND p.id IN (:productIds)`,
+      { productIds },
+    );
+  },
   listProductSlugs(): Promise<{ slug: string }[]> {
     return select<{ slug: string }>(
       `SELECT p.slug FROM products p WHERE ${VISIBLE} ORDER BY p.sort, p.id`,

@@ -8,7 +8,7 @@ import { ProductPrice } from "@/components/shared/product-price";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { useWishlist } from "@/features/wishlist/use-wishlist";
-import type { WishlistItem } from "@/stores/wishlist-store";
+import type { WishlistItem } from "@/features/wishlist/wishlist-service";
 
 function WishlistCard({
   item,
@@ -65,13 +65,23 @@ function WishlistCard({
 
 /** The signed-in user's saved products. The heart on a card removes it (with Undo). */
 export function WishlistView() {
-  const { items, toggle } = useWishlist();
+  const { items, toggle, isLoading } = useWishlist();
 
   return (
     <div className="mx-auto w-full max-w-[980px] lg:mx-0">
       <h1 className="text-lg font-semibold sm:text-xl">List Wishlist</h1>
 
-      {items.length === 0 ? (
+      {isLoading ? (
+        <div
+          role="status"
+          className="mt-6 grid animate-pulse grid-cols-2 gap-4 sm:grid-cols-3"
+        >
+          {[0, 1, 2].map((card) => (
+            <div key={card} className="aspect-[12/13] rounded-2xl bg-white" />
+          ))}
+          <span className="sr-only">Loading your wishlist…</span>
+        </div>
+      ) : items.length === 0 ? (
         <EmptyState
           className="mt-6 rounded-2xl bg-white"
           title="Your wishlist is empty"

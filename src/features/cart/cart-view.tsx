@@ -1,7 +1,7 @@
 "use client";
 
 import { EmptyState } from "@/components/shared/empty-state";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { CartLineItem } from "@/features/cart/cart-line-item";
 import { CheckoutAction } from "@/features/cart/checkout-action";
@@ -12,7 +12,7 @@ import { useHydrated } from "@/hooks/use-hydrated";
 import { useAuthReady } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
 
-/** Placeholder for the saved cart, which only exists in the browser. */
+/** Placeholder while the saved cart is being read from the server. */
 function CartListSkeleton() {
   return (
     <div role="status" className="animate-pulse space-y-6">
@@ -26,18 +26,18 @@ function CartListSkeleton() {
 }
 
 /**
- * The cart page: the signed-in customer's own cart (see cart-store). It lives
- * in the browser, so the list is only shown after hydration; the server HTML
- * has the headings and a placeholder.
+ * The cart page: the signed-in customer's own cart, kept on the server and
+ * read for the selected region (see use-cart). The server HTML has the
+ * headings and a placeholder; the list appears once the cart has loaded.
  */
 export function CartView() {
   const hydrated = useHydrated();
   const authReady = useAuthReady();
-  const { lines, signedIn } = useCart();
+  const { lines, signedIn, isLoading, isError, refetch } = useCart();
   const region = useUiStore((state) => state.region);
 
   const itemCount = getItemCount(lines);
-  const totals = getCartTotals(lines, region);
+  const totals = getCartTotals(lines);
 
   return (
     <Container className="pt-12 pb-16 lg:pt-[min(100px,6.5dvh)] lg:pb-20">
@@ -62,7 +62,7 @@ export function CartView() {
           aria-label="Items in your cart"
           className="rounded-xl bg-panel p-4 sm:p-5 lg:px-5 lg:pt-5 lg:pb-4"
         >
-          {!hydrated || !authReady ? (
+          {!hydrated || !authReady || isLoading ? (
             <CartListSkeleton />
           ) : !signedIn ? (
             <EmptyState
@@ -71,6 +71,12 @@ export function CartView() {
               action={
                 <ButtonLink href="/login?next=%2Fcart">Log in</ButtonLink>
               }
+            />
+          ) : isError ? (
+            <EmptyState
+              title="We couldn't load your cart"
+              description="Please check your connection and try again."
+              action={<Button onClick={() => void refetch()}>Try again</Button>}
             />
           ) : lines.length === 0 ? (
             <EmptyState
@@ -92,7 +98,11 @@ export function CartView() {
               </div>
               <ul className="mt-4">
                 {lines.map((line) => (
-                  <CartLineItem key={line.key} line={line} region={region} />
+                  <CartLineItem
+                    key={line.variantId}
+                    line={line}
+                    region={region}
+                  />
                 ))}
               </ul>
             </>

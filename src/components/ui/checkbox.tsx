@@ -20,7 +20,7 @@ export function Checkbox({ label, className, ...props }: CheckboxProps) {
       <input type="checkbox" className="peer sr-only" {...props} />
       <span
         aria-hidden
-        className="mt-px flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border border-muted-foreground/60 text-primary-foreground transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100"
+        className="mt-px flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border border-muted-foreground/60 text-primary-foreground transition-colors peer-checked:border-primary peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-40 [&>svg]:opacity-0 peer-checked:[&>svg]:opacity-100"
       >
         <Check strokeWidth={3} className="size-3" />
       </span>

@@ -7,11 +7,25 @@ import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { toast } from "@/components/ui/toaster";
+import { isBuyable, type CartLine } from "@/features/cart/cart-service";
 import { getUnitPrice } from "@/features/cart/cart-totals";
 import { useCart } from "@/features/cart/use-cart";
-import type { CartLine } from "@/stores/cart-store";
 import type { RegionCode } from "@/types/region";
 import { formatRegionalPrice } from "@/utils/format-currency";
+
+/** What to tell the shopper when the line is not simply "in stock, as asked". */
+function describeProblem(line: CartLine) {
+  switch (line.status) {
+    case "adjusted":
+      return `Only ${line.available} available. We lowered the quantity from ${line.requestedQuantity}.`;
+    case "out_of_stock":
+      return "Out of stock right now. It stays in your cart, but is not included in the total.";
+    case "unavailable":
+      return "No longer available. Please remove it from your cart.";
+    default:
+      return null;
+  }
+}
 
 /** The line under the name: scent notes, or the chosen size (and color when it is not the only one). */
 function describeLine(line: CartLine) {
@@ -31,19 +45,22 @@ export function CartLineItem({
   const { setQuantity, toggleSelected, removeItem, addItem } = useCart();
 
   const href = `/products/${line.slug}`;
-  const unitPrice = getUnitPrice(line, region);
+  const unitPrice = getUnitPrice(line);
   const description = describeLine(line);
+  const problem = describeProblem(line);
+  const buyable = isBuyable(line);
 
   function remove() {
-    removeItem(line.key);
+    removeItem(line.variantId);
     toast(`${line.name} removed from your cart`, {
       action: {
         label: "Undo",
         onClick: () => {
-          const { key, quantity, selected, ...item } = line;
-          void key;
-          void selected;
-          addItem(item, quantity);
+          void addItem({
+            variantId: line.variantId,
+            quantity: Math.max(1, line.requestedQuantity),
+            name: line.name,
+          });
         },
       },
     });
@@ -54,7 +71,8 @@ export function CartLineItem({
       <Checkbox
         aria-label={`Select ${line.name}`}
         checked={line.selected}
-        onChange={() => toggleSelected(line.key)}
+        disabled={!buyable}
+        onChange={() => toggleSelected(line.variantId, !line.selected)}
         className="items-center"
       />
 
@@ -93,21 +111,31 @@ export function CartLineItem({
             {description}
           </p>
         ) : null}
-        {unitPrice !== undefined ? (
+        {buyable && unitPrice !== undefined ? (
           <p className="mt-1 text-base leading-6 font-bold lg:text-[17px]">
             {formatRegionalPrice(unitPrice * line.quantity, region)}
+          </p>
+        ) : null}
+        {problem ? (
+          <p
+            role="status"
+            className="mt-1 text-[13px] leading-[18px] font-medium text-red-700"
+          >
+            {problem}
           </p>
         ) : null}
       </div>
 
       <div className="col-span-2 col-start-2 flex items-center gap-2.5 lg:col-span-1 lg:col-start-auto">
-        <QuantityStepper
-          variant="outlined"
-          value={line.quantity}
-          max={line.maxQuantity}
-          onChange={(quantity) => setQuantity(line.key, quantity)}
-          className="w-[104px]"
-        />
+        {buyable ? (
+          <QuantityStepper
+            variant="outlined"
+            value={line.quantity}
+            max={line.available}
+            onChange={(quantity) => setQuantity(line.variantId, quantity)}
+            className="w-[104px]"
+          />
+        ) : null}
         <button
           type="button"
           aria-label={`Remove ${line.name} from cart`}

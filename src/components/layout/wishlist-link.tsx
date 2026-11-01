@@ -8,7 +8,7 @@ import { useWishlist } from "@/features/wishlist/use-wishlist";
 
 const MAX_BADGE = 99;
 
-/** Header wishlist icon with the number of saved products. The wishlist belongs to the signed-in user and lives in the browser, so the count is 0 until hydration. */
+/** Header wishlist icon with the number of saved products. The wishlist belongs to the signed-in user and is read from the server, so the count is 0 until it has loaded. */
 export function WishlistLink() {
   const { items } = useWishlist();
   const count = items.length;

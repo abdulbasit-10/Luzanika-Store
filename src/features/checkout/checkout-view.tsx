@@ -28,15 +28,15 @@ function CheckoutSkeleton({ label }: { label: string }) {
 }
 
 /**
- * The checkout page. It checks out the items selected in the cart, which only
- * exists in the browser, so the content waits for hydration; the server HTML
- * has the heading and a placeholder. After an order is placed it hands the
+ * The checkout page. It checks out the items selected in the cart, which is
+ * read from the server, so the content waits for it; the server HTML has the
+ * heading and a placeholder. After an order is placed it hands the
  * order to the confirmation page.
  */
 export function CheckoutView() {
   const router = useRouter();
   const hydrated = useHydrated();
-  const { lines } = useCart();
+  const { lines, isLoading } = useCart();
   const region = useUiStore((state) => state.region);
   const setLastOrder = useOrderStore((state) => state.setLastOrder);
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -54,7 +54,7 @@ export function CheckoutView() {
   }, [authReady, userId, leaving, router]);
 
   const selected = lines.filter((line) => line.selected);
-  const totals = getCartTotals(lines, region);
+  const totals = getCartTotals(lines);
 
   function handlePlaced(order: ConfirmedOrder) {
     setLastOrder(order);
@@ -81,7 +81,7 @@ export function CheckoutView() {
       <div className="mt-6 lg:mt-[min(24px,2.8dvh)]">
         {leaving ? (
           <CheckoutSkeleton label="Order placed. Opening your confirmation…" />
-        ) : !hydrated || !authReady || !userId ? (
+        ) : !hydrated || !authReady || !userId || isLoading ? (
           <CheckoutSkeleton label="Loading checkout…" />
         ) : selected.length === 0 ? (
           <EmptyState

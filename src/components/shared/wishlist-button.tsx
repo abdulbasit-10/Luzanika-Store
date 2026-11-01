@@ -3,7 +3,7 @@
 import { Heart } from "lucide-react";
 
 import { useWishlist } from "@/features/wishlist/use-wishlist";
-import type { WishlistProduct } from "@/stores/wishlist-store";
+import type { WishlistProduct } from "@/features/wishlist/wishlist-service";
 import { cn } from "@/utils/cn";
 
 interface WishlistButtonProps {
