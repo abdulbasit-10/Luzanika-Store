@@ -200,3 +200,34 @@ export const setSectionsSchema = z
       .max(12, "At most 12 sections"),
   })
   .strict();
+
+/** Text and focus point of one product photo. `position` is where the picture is cropped from (CSS object-position, e.g. "center top"); null clears it. */
+export const updateImageSchema = z
+  .object({
+    alt: text("description", 200).optional(),
+    position: z
+      .string()
+      .trim()
+      .min(1)
+      .max(40, "Keep it under 40 characters")
+      .regex(/^[a-z0-9 %.-]+$/i, "Use words like center, top or percentages")
+      .nullable()
+      .optional(),
+  })
+  .strict()
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "Send at least one change",
+  });
+
+export type UpdateImageBody = z.infer<typeof updateImageSchema>;
+
+/** Every photo of the product, in the new order. */
+export const reorderImagesSchema = z
+  .object({
+    ids: z
+      .array(idSchema)
+      .min(1, "List the photos")
+      .max(10, "At most 10 photos")
+      .refine((ids) => new Set(ids).size === ids.length, "List each photo once"),
+  })
+  .strict();

@@ -4,6 +4,14 @@ import { execute, selectRows } from "@/server/db/query";
 import type { Tx } from "@/server/db/transaction";
 import type { Market } from "@/server/repositories/order-repository";
 
+export interface ImageRow {
+  id: string;
+  src: string;
+  alt: string;
+  position: string | null;
+  sort: number;
+}
+
 export type ProductStatus = "draft" | "active" | "archived";
 export type DeletedFilter = "exclude" | "include" | "only";
 
@@ -527,5 +535,78 @@ export const adminProductRepository = {
       { productId },
       tx,
     );
+  },
+
+  findImage(
+    productId: string,
+    imageId: string,
+    tx: Tx,
+  ): Promise<ImageRow | undefined> {
+    return selectRows<ImageRow>(
+      `SELECT id, src, alt, position, sort FROM product_images
+       WHERE product_id = :productId AND id = :imageId FOR UPDATE`,
+      { productId, imageId },
+      tx,
+    ).then((rows) => rows[0]);
+  },
+
+  async countImages(productId: string, tx: Tx): Promise<number> {
+    const rows = await selectRows<{ n: string }>(
+      "SELECT count(*) AS n FROM product_images WHERE product_id = :productId",
+      { productId },
+      tx,
+    );
+    return Number(rows[0].n);
+  },
+
+  /** Adds a photo after the last one. */
+  async insertImage(
+    image: { productId: string; src: string; alt: string },
+    tx: Tx,
+  ): Promise<ImageRow> {
+    const rows = await selectRows<ImageRow>(
+      `INSERT INTO product_images (product_id, src, alt, sort)
+       VALUES (:productId, :src, :alt,
+         (SELECT COALESCE(max(sort) + 1, 0) FROM product_images WHERE product_id = :productId))
+       RETURNING id, src, alt, position, sort`,
+      image,
+      tx,
+    );
+    return rows[0];
+  },
+
+  async updateImage(
+    imageId: string,
+    changes: { alt?: string; position?: string | null },
+    tx: Tx,
+  ): Promise<void> {
+    await execute(
+      `UPDATE product_images
+       SET alt = COALESCE(CAST(:alt AS text), alt),
+           position = CASE WHEN :setPosition THEN CAST(:position AS text) ELSE position END
+       WHERE id = :imageId`,
+      {
+        imageId,
+        alt: changes.alt ?? null,
+        setPosition: changes.position !== undefined,
+        position: changes.position ?? null,
+      },
+      tx,
+    );
+  },
+
+  async deleteImage(imageId: string, tx: Tx): Promise<void> {
+    await execute("DELETE FROM product_images WHERE id = :imageId", { imageId }, tx);
+  },
+
+  /** Numbers the photos 0, 1, 2... in the order of `ids` (the unique sort is checked at the end of the transaction). */
+  async setImageOrder(ids: string[], tx: Tx): Promise<void> {
+    for (const [sort, imageId] of ids.entries()) {
+      await execute(
+        "UPDATE product_images SET sort = :sort WHERE id = :imageId",
+        { sort, imageId },
+        tx,
+      );
+    }
   },
 };

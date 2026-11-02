@@ -1,11 +1,18 @@
 import "server-only";
 
+import { randomBytes } from "node:crypto";
+
 import { recordAudit } from "@/server/audit/audit";
 import { refreshCatalogCache } from "@/server/catalog/refresh-cache";
 import { slugify } from "@/server/catalog/slugify";
 import { constraintOf, isUniqueViolation } from "@/server/db/errors";
 import { withTransaction, type Tx } from "@/server/db/transaction";
 import { ApiError } from "@/server/http/api-error";
+import { logger, serializeError } from "@/server/logger";
+import {
+  MAX_PHOTOS_PER_PRODUCT,
+  processProductPhoto,
+} from "@/server/media/product-image";
 import { adminCatalogRepository } from "@/server/repositories/admin-catalog-repository";
 import {
   adminProductRepository,
@@ -18,10 +25,12 @@ import {
 } from "@/server/repositories/admin-product-repository";
 import type { Market } from "@/server/repositories/order-repository";
 import type { AdminContext } from "@/server/services/staff-admin-service";
+import { getStorage } from "@/server/storage";
 import type {
   CreateProductBody,
   CreateVariantBody,
   SetPricesBody,
+  UpdateImageBody,
   UpdateProductBody,
   UpdateVariantBody,
 } from "@/server/validation/admin-product-schemas";
@@ -778,6 +787,199 @@ export async function setSections(
       ctx.requestId,
     );
   });
+  refreshCatalogCache();
+  return getProduct(id);
+}
+
+// -------------------------------------------------------------------- photos
+
+/** Where the shop page finds an uploaded photo (see the public media route). */
+const PHOTO_URL_PREFIX = "/api/v1/media/";
+
+/** The storage key behind a photo address, or null for the sample photos that ship with the site (/images/...). */
+function uploadedKey(src: string): string | null {
+  return src.startsWith(PHOTO_URL_PREFIX)
+    ? src.slice(PHOTO_URL_PREFIX.length)
+    : null;
+}
+
+async function removeFileQuietly(key: string | null): Promise<void> {
+  if (!key) return;
+  try {
+    await getStorage().delete(key);
+  } catch (error) {
+    // The database no longer points at it; a leftover file is harmless.
+    logger.warn("could not delete a product photo", {
+      error: serializeError(error),
+    });
+  }
+}
+
+/** Locks the product and refuses to change a deleted one. */
+async function lockEditable(id: string, tx: Tx) {
+  const current = await adminProductRepository.lockById(id, tx);
+  if (!current) throw notFound();
+  if (current.deleted_at) {
+    throw new ApiError("conflict", {
+      message: "This product was deleted. Restore it before changing it.",
+    });
+  }
+  return current;
+}
+
+const imageNotFound = () =>
+  new ApiError("not_found", { message: "This photo does not exist." });
+
+/**
+ * Adds an uploaded picture as the product's last photo. The picture is
+ * checked and shrunk to WebP before anything is saved; its description starts
+ * as the product name and is changed with updateImage.
+ */
+export async function addImage(
+  ctx: AdminContext,
+  id: string,
+  upload: Buffer,
+): Promise<ProductDto> {
+  const processed = await processProductPhoto(upload);
+  const key = `products/${randomBytes(16).toString("hex")}.webp`;
+  await getStorage().put(key, processed);
+
+  try {
+    await withTransaction(async (tx) => {
+      const product = await lockEditable(id, tx);
+      if (
+        (await adminProductRepository.countImages(id, tx)) >=
+        MAX_PHOTOS_PER_PRODUCT
+      ) {
+        throw new ApiError("conflict", {
+          message: `A product can have at most ${MAX_PHOTOS_PER_PRODUCT} photos. Remove one first.`,
+        });
+      }
+      const image = await adminProductRepository.insertImage(
+        { productId: id, src: `${PHOTO_URL_PREFIX}${key}`, alt: product.name },
+        tx,
+      );
+      await recordAudit(
+        tx,
+        ctx.actor,
+        {
+          action: "products.image_add",
+          entityType: "product",
+          entityId: id,
+          after: { imageId: image.id, src: image.src, sort: image.sort },
+        },
+        ctx.requestId,
+      );
+    });
+  } catch (error) {
+    await removeFileQuietly(key);
+    throw error;
+  }
+  refreshCatalogCache();
+  return getProduct(id);
+}
+
+export async function updateImage(
+  ctx: AdminContext,
+  id: string,
+  imageId: string,
+  changes: UpdateImageBody,
+): Promise<ProductDto> {
+  await withTransaction(async (tx) => {
+    await lockEditable(id, tx);
+    const before = await adminProductRepository.findImage(id, imageId, tx);
+    if (!before) throw imageNotFound();
+    await adminProductRepository.updateImage(imageId, changes, tx);
+    await recordAudit(
+      tx,
+      ctx.actor,
+      {
+        action: "products.image_update",
+        entityType: "product",
+        entityId: id,
+        before: { imageId, alt: before.alt, position: before.position },
+        after: {
+          imageId,
+          alt: changes.alt ?? before.alt,
+          position:
+            changes.position === undefined ? before.position : changes.position,
+        },
+      },
+      ctx.requestId,
+    );
+  });
+  refreshCatalogCache();
+  return getProduct(id);
+}
+
+/** The photos in a new order. `ids` must be every photo of the product, once each; the first is the main photo. */
+export async function reorderImages(
+  ctx: AdminContext,
+  id: string,
+  ids: string[],
+): Promise<ProductDto> {
+  await withTransaction(async (tx) => {
+    await lockEditable(id, tx);
+    const current = await adminProductRepository.listImages(id, tx);
+    const currentIds = current.map((image) => image.id);
+    if (
+      ids.length !== currentIds.length ||
+      !ids.every((imageId) => currentIds.includes(imageId))
+    ) {
+      throw new ApiError("validation_failed", {
+        message: "List every photo of this product, once each.",
+        fields: { ids: "List every photo of this product, once each" },
+      });
+    }
+    await adminProductRepository.setImageOrder(ids, tx);
+    await recordAudit(
+      tx,
+      ctx.actor,
+      {
+        action: "products.images_reorder",
+        entityType: "product",
+        entityId: id,
+        before: { ids: currentIds },
+        after: { ids },
+      },
+      ctx.requestId,
+    );
+  });
+  refreshCatalogCache();
+  return getProduct(id);
+}
+
+export async function removeImage(
+  ctx: AdminContext,
+  id: string,
+  imageId: string,
+): Promise<ProductDto> {
+  let removedKey: string | null = null;
+  await withTransaction(async (tx) => {
+    await lockEditable(id, tx);
+    const image = await adminProductRepository.findImage(id, imageId, tx);
+    if (!image) throw imageNotFound();
+    await adminProductRepository.deleteImage(imageId, tx);
+    // Close the gap so the photos stay numbered 0, 1, 2...
+    const rest = await adminProductRepository.listImages(id, tx);
+    await adminProductRepository.setImageOrder(
+      rest.map((item) => item.id),
+      tx,
+    );
+    await recordAudit(
+      tx,
+      ctx.actor,
+      {
+        action: "products.image_remove",
+        entityType: "product",
+        entityId: id,
+        before: { imageId, src: image.src, alt: image.alt },
+      },
+      ctx.requestId,
+    );
+    removedKey = uploadedKey(image.src);
+  });
+  await removeFileQuietly(removedKey);
   refreshCatalogCache();
   return getProduct(id);
 }
