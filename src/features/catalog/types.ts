@@ -35,6 +35,16 @@ export interface CatalogProduct extends ProductSummary {
   availability: string;
 }
 
+/**
+ * What the sidebar filters need. The all-products page also lists products
+ * that belong to no collection (the home page ones); they simply never match
+ * a collection or availability filter.
+ */
+export interface FilterableProduct extends ProductSummary {
+  collection?: string;
+  availability?: string;
+}
+
 export interface FilterOption {
   value: string;
   label: string;

@@ -9,7 +9,7 @@ import { StylistCard } from "@/features/catalog/stylist-card";
 import type {
   CatalogFacets,
   CatalogFilters,
-  CatalogProduct,
+  FilterableProduct,
 } from "@/features/catalog/types";
 import { cn } from "@/utils/cn";
 import { formatRegionalPrice } from "@/utils/format-currency";
@@ -18,7 +18,8 @@ import type { RegionCode } from "@/types/region";
 interface FilterSidebarProps {
   id?: string;
   facets: CatalogFacets;
-  products: CatalogProduct[];
+  /** Used for the availability counts. */
+  products: FilterableProduct[];
   value: CatalogFilters;
   region: RegionCode;
   onChange: (next: CatalogFilters) => void;

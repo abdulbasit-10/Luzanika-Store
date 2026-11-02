@@ -2,22 +2,24 @@
 
 import { CircleHelp, Heart, Share2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
+import { toast } from "@/components/ui/toaster";
+import { useWishlist } from "@/features/wishlist/use-wishlist";
+import type { WishlistProduct } from "@/stores/wishlist-store";
 import { cn } from "@/utils/cn";
 
 const actionClass =
   "flex items-center gap-2 text-sm font-medium text-foreground hover:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring";
 
-export function ProductActions({ productName }: { productName: string }) {
-  const [wishlisted, setWishlisted] = useState(false);
-  const [copied, setCopied] = useState(false);
+export function ProductActions({ product }: { product: WishlistProduct }) {
+  const { has, toggle } = useWishlist();
+  const wishlisted = has(product.id);
 
   async function share() {
     const url = window.location.href;
     if (navigator.share) {
       try {
-        await navigator.share({ title: productName, url });
+        await navigator.share({ title: product.name, url });
       } catch {
         // The visitor dismissed the share sheet.
       }
@@ -25,20 +27,23 @@ export function ProductActions({ productName }: { productName: string }) {
     }
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      toast.success("Link copied to clipboard", { id: "share-link" });
     } catch {
-      // Clipboard access can be blocked; there is nothing else to do.
+      toast.error(
+        "Couldn't copy the link. Please copy it from the address bar.",
+        {
+          id: "share-link",
+        },
+      );
     }
   }
 
   return (
     <div className="flex flex-wrap items-center gap-x-10 gap-y-3">
-      {/* Visual toggle only; it will be wired to the wishlist service later. */}
       <button
         type="button"
         aria-pressed={wishlisted}
-        onClick={() => setWishlisted((value) => !value)}
+        onClick={() => toggle(product)}
         className={actionClass}
       >
         <Heart
@@ -53,7 +58,7 @@ export function ProductActions({ productName }: { productName: string }) {
       </Link>
       <button type="button" onClick={share} className={actionClass}>
         <Share2 aria-hidden className="size-4" />
-        {copied ? "Link copied" : "Share"}
+        Share
       </button>
     </div>
   );

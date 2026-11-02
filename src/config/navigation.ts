@@ -24,7 +24,7 @@ export const mainNav: { links: NavLink[]; categoryLabel: string } = {
 };
 
 export const headerActions = {
-  search: { label: "Search", href: "/search" },
+  search: { label: "Search", href: "/products#search" },
   cart: { label: "Cart", href: "/cart" },
   wishlist: { label: "Wishlist", href: "/wishlist" },
   account: { label: "Account", href: "/login" },

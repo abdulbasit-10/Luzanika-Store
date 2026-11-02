@@ -14,6 +14,8 @@ export interface ProductDetail {
   name: string;
   /** One-line summary shown under the title. */
   tagline?: string;
+  /** Short descriptors such as scent notes ("Woody", "Amber"); the cart shows them under the name. */
+  notes?: string[];
   /** The first image is shown by default. */
   images: ProductImage[];
   prices: RegionalPrice[];

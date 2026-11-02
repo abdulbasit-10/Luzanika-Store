@@ -9,6 +9,7 @@ import {
   mainNav,
   type NavLink,
 } from "@/config/navigation";
+import { useAccountHref } from "@/features/auth/use-account-href";
 import { useUiStore } from "@/stores/ui-store";
 
 export function MobileNavToggle() {
@@ -69,6 +70,7 @@ function MobileNavSection({
 export function MobileNavPanel() {
   const isOpen = useUiStore((state) => state.isMobileNavOpen);
   const setOpen = useUiStore((state) => state.setMobileNavOpen);
+  const accountHref = useAccountHref();
 
   if (!isOpen) return null;
 
@@ -90,7 +92,7 @@ export function MobileNavPanel() {
         links={[
           headerActions.search,
           headerActions.wishlist,
-          headerActions.account,
+          { ...headerActions.account, href: accountHref },
         ]}
         onNavigate={close}
       />

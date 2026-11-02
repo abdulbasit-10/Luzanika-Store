@@ -1,28 +1,27 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { useState } from "react";
 
+import { useWishlist } from "@/features/wishlist/use-wishlist";
+import type { WishlistProduct } from "@/stores/wishlist-store";
 import { cn } from "@/utils/cn";
 
 interface WishlistButtonProps {
-  productName: string;
+  product: WishlistProduct;
   className?: string;
 }
 
-/** Visual toggle only; it will be wired to the wishlist service later. */
-export function WishlistButton({
-  productName,
-  className,
-}: WishlistButtonProps) {
-  const [active, setActive] = useState(false);
+/** Heart on a product card. Filled when the product is in the signed-in user's wishlist. */
+export function WishlistButton({ product, className }: WishlistButtonProps) {
+  const { has, toggle } = useWishlist();
+  const active = has(product.id);
 
   return (
     <button
       type="button"
       aria-pressed={active}
-      aria-label={`${active ? "Remove" : "Add"} ${productName} ${active ? "from" : "to"} wishlist`}
-      onClick={() => setActive((value) => !value)}
+      aria-label={`${active ? "Remove" : "Add"} ${product.name} ${active ? "from" : "to"} wishlist`}
+      onClick={() => toggle(product)}
       className={cn(
         "flex size-8 items-center justify-center rounded-full bg-surface shadow-card transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
