@@ -60,6 +60,8 @@ let pool: pg.Pool;
 beforeAll(async () => {
   pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
   await importSampleCatalog(pool);
+  // Earlier files (admin stock) change stock; these tests check what the import made.
+  await exec("UPDATE inventory SET on_hand = 25, reserved = 0");
 });
 
 afterAll(async () => {

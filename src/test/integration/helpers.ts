@@ -31,8 +31,10 @@ export interface CallOptions {
   body?: unknown;
   /** A multipart upload. The content type (with its boundary) is set automatically. */
   form?: FormData;
-  /** Value of the session cookie to send. */
+  /** Value of the customer session cookie to send. */
   cookie?: string;
+  /** Value of the admin (staff) session cookie to send. */
+  staffCookie?: string;
   ip?: string;
   headers?: Record<string, string>;
 }
@@ -45,8 +47,10 @@ export interface CallResult {
   /** The response body exactly as sent, for images and other binary answers. */
   bytes: Buffer;
   headers: Headers;
-  /** Session cookie set by the response: its value, "" when cleared, undefined when untouched. */
+  /** Customer session cookie set by the response: its value, "" when cleared, undefined when untouched. */
   cookie: string | undefined;
+  /** Same for the admin (staff) cookie. */
+  staffCookie: string | undefined;
 }
 
 /** Calls a route handler the way Next.js would, without a running server. */
@@ -60,8 +64,17 @@ export async function call(
     ...(options.body !== undefined
       ? { "content-type": "application/json" }
       : {}),
-    ...(options.cookie !== undefined
-      ? { cookie: `lz_session=${options.cookie}` }
+    ...(options.cookie !== undefined || options.staffCookie !== undefined
+      ? {
+          cookie: [
+            options.cookie !== undefined ? `lz_session=${options.cookie}` : "",
+            options.staffCookie !== undefined
+              ? `lz_staff=${options.staffCookie}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join("; "),
+        }
       : {}),
     ...options.headers,
   };
@@ -89,6 +102,9 @@ export async function call(
   const match = setCookie
     ? /(?:^|,\s*)lz_session=([^;]*)/.exec(setCookie)
     : null;
+  const staffMatch = setCookie
+    ? /(?:^|,\s*)lz_staff=([^;]*)/.exec(setCookie)
+    : null;
 
   return {
     status: response.status,
@@ -97,6 +113,7 @@ export async function call(
     bytes,
     headers: response.headers,
     cookie: match ? match[1] : undefined,
+    staffCookie: staffMatch ? staffMatch[1] : undefined,
   };
 }
 

@@ -25,6 +25,11 @@ export default defineConfig({
       BCRYPT_COST: "4",
       // Lets each test pretend to be a different visitor through X-Real-IP.
       TRUST_PROXY: "true",
+      STAFF_2FA_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
+      // Tests must not depend on the developer's own mail settings.
+      SMTP_HOST: "",
+      MAIL_FROM: "",
+      CONTACT_TO_EMAIL: "",
     },
   },
 });

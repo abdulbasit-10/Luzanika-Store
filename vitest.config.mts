@@ -22,6 +22,8 @@ export default defineConfig({
       LOG_LEVEL: "silent",
       BCRYPT_COST: "4",
       NEXT_PUBLIC_API_URL: "/api/v1",
+      // A fixed key for the admin tests only (32 bytes, base64).
+      STAFF_2FA_ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
     },
   },
 });
