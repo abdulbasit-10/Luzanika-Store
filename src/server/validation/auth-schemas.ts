@@ -9,7 +9,7 @@ export const email = z
   .toLowerCase()
   .pipe(z.email("Please enter a valid email address"));
 
-const personName = (label: string) =>
+export const personName = (label: string) =>
   z
     .string()
     .trim()

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 export const contactSchema = z.object({
-  name: z.string().trim().min(1, "Please enter your name"),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Please enter your name")
+    .max(80, "Please keep your name under 80 characters"),
   email: z.email("Please enter a valid email address"),
   phone: z
     .string()

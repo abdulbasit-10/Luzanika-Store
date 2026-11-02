@@ -159,7 +159,11 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   return user ? toAuthUser(user) : null;
 }
 
-/** POST /auth/forgot-password: asks for a reset link. Always succeeds, whether or not the email has an account. */
+/**
+ * POST /auth/forgot-password: asks for a reset link. Rejects with
+ * AuthError("email_not_registered") when no account has this email (a
+ * deliberate choice: sign-up already tells people when an email is taken).
+ */
 export async function requestPasswordReset(email: string): Promise<void> {
   await request(() => apiPost("/auth/forgot-password", { email }));
 }
