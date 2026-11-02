@@ -36,6 +36,8 @@ export interface OrderRow {
   discount_total: string;
   shipping_total: string;
   tax_total: string;
+  /** null: no tax worked out. true: the tax is already inside the prices. false: added on top. */
+  tax_included: boolean | null;
   total: string;
   ship_name: string;
   ship_company: string | null;
@@ -84,6 +86,7 @@ export interface NewOrder {
   discountTotal: number;
   shippingTotal: number;
   taxTotal: number;
+  taxIncluded: boolean | null;
   total: number;
   shipName: string;
   shipCompany: string | null;
@@ -118,7 +121,7 @@ export interface InventoryLock {
 const ORDER_COLUMNS = `o.id, o.number, o.market, o.currency, o.customer_id, o.email, o.phone,
   o.status, o.payment_status, o.payment_method, o.stock_state, o.reservation_expires_at,
   (SELECT p.provider FROM payments p WHERE p.order_id = o.id ORDER BY p.created_at DESC, p.id LIMIT 1) AS payment_provider,
-  o.subtotal, o.discount_total, o.shipping_total, o.tax_total, o.total,
+  o.subtotal, o.discount_total, o.shipping_total, o.tax_total, o.tax_included, o.total,
   o.ship_name, o.ship_company, o.ship_country, o.ship_city, o.ship_address, o.ship_zip,
   o.bill_country, o.bill_city, o.bill_address, o.bill_zip,
   o.placed_at, o.paid_at, o.cancelled_at, o.cancel_reason`;
@@ -140,11 +143,11 @@ export const orderRepository = {
     const rows = await selectRows<{ id: string }>(
       `INSERT INTO orders (number, market, currency, customer_id, idempotency_key, email, phone,
          payment_method, reservation_expires_at, subtotal, discount_total, shipping_total, tax_total,
-         total, ship_name, ship_company, ship_country, ship_city, ship_address, ship_zip,
+         tax_included, total, ship_name, ship_company, ship_country, ship_city, ship_address, ship_zip,
          bill_country, bill_city, bill_address, bill_zip, accepted_terms_at)
        VALUES (:number, :market, :currency, :customerId, :idempotencyKey, :email, :phone,
          :paymentMethod, :reservationExpiresAt, :subtotal, :discountTotal, :shippingTotal, :taxTotal,
-         :total, :shipName, :shipCompany, :shipCountry, :shipCity, :shipAddress, :shipZip,
+         :taxIncluded, :total, :shipName, :shipCompany, :shipCountry, :shipCity, :shipAddress, :shipZip,
          :billCountry, :billCity, :billAddress, :billZip, now())
        RETURNING id`,
       {

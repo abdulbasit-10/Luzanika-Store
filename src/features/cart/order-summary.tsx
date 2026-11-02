@@ -34,6 +34,14 @@ export function OrderSummary({
         {[
           ["Total Price", money(totals.subtotal)],
           ["Total Price (Discount)", money(totals.discount)],
+          [
+            "Shipping",
+            !totals.pricingReady
+              ? "…"
+              : totals.shipping === 0 && totals.selectedCount > 0
+                ? "Free"
+                : money(totals.shipping),
+          ],
           ["Tax & Fee", money(totals.tax)],
         ].map(([label, value]) => (
           <div key={label} className="flex justify-between gap-4">
@@ -47,6 +55,12 @@ export function OrderSummary({
         <p>Total Price</p>
         <p aria-live="polite">{money(totals.total)}</p>
       </div>
+      {totals.vatIncluded && totals.total > 0 ? (
+        <p className="mt-1 text-right text-xs text-muted-foreground">
+          Includes {totals.vatIncluded.ratePercent}% VAT:{" "}
+          {money(totals.vatIncluded.amount)}
+        </p>
+      ) : null}
 
       <div className="mt-5">{children}</div>
     </aside>

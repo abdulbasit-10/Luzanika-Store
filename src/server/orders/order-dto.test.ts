@@ -26,6 +26,7 @@ function order(overrides: Partial<OrderRow> = {}): OrderRow {
     discount_total: "0",
     shipping_total: "0",
     tax_total: "0",
+    tax_included: null,
     total: "267000",
     ship_name: "Ada Lovelace",
     ship_company: null,

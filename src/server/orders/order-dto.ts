@@ -45,7 +45,10 @@ export interface OrderDto {
   subtotal: number;
   discountTotal: number;
   shippingTotal: number;
+  /** With `taxIncluded`, the part of `total` that is tax. */
   taxTotal: number;
+  /** null: no tax worked out. true: the tax is already inside the prices. false: added on top. */
+  taxIncluded: boolean | null;
   total: number;
   email: string;
   phone: string;
@@ -95,6 +98,7 @@ export function toOrderDto(row: OrderRow, items: OrderItemRow[]): OrderDto {
     discountTotal: Number(row.discount_total),
     shippingTotal: Number(row.shipping_total),
     taxTotal: Number(row.tax_total),
+    taxIncluded: row.tax_included,
     total: Number(row.total),
     email: row.email,
     phone: row.phone,

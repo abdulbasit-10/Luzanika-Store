@@ -7,6 +7,7 @@ import { siteConfig } from "@/config/site";
 import { AuthSync } from "@/features/auth/auth-sync";
 import { PendingActionRunner } from "@/features/auth/pending-action-runner";
 import { CookieConsentBanner } from "@/features/cookies/cookie-consent-banner";
+import { RegionSync } from "@/features/region/region-sync";
 import { QueryProvider } from "@/providers/query-provider";
 
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col font-sans">
         <QueryProvider>
           <AuthSync />
+          <RegionSync />
           <PendingActionRunner />
           {children}
           <CookieConsentBanner />

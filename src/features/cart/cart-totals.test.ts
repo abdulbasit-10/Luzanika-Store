@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { CartLine } from "@/features/cart/cart-service";
+import type { Pricing } from "@/features/cart/pricing-service";
 
 import { getCartTotals, getItemCount } from "./cart-totals";
 
@@ -58,6 +59,64 @@ describe("getCartTotals", () => {
 
   it("is zero for an empty cart", () => {
     expect(getCartTotals([])).toMatchObject({ subtotal: 0, selectedCount: 0 });
+  });
+});
+
+describe("getCartTotals with shipping and VAT", () => {
+  const pk: Pricing = {
+    market: "PK",
+    shippingFee: 30_000,
+    taxIncluded: null,
+    vatRatePercent: null,
+  };
+  const de: Pricing = {
+    market: "DE",
+    shippingFee: 1_900,
+    taxIncluded: true,
+    vatRatePercent: 19,
+  };
+
+  it("adds the flat shipping fee once, not per item", () => {
+    const totals = getCartTotals(
+      [line({ quantity: 3, unitPrice: { amount: 10_000, currency: "PKR" } })],
+      pk,
+    );
+
+    expect(totals).toMatchObject({
+      subtotal: 30_000,
+      shipping: 30_000,
+      total: 60_000,
+      vatIncluded: null,
+      pricingReady: true,
+    });
+  });
+
+  it("charges no shipping when nothing is selected", () => {
+    const totals = getCartTotals([line({ selected: false })], pk);
+
+    expect(totals).toMatchObject({ shipping: 0, total: 0, selectedCount: 0 });
+  });
+
+  it("shows the VAT that is already inside a German total without adding it", () => {
+    const totals = getCartTotals(
+      [line({ quantity: 1, unitPrice: { amount: 10_000, currency: "EUR" } })],
+      de,
+    );
+
+    // (10 000 + 1 900) x 19 / 119 = 1 900, and the total stays 11 900.
+    expect(totals.total).toBe(11_900);
+    expect(totals.tax).toBe(0);
+    expect(totals.vatIncluded).toEqual({ ratePercent: 19, amount: 1_900 });
+  });
+
+  it("is not ready, and adds nothing, until the pricing has loaded", () => {
+    const totals = getCartTotals([line()]);
+
+    expect(totals).toMatchObject({
+      shipping: 0,
+      vatIncluded: null,
+      pricingReady: false,
+    });
   });
 });
 

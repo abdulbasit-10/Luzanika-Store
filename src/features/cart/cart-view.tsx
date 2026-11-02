@@ -8,6 +8,7 @@ import { CheckoutAction } from "@/features/cart/checkout-action";
 import { OrderSummary } from "@/features/cart/order-summary";
 import { getCartTotals, getItemCount } from "@/features/cart/cart-totals";
 import { useCart } from "@/features/cart/use-cart";
+import { usePricing } from "@/features/cart/use-pricing";
 import { useHydrated } from "@/hooks/use-hydrated";
 import { useAuthReady } from "@/stores/auth-store";
 import { useUiStore } from "@/stores/ui-store";
@@ -37,7 +38,8 @@ export function CartView() {
   const region = useUiStore((state) => state.region);
 
   const itemCount = getItemCount(lines);
-  const totals = getCartTotals(lines);
+  const { pricing } = usePricing(region);
+  const totals = getCartTotals(lines, pricing);
 
   return (
     <Container className="pt-12 pb-16 lg:pt-[min(100px,6.5dvh)] lg:pb-20">

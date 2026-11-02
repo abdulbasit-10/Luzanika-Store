@@ -52,7 +52,10 @@ export interface Order {
   subtotal: number;
   discountTotal: number;
   shippingTotal: number;
+  /** With `taxIncluded`, the part of `total` that is tax. */
   taxTotal: number;
+  /** null: no tax worked out. true: the tax is already inside the prices. false: added on top. */
+  taxIncluded: boolean | null;
   total: number;
   email: string;
   phone: string;

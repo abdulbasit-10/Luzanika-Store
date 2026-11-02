@@ -108,7 +108,13 @@ export function OrderConfirmationView() {
   const rows = [
     ["Order code:", order.number],
     ["Date:", orderDateFormat.format(new Date(order.placedAt))],
+    ...(order.shippingTotal > 0
+      ? [["Shipping:", formatRegionalPrice(order.shippingTotal, order.market)]]
+      : []),
     ["Total:", formatRegionalPrice(order.total, order.market)],
+    ...(order.taxIncluded && order.taxTotal > 0
+      ? [["Includes VAT:", formatRegionalPrice(order.taxTotal, order.market)]]
+      : []),
     ["Payment method:", paymentMethodLabels[order.paymentMethod]],
   ];
 

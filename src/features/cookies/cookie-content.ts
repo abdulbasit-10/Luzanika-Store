@@ -67,16 +67,16 @@ export const cookieTypes: CookieType[] = [
   {
     key: "essential",
     title: "Essential Cookies",
-    text: "Help core boutique features—such as basket persistence, order completion, and tokenized session access—function correctly.",
+    text: "Help core boutique features—such as basket persistence, order completion, tokenized session access, and remembering your chosen country and currency (PKR or EUR)—function correctly.",
     tag: "Strictly Necessary • Required",
     badge: "Always Active",
     switchText:
-      "Required for basic website functionality, navigation, and bag checkout security.",
+      "Required for basic website functionality, navigation, your chosen country and currency, and bag checkout security.",
   },
   {
     key: "functional",
     title: "Functional Cookies",
-    text: "Remember your bespoke settings including currency selections (e.g., USD, EUR, PKR), preferred measurements, and volume presets.",
+    text: "Remember your bespoke settings including preferred measurements and volume presets.",
     tag: "Client Preferences & Memory",
     badge: "Configurable",
     switchText:

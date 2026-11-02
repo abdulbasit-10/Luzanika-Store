@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/shared/empty-state";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { getCartTotals } from "@/features/cart/cart-totals";
 import { useCart } from "@/features/cart/use-cart";
+import { usePricing } from "@/features/cart/use-pricing";
 import { CheckoutContent } from "@/features/checkout/checkout-content";
 import type { Order } from "@/features/orders/types";
 import { useHydrated } from "@/hooks/use-hydrated";
@@ -49,8 +50,15 @@ export function CheckoutView() {
     }
   }, [authReady, userId, leaving, router]);
 
+  const {
+    pricing,
+    isLoading: pricingLoading,
+    isError: pricingFailed,
+    refetch: refetchPricing,
+  } = usePricing(region);
+
   const selected = lines.filter((line) => line.selected);
-  const totals = getCartTotals(lines);
+  const totals = getCartTotals(lines, pricing);
 
   function handlePlaced(order: Order) {
     setLeaving(true);
@@ -77,8 +85,20 @@ export function CheckoutView() {
       <div className="mt-6 lg:mt-[min(24px,2.8dvh)]">
         {leaving ? (
           <CheckoutSkeleton label="Order placed. Opening your confirmation…" />
-        ) : !hydrated || !authReady || !userId || isLoading ? (
+        ) : !hydrated ||
+          !authReady ||
+          !userId ||
+          isLoading ||
+          (pricingLoading && !pricingFailed) ? (
           <CheckoutSkeleton label="Loading checkout…" />
+        ) : pricingFailed ? (
+          <EmptyState
+            title="We couldn't load the shipping costs"
+            description="Please check your connection and try again."
+            action={
+              <Button onClick={() => void refetchPricing()}>Try again</Button>
+            }
+          />
         ) : selected.length === 0 ? (
           <EmptyState
             title="Nothing to check out"

@@ -19,12 +19,14 @@ import {
   type OrderRow,
 } from "@/server/repositories/order-repository";
 import {
+  getPricingConfig,
+  getReservationMinutes,
+} from "@/server/services/settings-service";
+import {
   orderNumberSchema,
   type CreateOrderBody,
 } from "@/server/validation/order-schemas";
 
-/** How long an unpaid order holds its stock before giving it back. */
-export const RESERVATION_MINUTES = 30;
 export const MAX_ORDERS_LISTED = 50;
 
 export interface PlacedOrder {
@@ -218,6 +220,8 @@ export async function createOrder(
         unitAmount: Number(row.amount),
         quantity,
       })),
+      body.market,
+      await getPricingConfig(tx),
     );
 
     // The shopper must get exactly what they were shown.
@@ -245,7 +249,7 @@ export async function createOrder(
         phone: body.contact.phone,
         paymentMethod: body.paymentMethod,
         reservationExpiresAt: new Date(
-          Date.now() + RESERVATION_MINUTES * 60_000,
+          Date.now() + (await getReservationMinutes(tx)) * 60_000,
         ),
         ...totals,
         shipName: body.shipping.fullName,
@@ -339,17 +343,24 @@ export async function createOrder(
   }
 }
 
-/** Cancels an unpaid order (locking it first). Returns false if it is no longer waiting for payment. */
-async function cancelUnpaid(
+/**
+ * Cancels an unpaid order (locking it first). Returns false if it is no longer
+ * waiting for payment. `inTransaction` runs in the same transaction after the
+ * cancellation, so something that must be saved with it (the admin's audit
+ * row) is saved together or not at all.
+ */
+export async function cancelUnpaid(
   orderId: string,
   actor: ActorType,
   reason: string,
   actorId: string | null = null,
+  inTransaction?: (tx: Tx) => Promise<void>,
 ): Promise<boolean> {
   const cancelled = await withTransaction(async (tx) => {
     const order = await orderRepository.lockById(orderId, tx);
     if (!order || order.status !== "waiting_payment") return false;
     await cancelLocked(order, tx, actor, reason, actorId);
+    if (inTransaction) await inTransaction(tx);
     return true;
   });
   if (cancelled) await stopPayment(orderId);

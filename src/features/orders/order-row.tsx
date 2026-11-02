@@ -134,6 +134,22 @@ export function OrderRow({ order }: { order: Order }) {
                 </span>
               </li>
             ))}
+            {order.shippingTotal > 0 ? (
+              <li className="flex justify-between gap-3">
+                <span>Shipping</span>
+                <span className="shrink-0 text-muted-foreground">
+                  {formatRegionalPrice(order.shippingTotal, order.market)}
+                </span>
+              </li>
+            ) : null}
+            {order.taxIncluded && order.taxTotal > 0 ? (
+              <li className="flex justify-between gap-3 text-muted-foreground">
+                <span>Total includes VAT</span>
+                <span className="shrink-0">
+                  {formatRegionalPrice(order.taxTotal, order.market)}
+                </span>
+              </li>
+            ) : null}
           </ul>
         </div>
       ) : null}
