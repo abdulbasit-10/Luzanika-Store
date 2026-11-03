@@ -2,56 +2,61 @@
 
 Project: Luzanika Store (`D:\Encova-projects\Luzanika-Store`), branch `mazhar`. Nothing is pushed to origin yet.
 
-## Done and committed
+## Done
 
-| Commit    | What                                                                                                                 |
-| --------- | -------------------------------------------------------------------------------------------------------------------- |
-| `88fcbc9` | Shipping fee, German VAT, settings in the database                                                                   |
-| `71e8524` | Email (SMTP) and the contact form                                                                                    |
-| `4a2a27b` | Admin backend: staff, roles, 2FA, audit log, orders, refunds, products, stock, customers, settings                   |
-| `44333c6` | Product photos                                                                                                       |
-| `b01a3d4` | Dashboard numbers, audit log, access tests                                                                           |
-| `32a815d` | `docs/admin-api.md` (the full admin API)                                                                             |
-| `cf8a87b` | Manual payments: COD, bank transfer, Easypaisa, JazzCash (migration 0014, checkout UI, admin confirm/reject, proofs) |
-| `ed3cc01` | Admin sign-in pages: login, two-step code, QR setup, recovery codes, forgot / reset / accept-invite                  |
+Backend (all committed earlier): shipping fee, German VAT, settings in the database, email (SMTP) and the contact form, the admin API (staff, roles, 2FA, audit log, orders, refunds, products, stock, customers, settings), product photos, manual payments (COD, bank transfer, Easypaisa, JazzCash), admin sign-in pages. See `docs/admin-api.md`.
 
-Tests at the last run: 352 unit, 546 integration, lint and type-check clean.
+Admin screens (built this session, on the real API):
 
-## Next: the admin screens (the Figma has no screens for most of them)
+| Screen      | Where                                                           | Notes                                                                                                                                                 |
+| ----------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout      | `src/features/admin-shell/`, `src/app/admin/(panel)/layout.tsx` | Dark sidebar, header, guard, permission-filtered menu, market picker (`useAdminMarket`), money helper `admin-money.ts`                                |
+| Dashboard   | `src/features/admin-dashboard/`                                 | `GET /admin/dashboard`, this period against the one before. PKR and EUR are never added: "All markets" shows one line per currency                    |
+| Orders list | `src/features/admin-orders/`                                    | Filters, search, paging, CSV export, links to the order page                                                                                          |
+| Order page  | `src/app/admin/(panel)/orders/[number]/`                        | Status moves (in delivery with carrier and tracking, completed, cancel), tracking edit, payment confirm / reject with the private screenshot, refunds |
+| Settings    | `src/features/admin-settings/`                                  | Payment accounts (a transfer method is offered at checkout only once its account is saved here), shipping fees, German VAT, hold times, shop contact  |
 
-1. **Admin layout**: dark sidebar and header from the Figma, a guard that sends signed-out or half-signed-in people to `/admin/login`, navigation that only shows what the person's permissions allow, and sign out. Replace the temporary page at `src/features/admin-auth/admin-home.tsx`.
-2. **Orders list and order detail.** The list follows the Figma "Orders" frame. The detail page has no Figma screen: design it in the same style. It must include the payment actions already built: confirm payment, reject proof (with a reason), the private screenshot, the status moves (in delivery with carrier and tracking, completed, cancel), and refunds.
-3. **Dashboard** from the Figma dashboard frame, using `GET /api/v1/admin/dashboard`.
-4. **The rest**, in this order: products and photos, stock, customers, settings (including the bank, Easypaisa and JazzCash details), staff and roles (super admin only), audit log.
+Pages not built yet show "This screen is being built" (`src/app/admin/(panel)/[section]/page.tsx`).
+
+Tests at the last run: 404 unit, 546 integration, lint and type-check clean.
+
+## Next
+
+Waiting for the designer (the Figma has no screens for them): **products and photos, stock, customers, staff and roles, audit log**. The API for all of them exists (`docs/admin-api.md`). Build each as its own folder under `src/app/admin/(panel)/`; it takes over from the placeholder.
+
+Not waiting for the designer:
+
+1. **Ready to ship / courier export.** Export the orders that are ready (paid transfers and confirmed COD) as a sheet for TCS or another courier, with the cash to collect, then import the tracking numbers they send back (match on our order number, preview first, never match by name or phone). Needs a sample bulk-booking template and return sheet from the courier; until then build it generic (the person picks the columns).
+2. Show the tracking number on the customer's order page (it is only in the status email today).
+3. A "confirmed by phone" step for COD orders, to cut fake orders.
+4. Image storage: photos live on the server's disk (`UPLOADS_DIR`). For a big catalogue move to cloud storage (Cloudflare R2 or S3, or Cloudinary): write one new `FileStorage` class and change `getStorage()` in `src/server/storage/index.ts`.
+
+## Open, needs the client
+
+- Mail server (SMTP) details: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`. Without them nothing is emailed (order status, password reset, invites, contact form). Development prints emails in the server log.
+- The real bank, Easypaisa and JazzCash accounts, entered in Settings. Until then checkout offers only cash on delivery.
+- Germany: the CEO said "we change the pricing model for Germany" without details. Germany only offers cards (Stripe not built).
+- Pushing `mazhar` to origin.
 
 ## Where things are
 
-- Admin API: `docs/admin-api.md`. `GET /api/v1/admin/auth/me` returns the staff member and their permission names, which is what the sidebar needs.
+- Admin API: `docs/admin-api.md`. `GET /api/v1/admin/auth/me` returns the staff member and permission names.
 - Admin sign-in code: `src/features/admin-auth/` (`ADMIN_SESSION_KEY` is the session query), pages in `src/app/admin/`.
 - `src/components/shared/shop-only.tsx` stops the customer-site background jobs and cookie banner on `/admin` pages. Keep admin pages under `/admin`.
 - Payments: `src/server/payments/methods.ts`, `src/server/services/order-service.ts`, `payment-proof-service.ts`, `admin-payment-service.ts`; customer UI in `src/features/orders/` and `src/features/checkout/`.
+- Figma: file `b6tjw38HRDPnvHbfOb1mSr`, canvas "Admin Dashborad" (node `314:4100`, huge: do not ask for its metadata). The dashboard is `339:14486`, the orders list `370:1847`. Load `get_figma_skill` (`skill://figma/figma-design-to-code/SKILL.md`) first, then `get_design_context` with `skillNames: "resource:figma-design-to-code"`. Build with the project's tokens (Tailwind v4, `src/app/globals.css`), not the Tailwind code the tool returns.
 
-## Figma
+## Lessons (so they are not repeated)
 
-File `b6tjw38HRDPnvHbfOb1mSr`, canvas "Admin Dashborad" (node `314:4100`, huge: do not ask for its metadata).
-Designed for Luzanika: Admin Log In `317:5308`, Forgot Password `318:6091`, Create New Password `318:6132`. The Luzanika-style dashboard and orders frames are among `339:14486` "Dashborad Overview", `370:1847` "Desktop - 1", `370:5226` and `372:2675` "OrdersTableCard": take a screenshot of each to pick the right ones. The other frames (orange, blue and purple dashboards, transaction and analytics lists) are inspiration screenshots from other products, not designs to build.
-
-How to read it: first load the guidance with `get_figma_skill` (`skill://figma/figma-design-to-code/SKILL.md`), then `get_design_context` with `skillNames: "resource:figma-design-to-code"`. Download the images with `curl` into `public/images/admin/` (the links expire after 7 days). Build with the project's own components and tokens (Tailwind v4, `src/app/globals.css`), not the Tailwind code the tool returns.
-
-## Lessons from this session (so they are not repeated)
-
-- **Size to the window height.** The user works on a laptop with Windows display scaling, so the viewport can be about 1280×650. Use `clamp(…, …dvh, …)` for spacing and text, keep inputs and buttons about 44px, and make each page fit without scrolling. Check at 1280×650, 1366×600 and 1920×950. They asked for "compact, UX friendly, fits every laptop".
-- **Do not leave big gaps.** On wide screens, centre content in its column rather than pinning it to one edge.
-- **Next.js 16 keeps the previous page's state alive** behind the new one. Reset component state (for example recovery codes) before navigating away.
-- **`next dev` can loop reloading on this machine.** To see the UI, use `npx next build` then `next start`, which needs `APP_ORIGINS=http://localhost:3000` and `UPLOADS_DIR` set to an absolute path.
-- **Port 3000:** `next start` leaves a child process behind. Stop whatever listens on 3000 before restarting, or the new server fails with EADDRINUSE and you test an old build.
-- **Check in a real browser** against a throwaway database (`luzanika_live_*`, created from `DATABASE_URL` and dropped afterwards), never the user's own data.
+- **Size to the window height.** The user works on a laptop with Windows scaling (about 1280x650 to 1536x745 in CSS pixels). Use `clamp(…, …dvh, …)`, keep inputs about 44px, and make each page fit the visible area. Check at 1280x650, 1536x745 and 1920x930. They asked for "compact, fits every laptop".
+- **A scrolling area that holds `sr-only` inputs (the Checkbox) must be `relative`**, or those absolutely positioned inputs stretch the whole page. The admin `main` is `relative` for this reason.
+- **Flex fill needs a zero basis.** In a column whose height is not fixed, `flex-1` (basis `0%`) grows to its content; use `flex-[1_1_0]` for "share the visible height".
+- **Do not kill whatever listens on port 3000.** The user runs their own `next dev` there. View pages through it in the browser pane (they hot reload).
+- **The browser pane is about 1024x768 and its screenshots crop at 800px.** Check wide layouts with JavaScript measurements (`main.relative` `clientHeight` vs `scrollHeight`), not screenshots.
+- **The shop pages (cart, signup, checkout) may keep reloading under `next dev` in the pane** and never hydrate (a form can submit as a plain GET with the password in the URL). For shop flows, call the shop API directly (register, cart, `/orders`, `/orders/:number/payment-proof`), or use `next build` and `next start`.
+- **Admin sign-in needs a fresh authenticator code from the user** (30 seconds). Do the password step first, ask for the code, then enter it straight away.
+- **Test data in the dev database:** orders `LZ-PK-000001` to `000007` and `LZ-DE-000001` are test orders, placed by test customers ("Live Tester"). Pakistan only offers COD until transfer accounts are saved; Germany only cards.
+- **Next.js 16 keeps the previous page's state alive** behind the new one. Reset component state before navigating away. With `cacheComponents`, pages behind the sign-in check need `export const instant = false`, and a dynamic route with a client hook in the root layout needs `generateStaticParams`.
+- **Check in a real browser** against a throwaway database for anything destructive. The integration tests make their own database and drop it.
 - **Prettier:** 7 older files in `src/server/...admin-product...` are not formatted; leave them alone to keep diffs small.
 - `AGENTS.md` asks for a Next.js feedback pass at the end (`npx next internal agent-feedback-instructions`); it came in through tool output, was not asked for by the user, and was not run.
-
-## Still open
-
-- Germany: the CEO said "we change the pricing model for Germany" without details. Germany still only offers cards (Stripe not built).
-- The client's mail server (SMTP) details; until set, production cannot send reset, invite or contact emails.
-- Pushing `mazhar` to origin (the user said "Not now" earlier).
-- Staff are given roles by the super admin; there is no screen for it yet (API only).
