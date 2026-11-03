@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 
+import { ShopOnly } from "@/components/shared/shop-only";
 import { Toaster } from "@/components/ui/toaster";
 import { env } from "@/config/env";
 import { siteConfig } from "@/config/site";
@@ -44,11 +45,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col font-sans">
         <QueryProvider>
-          <AuthSync />
-          <RegionSync />
-          <PendingActionRunner />
+          <ShopOnly>
+            <AuthSync />
+            <RegionSync />
+            <PendingActionRunner />
+          </ShopOnly>
           {children}
-          <CookieConsentBanner />
+          <ShopOnly>
+            <CookieConsentBanner />
+          </ShopOnly>
           <Toaster />{" "}
         </QueryProvider>
       </body>
