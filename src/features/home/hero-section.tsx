@@ -15,7 +15,7 @@ export function HeroSection() {
   return (
     <section className="relative isolate min-h-[28rem] w-full overflow-hidden bg-section lg:h-[min(60vw,calc(100dvh-var(--header-height)))] lg:min-h-[24rem]">
       <Image
-        src="/images/hero.png"
+        src="/images/hero.webp"
         alt=""
         fill
         priority
