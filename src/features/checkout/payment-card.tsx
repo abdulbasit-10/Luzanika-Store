@@ -1,43 +1,92 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, fieldControlClass } from "@/components/ui/field";
 import { Radio } from "@/components/ui/radio";
-import {
-  PAYMENT_METHODS,
-  type CheckoutFormValues,
-  type PaymentMethod,
-} from "@/features/checkout/checkout-schema";
+import { type CheckoutFormValues } from "@/features/checkout/checkout-schema";
 import { cardClass } from "@/features/checkout/contact-card";
 import { COUNTRY_LIST_ID } from "@/features/checkout/shipping-card";
+import { PaymentAccount } from "@/features/orders/payment-account";
+import {
+  paymentMethodLabels,
+  type PaymentOption,
+} from "@/features/orders/payment-methods";
+import { usePaymentOptions } from "@/features/orders/use-payment-options";
+import type { RegionCode } from "@/types/region";
 
-const methodLabels: Record<PaymentMethod, string> = {
-  card: "Pay with Credit Card",
-  paypal: "Pay with PayPal",
-  "gift-card": "Use Gift Card",
-};
-
-const unavailableNotes: Record<Exclude<PaymentMethod, "card">, string> = {
-  paypal: "PayPal checkout is not available yet. Please pay by credit card.",
-  "gift-card": "Gift cards are not available yet. Please pay by credit card.",
-};
+/** What the shopper should know about the chosen way of paying. */
+function MethodNote({
+  option,
+  holdHours,
+}: {
+  option: PaymentOption;
+  holdHours?: number;
+}) {
+  if (option.method === "card") {
+    return (
+      <p role="status" className="mt-2.5 text-sm text-muted-foreground">
+        You enter your card details on our payment provider&apos;s secure page
+        right after you place the order. Your card number is never sent to, or
+        stored by, Luzanika.
+      </p>
+    );
+  }
+  if (option.method === "cod") {
+    return (
+      <p role="status" className="mt-2.5 text-sm text-muted-foreground">
+        Pay in cash to the courier when your order arrives. Please keep the
+        exact amount ready and make sure your phone number is correct: we may
+        call you to confirm the order.
+      </p>
+    );
+  }
+  return (
+    <div role="status" className="mt-2.5 text-sm text-muted-foreground">
+      <p>
+        Send the order total to this account from your{" "}
+        {option.method === "bank_transfer" ? "banking" : "wallet"} app.{" "}
+        {holdHours ? `Your items are held for ${holdHours} hours.` : null} After
+        you place the order, you add the transaction ID or a screenshot of the
+        payment, and we confirm it.
+      </p>
+      <PaymentAccount option={option} />
+    </div>
+  );
+}
 
 /*
  * Payment choice and billing address. There is no card form: card details are
  * typed into the payment provider's secure fields after the order is placed,
- * so they never pass through this page or our server.
+ * so they never pass through this page or our server. The ways to pay come
+ * from the server (they depend on the market and on which accounts are set up).
  */
-export function PaymentCard() {
+export function PaymentCard({ region }: { region: RegionCode }) {
   const {
     register,
     control,
+    setValue,
     formState: { errors },
   } = useFormContext<CheckoutFormValues>();
   const method = useWatch({ control, name: "paymentMethod" });
   const sameBilling = useWatch({ control, name: "sameBilling" });
+  const { options, isLoading, isError, refetch } = usePaymentOptions(region);
+
+  // A choice that is not offered (another market, or an account that was taken away) moves to the first one that is.
+  useEffect(() => {
+    if (
+      options &&
+      options.methods.length > 0 &&
+      !options.methods.some((option) => option.method === method)
+    ) {
+      setValue("paymentMethod", options.methods[0].method);
+    }
+  }, [options, method, setValue]);
+
+  const chosen = options?.methods.find((option) => option.method === method);
 
   return (
     <section aria-labelledby="checkout-payment-title" className={cardClass}>
@@ -48,31 +97,42 @@ export function PaymentCard() {
         How would you like to pay?
       </h2>
 
-      <div
-        role="radiogroup"
-        aria-labelledby="checkout-payment-title"
-        className="mt-2.5 flex flex-wrap gap-x-6 gap-y-2"
-      >
-        {PAYMENT_METHODS.map((value) => (
-          <Radio
-            key={value}
-            value={value}
-            label={methodLabels[value]}
-            {...register("paymentMethod")}
-          />
-        ))}
-      </div>
-
-      {method === "card" ? (
+      {isLoading ? (
         <p role="status" className="mt-2.5 text-sm text-muted-foreground">
-          You enter your card details on our payment provider&apos;s secure page
-          right after you place the order. Your card number is never sent to, or
-          stored by, Luzanika.
+          Loading payment methods…
+        </p>
+      ) : isError || !options ? (
+        <p role="alert" className="mt-2.5 text-sm text-danger">
+          We couldn&apos;t load the payment methods.{" "}
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className="underline"
+          >
+            Try again
+          </button>
         </p>
       ) : (
-        <p role="status" className="mt-2.5 text-sm text-muted-foreground">
-          {unavailableNotes[method]}
-        </p>
+        <>
+          <div
+            role="radiogroup"
+            aria-labelledby="checkout-payment-title"
+            className="mt-2.5 flex flex-wrap gap-x-6 gap-y-2"
+          >
+            {options.methods.map((option) => (
+              <Radio
+                key={option.method}
+                value={option.method}
+                label={paymentMethodLabels[option.method]}
+                {...register("paymentMethod")}
+              />
+            ))}
+          </div>
+
+          {chosen ? (
+            <MethodNote option={chosen} holdHours={options.holdHours} />
+          ) : null}
+        </>
       )}
 
       <div className="mt-3 flex flex-col gap-2.5">

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { FormProvider, useForm, useWatch } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
 import { REGIONS } from "@/config/regions";
@@ -54,7 +54,7 @@ function toOrderInput(
           address: values.billingAddress,
           zip: values.billingZip,
         },
-    paymentMethod: "card",
+    paymentMethod: values.paymentMethod,
     acceptTerms: true,
     // No prices and no card details: the server prices the order itself and
     // only checks that it matches what the shopper saw.
@@ -111,7 +111,8 @@ export function CheckoutContent({
       city: "",
       address: "",
       zip: "",
-      paymentMethod: "card",
+      // Pakistan starts on cash on delivery, Germany on cards; the payment card corrects it if the server offers something else.
+      paymentMethod: region === "PK" ? "cod" : "card",
       sameBilling: true,
       billingCountry: regionCountry,
       billingCity: "",
@@ -120,7 +121,7 @@ export function CheckoutContent({
       acceptTerms: false,
     },
   });
-  const { handleSubmit, setValue, control } = methods;
+  const { handleSubmit, setValue } = methods;
 
   // The country follows the region selector until the shopper edits it.
   const countryEdited = useRef(false);
@@ -151,8 +152,7 @@ export function CheckoutContent({
     },
   });
 
-  const method = useWatch({ control, name: "paymentMethod" });
-  const canPay = method === "card" && !isPending;
+  const canPay = !isPending;
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8">
@@ -172,7 +172,7 @@ export function CheckoutContent({
               countryEdited.current = true;
             }}
           />
-          <PaymentCard />
+          <PaymentCard region={region} />
         </form>
       </FormProvider>
 
@@ -190,11 +190,6 @@ export function CheckoutContent({
             {describeFailure(error)}
           </p>
         ) : null}
-        {method === "card" ? null : (
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Choose credit card to pay.
-          </p>
-        )}
       </OrderSummary>
     </div>
   );

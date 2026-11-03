@@ -2,6 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 
+import { PAYMENT_METHODS } from "@/server/payments/methods";
 import { phone, text } from "@/server/validation/address-schemas";
 import { email } from "@/server/validation/auth-schemas";
 
@@ -32,7 +33,7 @@ export const createOrderSchema = z
       })
       .strict(),
     billing: z.union([z.literal("same"), z.object(address).strict()]),
-    paymentMethod: z.literal("card"),
+    paymentMethod: z.enum(PAYMENT_METHODS),
     acceptTerms: z.literal(true, {
       error: "Please accept the Terms & Conditions to continue",
     }),
@@ -71,6 +72,24 @@ export const idempotencyKeySchema = z
   .regex(/^[A-Za-z0-9_.:-]+$/);
 
 export const orderNumberSchema = z.string().regex(/^LZ-(PK|DE)-\d{6,}$/);
+
+/**
+ * The text part of a payment proof (the screenshot is the file field). A
+ * transaction ID is what the bank or wallet app shows: letters, digits and a
+ * few separators.
+ */
+export const paymentProofFieldsSchema = z
+  .object({
+    transactionId: z
+      .string()
+      .trim()
+      .regex(
+        /^[A-Za-z0-9][A-Za-z0-9 _./-]{3,59}$/,
+        "Enter the transaction ID exactly as your bank or wallet shows it (4 to 60 letters or digits)",
+      )
+      .optional(),
+  })
+  .strict();
 
 export const simulatePaymentSchema = z
   .object({ outcome: z.enum(["success", "failure"]) })

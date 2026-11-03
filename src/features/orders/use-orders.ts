@@ -9,6 +9,7 @@ import {
   cancelOrder,
   fetchOrder,
   fetchOrders,
+  sendPaymentProof,
   simulatePayment,
 } from "@/features/orders/order-service";
 import type { Order } from "@/features/orders/types";
@@ -87,7 +88,7 @@ export function useOrder(number: string | null) {
   };
 }
 
-/** Cancel and (development only) simulate-payment actions, which refresh the order lists. */
+/** Cancel, send a payment proof and (development only) simulate-payment actions, which refresh the order lists. */
 export function useOrderActions() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -129,5 +130,34 @@ export function useOrderActions() {
     onError: (error) => failed(error, "Couldn't simulate the payment."),
   });
 
-  return { cancel, simulate };
+  const sendProof = useMutation({
+    mutationFn: ({
+      number,
+      ...proof
+    }: {
+      number: string;
+      transactionId?: string;
+      screenshot?: File;
+    }) => sendPaymentProof(number, proof),
+    onSuccess: (order) => {
+      show(order);
+      toast.success("Payment proof sent. We will check it and email you.", {
+        id: "order-proof",
+      });
+    },
+    onError: (error) => {
+      if (handleSessionExpired(error)) return;
+      // The server names what is wrong with the transaction ID or the picture.
+      const fields = error instanceof AuthError ? error.fields : null;
+      toast.error(
+        fields?.transactionId ??
+          fields?.screenshot ??
+          explain(error, "Couldn't send your payment proof."),
+        { id: "order-error" },
+      );
+      void queryClient.invalidateQueries({ queryKey: [ORDERS_KEY, userId] });
+    },
+  });
+
+  return { cancel, simulate, sendProof };
 }

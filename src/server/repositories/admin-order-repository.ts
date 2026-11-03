@@ -106,6 +106,19 @@ export interface AdminPaymentRow {
   created_at: Date;
 }
 
+export interface AdminProofRow {
+  id: string;
+  transaction_ref: string | null;
+  file_key: string | null;
+  status: "pending" | "approved" | "rejected";
+  submitted_at: Date;
+  reviewed_at: Date | null;
+  review_note: string | null;
+  reviewer_id: string | null;
+  reviewer_name: string | null;
+  reviewer_email: string | null;
+}
+
 export interface AdminHistoryRow {
   from_status: OrderStatus | null;
   to_status: OrderStatus;
@@ -235,6 +248,52 @@ export const adminOrderRepository = {
       { orderId },
       tx,
     );
+  },
+
+  listProofs(orderId: string, tx?: Tx): Promise<AdminProofRow[]> {
+    return selectRows<AdminProofRow>(
+      `SELECT p.id, p.transaction_ref, p.file_key, p.status, p.submitted_at, p.reviewed_at, p.review_note,
+              p.reviewed_by AS reviewer_id,
+              CASE WHEN s.id IS NULL THEN NULL ELSE s.first_name || ' ' || s.last_name END AS reviewer_name,
+              s.email::text AS reviewer_email
+       FROM payment_proofs p LEFT JOIN staff s ON s.id = p.reviewed_by
+       WHERE p.order_id = :orderId ORDER BY p.submitted_at, p.id`,
+      { orderId },
+      tx,
+    );
+  },
+
+  async findProof(
+    orderId: string,
+    proofId: string,
+    tx?: Tx,
+  ): Promise<{ id: string; file_key: string | null } | undefined> {
+    const rows = await selectRows<{ id: string; file_key: string | null }>(
+      "SELECT id, file_key FROM payment_proofs WHERE order_id = :orderId AND id = :proofId",
+      { orderId, proofId },
+      tx,
+    );
+    return rows[0];
+  },
+
+  /** Marks the proofs of an order that still wait for a decision. Returns how many there were. */
+  async reviewPendingProofs(
+    orderId: string,
+    review: {
+      status: "approved" | "rejected";
+      staffId: string;
+      note: string | null;
+    },
+    tx: Tx,
+  ): Promise<number> {
+    const rows = await selectRows<{ id: string }>(
+      `UPDATE payment_proofs
+       SET status = :status, reviewed_at = now(), reviewed_by = :staffId, review_note = :note
+       WHERE order_id = :orderId AND status = 'pending' RETURNING id`,
+      { orderId, ...review },
+      tx,
+    );
+    return rows.length;
   },
 
   listHistory(orderId: string, tx?: Tx): Promise<AdminHistoryRow[]> {

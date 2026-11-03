@@ -8,10 +8,11 @@ import { ApiError } from "@/server/http/api-error";
 const MAX_INPUT_PIXELS = 25_000_000;
 const ALLOWED_FORMATS = new Set(["jpeg", "png", "webp"]);
 
-export function rejectedImage(message: string): ApiError {
+/** `field` is the name of the upload field the message is about. */
+export function rejectedImage(message: string, field = "photo"): ApiError {
   return new ApiError("validation_failed", {
     message,
-    fields: { photo: message },
+    fields: { [field]: message },
   });
 }
 
@@ -26,6 +27,7 @@ export function rejectedImage(message: string): ApiError {
 export async function processImage(
   input: Buffer,
   shape: (image: Sharp) => Sharp,
+  field = "photo",
 ): Promise<Buffer> {
   try {
     const image = sharp(input, {
@@ -35,13 +37,16 @@ export async function processImage(
 
     const { format } = await image.metadata();
     if (!format || !ALLOWED_FORMATS.has(format)) {
-      throw rejectedImage("Please choose a JPG, PNG or WebP image.");
+      throw rejectedImage("Please choose a JPG, PNG or WebP image.", field);
     }
 
     return await shape(image.rotate()).webp({ quality: 82 }).toBuffer();
   } catch (error) {
     if (error instanceof ApiError) throw error;
     // Corrupt, truncated, or too large once decoded.
-    throw rejectedImage("We couldn't read that image. Please try another one.");
+    throw rejectedImage(
+      "We couldn't read that image. Please try another one.",
+      field,
+    );
   }
 }

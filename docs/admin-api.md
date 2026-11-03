@@ -101,22 +101,23 @@ the shell) and refuses to run when a super admin already exists unless
 Roles are made by the super admin with ticked permissions and given to staff.
 Everyone sees both markets. A staff member's rights are the union of their roles.
 
-| Permission         | Allows                                                           |
-| ------------------ | ---------------------------------------------------------------- |
-| `dashboard.view`   | See the dashboard numbers                                        |
-| `orders.view`      | See orders and their history                                     |
-| `orders.manage`    | Move orders along (delivery, completed) and cancel unpaid orders |
-| `orders.refund`    | Record refunds, including cancelling a paid order                |
-| `products.view`    | See products, prices and photos                                  |
-| `products.manage`  | Create and edit products, variants, prices and photos            |
-| `products.delete`  | Delete (hide) and restore products                               |
-| `catalog.manage`   | Manage categories, collections and the home page sections        |
-| `stock.view`       | See stock levels and movements                                   |
-| `stock.adjust`     | Change stock levels                                              |
-| `customers.view`   | See customers and their orders                                   |
-| `customers.manage` | Block and unblock customers                                      |
-| `settings.view`    | See the shop settings                                            |
-| `settings.manage`  | Change shipping fees, VAT, hold time and shop details            |
+| Permission         | Allows                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `dashboard.view`   | See the dashboard numbers                                                                      |
+| `orders.view`      | See orders and their history                                                                   |
+| `orders.manage`    | Move orders along (delivery, completed) and cancel unpaid orders                               |
+| `orders.refund`    | Record refunds, including cancelling a paid order                                              |
+| `payments.verify`  | Check payment proofs, confirm cash / bank / Easypaisa / JazzCash payments, see the screenshots |
+| `products.view`    | See products, prices and photos                                                                |
+| `products.manage`  | Create and edit products, variants, prices and photos                                          |
+| `products.delete`  | Delete (hide) and restore products                                                             |
+| `catalog.manage`   | Manage categories, collections and the home page sections                                      |
+| `stock.view`       | See stock levels and movements                                                                 |
+| `stock.adjust`     | Change stock levels                                                                            |
+| `customers.view`   | See customers and their orders                                                                 |
+| `customers.manage` | Block and unblock customers                                                                    |
+| `settings.view`    | See the shop settings                                                                          |
+| `settings.manage`  | Change shipping fees, VAT, hold time and shop details                                          |
 
 **Super admin only** (a role can never give these away): managing staff,
 managing roles and reading the audit log. A super admin has every permission.
@@ -206,13 +207,19 @@ The period defaults to the last 30 days up to and including today (at most
 
 ### Orders
 
-| Method | Path                       | Permission      | Notes                                                                                                   |
-| ------ | -------------------------- | --------------- | ------------------------------------------------------------------------------------------------------- |
-| GET    | `/orders`                  | `orders.view`   | Filters `market`, `status`, `paymentStatus`, `from`, `to`, `search` (number, email, recipient), paging. |
-| GET    | `/orders/:number`          | `orders.view`   | Items, addresses, payments, status history, refunds, `amounts.refundableTotal`.                         |
-| POST   | `/orders/:number/status`   | `orders.manage` | See below. The customer is emailed; an email failure is logged and never undoes the change.             |
-| PATCH  | `/orders/:number/tracking` | `orders.manage` | `{ carrier, trackingNumber }` while in delivery. The customer is not emailed again.                     |
-| POST   | `/orders/:number/refunds`  | `orders.refund` | See below.                                                                                              |
+| Method | Path                                                 | Permission        | Notes                                                                                                   |
+| ------ | ---------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
+| GET    | `/orders`                                            | `orders.view`     | Filters `market`, `status`, `paymentStatus`, `from`, `to`, `search` (number, email, recipient), paging. |
+| GET    | `/orders/:number`                                    | `orders.view`     | Items, addresses, payments, status history, refunds, `amounts.refundableTotal`.                         |
+| POST   | `/orders/:number/status`                             | `orders.manage`   | See below. The customer is emailed; an email failure is logged and never undoes the change.             |
+| PATCH  | `/orders/:number/tracking`                           | `orders.manage`   | `{ carrier, trackingNumber }` while in delivery. The customer is not emailed again.                     |
+| POST   | `/orders/:number/refunds`                            | `orders.refund`   | See below.                                                                                              |
+| POST   | `/orders/:number/payment/confirm`                    | `payments.verify` | `{ note? }`. The money is there. See "Payments" below.                                                  |
+| POST   | `/orders/:number/payment/reject`                     | `payments.verify` | `{ reason }`. The customer's payment proof does not check out. See "Payments" below.                    |
+| GET    | `/orders/:number/payment-proofs/:proofId/screenshot` | `payments.verify` | The customer's screenshot (private, never cached).                                                      |
+
+`GET /orders/:number` also returns `paymentMethod`, `paymentActions`
+(`{ canConfirm, canReject }`: what to offer right now) and `paymentProofs`.
 
 Statuses: `waiting_payment`, `processing`, `in_delivery`, `completed`,
 `cancelled`, `refunded`. Allowed moves; anything else is `409 invalid_status_transition`:
@@ -224,7 +231,10 @@ Statuses: `waiting_payment`, `processing`, `in_delivery`, `completed`,
 ```
 
 There is no going back. A **paid** order is never cancelled here: record a
-refund instead; a full refund ends it as `refunded`.
+refund instead; a full refund ends it as `refunded`. The one exception is an
+unpaid **cash on delivery** order: it is `processing` from the start, so while
+its cash has not been collected staff can still cancel it (a fake order, a
+parcel refused at the door) and its goods go back into stock.
 
 **Refund**: `{ amount, reason, restock?, items?: [{ orderItemId, quantity }] }`.
 `amount` may not exceed what is still refundable. A partial refund sets
@@ -233,6 +243,39 @@ items go back into stock (list them in `items`, or leave `items` out to put
 back everything not yet back) and a `return` row is written to the stock
 ledger. No money moves until a payment provider exists; the record is the
 bookkeeping.
+
+### Payments (cash on delivery, bank transfer, Easypaisa, JazzCash)
+
+There is no payment gateway for these: the customer pays outside the shop and
+staff confirm it. Pakistan only; Germany keeps cards. The customer chooses at
+checkout (`GET /api/v1/payment-methods?market=PK` lists what is offered; a
+transfer method is only offered once its account is set in the settings).
+
+| Method                                   | At checkout                                                                                                                            | Staff                                                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `cod`                                    | The order goes straight to `processing`, payment `pending`; the goods are sold now. No limit.                                          | Phone the customer if needed, ship, then `payment/confirm` when the courier hands over the cash. Until then it can still be cancelled. |
+| `bank_transfer`, `easypaisa`, `jazzcash` | The order is `waiting_payment` and holds its stock for `payments.manualHoldHours` (default 48). The customer sees the account details. | See below.                                                                                                                             |
+
+**Transfers.** After sending the money, the customer posts a transaction ID
+and/or a screenshot to `POST /api/v1/orders/:number/payment-proof` (multipart:
+`transactionId`, `screenshot`; at least one). The payment becomes
+`awaiting_verification`, and the order keeps its stock until staff decide (it
+does not expire while waiting). Staff then:
+
+- `payment/confirm`: sold stock, `processing`, payment `paid`, the proof is
+  `approved`, the customer is emailed. Also works for a customer who paid but
+  sent no proof (staff saw the money in the bank app).
+- `payment/reject { reason }`: payment `failed`, the reason is emailed and shown to
+  the customer, the order gets a fresh hold time, and the customer can send a
+  new proof (at most 5 per order).
+
+A transaction ID cannot pay two orders (a rejected one can be used again).
+Screenshots are re-encoded to WebP (max 2000 px) and kept in private storage
+(`payment-proofs/…`): only `payments.verify` can see them, never the public
+photo address. Everything is written to the audit log (`orders.payment_confirm`,
+`orders.payment_reject`). The dashboard shows `awaitingVerification` (proofs not
+yet checked). Revenue counts an order when it is **paid**, so a cash order counts
+once the cash is collected.
 
 ### Products and photos
 
@@ -313,6 +356,11 @@ the same way the order code does it).
 | ------ | ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ |
 | GET    | `/settings` | `settings.view`   | Shipping fee per market, German VAT rate, unpaid-order hold time, shop contact details.                            |
 | PATCH  | `/settings` | `settings.manage` | Changes only what is sent. New orders use the new values at once; existing orders keep what they were placed with. |
+
+`PATCH /settings` also takes `payments`: `{ manualHoldHours?, bank?, easypaisa?,
+jazzcash? }`, where `bank` is `{ bankName, accountTitle, accountNumber }` and
+the wallets are `{ accountTitle, number }`. A method that is left out stays as it
+is; `null` removes it (it is then no longer offered at checkout).
 
 These live in the database (not environment variables). The shop reads the
 public part (contact details) at `GET /api/v1/settings/shop`, and the cart

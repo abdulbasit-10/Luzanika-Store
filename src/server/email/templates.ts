@@ -154,3 +154,45 @@ export function orderCancelledEmail(input: {
     ].join("\n"),
   };
 }
+
+/** Sent when staff have checked a transfer (bank, Easypaisa, JazzCash) and the money is there. */
+export function orderPaymentConfirmedEmail(input: {
+  to: string;
+  name: string;
+  orderNumber: string;
+}): EmailMessage {
+  return {
+    to: input.to,
+    subject: `We received your payment for order ${input.orderNumber}`,
+    text: [
+      `Hi ${input.name},`,
+      "",
+      `Thank you: we checked your payment and your order ${input.orderNumber} is now being prepared.`,
+      "",
+      "We will email you again when it is handed to the carrier.",
+    ].join("\n"),
+  };
+}
+
+/** Sent when staff cannot match a payment proof, so the customer can send a correct one. */
+export function orderPaymentRejectedEmail(input: {
+  to: string;
+  name: string;
+  orderNumber: string;
+  reason: string;
+}): EmailMessage {
+  return {
+    to: input.to,
+    subject: `We could not confirm your payment for order ${input.orderNumber}`,
+    text: [
+      `Hi ${input.name},`,
+      "",
+      `We could not confirm the payment proof you sent for order ${input.orderNumber}.`,
+      "",
+      `Reason: ${input.reason}`,
+      "",
+      "Please open your order in your account and send the transaction ID or a clear screenshot again.",
+      "Your items are still being held for you for a little longer.",
+    ].join("\n"),
+  };
+}

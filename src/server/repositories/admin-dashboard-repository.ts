@@ -116,6 +116,18 @@ export const adminDashboardRepository = {
     );
   },
 
+  /** Right now: orders whose customer sent a payment proof that no one has checked yet. */
+  awaitingVerification(
+    market: Market | null,
+  ): Promise<{ market: Market; n: number }[]> {
+    return selectRows<{ market: Market; n: number }>(
+      `SELECT o.market, count(*)::int AS n FROM orders o
+       WHERE o.payment_status = 'awaiting_verification' AND ${MARKET_FILTER}
+       GROUP BY o.market`,
+      { market },
+    );
+  },
+
   async newCustomers(period: Period): Promise<number> {
     const rows = await selectRows<{ n: number }>(
       `SELECT count(*)::int AS n FROM customers

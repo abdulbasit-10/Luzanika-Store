@@ -22,6 +22,7 @@ import { formatRegionalPrice } from "@/utils/format-currency";
 const statusLabels: Record<PaymentStatus, string> = {
   paid: "Payment Successful",
   pending: "Payment Pending",
+  awaiting_verification: "Checking Your Payment",
   failed: "Payment Failed",
   refunded: "Refunded",
   partially_refunded: "Partially Refunded",
@@ -39,6 +40,12 @@ function describe(order: Order) {
     return {
       title: "Order Received. Waiting for Payment",
       text: "Your items are held while the payment is completed. If you have any problem, please",
+    };
+  }
+  if (order.paymentMethod === "cod" && order.paymentStatus === "pending") {
+    return {
+      title: "Your Order Has Been Confirmed!",
+      text: "You pay in cash when your order arrives, and we are preparing it now. If you have any problem, please",
     };
   }
   return {

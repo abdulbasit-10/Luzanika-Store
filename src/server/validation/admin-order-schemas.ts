@@ -47,7 +47,14 @@ export const adminOrderListQuerySchema = z.object({
     ])
     .optional(),
   paymentStatus: z
-    .enum(["pending", "paid", "failed", "refunded", "partially_refunded"])
+    .enum([
+      "pending",
+      "awaiting_verification",
+      "paid",
+      "failed",
+      "refunded",
+      "partially_refunded",
+    ])
     .optional(),
   from: dateParam("start", false).optional(),
   to: dateParam("end", true).optional(),
@@ -129,3 +136,32 @@ export const createRefundSchema = z
   .strict();
 
 export type CreateRefundBody = z.infer<typeof createRefundSchema>;
+
+/** Confirming a payment: an optional note for the order's history ("TID 123 checked in the bank app"). */
+export const confirmPaymentSchema = z
+  .object({
+    note: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200, "Keep it under 200 characters")
+      .regex(noControl, "Enter a valid note")
+      .optional(),
+  })
+  .strict();
+
+export type ConfirmPaymentBody = z.infer<typeof confirmPaymentSchema>;
+
+/** Rejecting a payment proof: the reason is sent to the customer, so they know what to fix. */
+export const rejectPaymentSchema = z
+  .object({
+    reason: z
+      .string()
+      .trim()
+      .min(1, "Please give a reason")
+      .max(300, "Keep it under 300 characters")
+      .regex(noControl, "Enter a valid reason"),
+  })
+  .strict();
+
+export type RejectPaymentBody = z.infer<typeof rejectPaymentSchema>;

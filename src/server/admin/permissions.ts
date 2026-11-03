@@ -9,6 +9,8 @@ export const PERMISSIONS = {
   "orders.manage":
     "Move orders along (delivery, completed) and cancel unpaid orders",
   "orders.refund": "Record refunds, including cancelling a paid order",
+  "payments.verify":
+    "Check payment proofs, confirm bank, Easypaisa, JazzCash and cash payments, and see the screenshots",
   "products.view": "See products, prices and photos",
   "products.manage": "Create and edit products, variants, prices and photos",
   "products.delete": "Delete (hide) and restore products",

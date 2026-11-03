@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/server/payments/methods";
 import type {
   Currency,
   Market,
@@ -5,6 +6,8 @@ import type {
   OrderRow,
   OrderStatus,
   PaymentStatus,
+  ProofRow,
+  ProofStatus,
 } from "@/server/repositories/order-repository";
 
 export interface OrderItemDto {
@@ -33,9 +36,16 @@ export interface OrderDto {
   currency: Currency;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: "card";
-  /** Who collects the money ("simulated" only in development); null if no payment attempt exists. */
+  paymentMethod: PaymentMethod;
+  /** Who collects the money ("simulated" only in development, "manual" for cash and transfers); null if no payment attempt exists. */
   paymentProvider: string | null;
+  /** For a transfer: the newest proof the customer sent and what staff made of it. Null until one is sent. */
+  paymentProof: {
+    status: ProofStatus;
+    /** Why staff rejected it, for the customer to fix. */
+    rejectionReason: string | null;
+    submittedAt: string;
+  } | null;
   /** ISO 8601. */
   placedAt: string;
   paidAt: string | null;
@@ -81,7 +91,12 @@ function toItem(row: OrderItemRow): OrderItemDto {
   };
 }
 
-export function toOrderDto(row: OrderRow, items: OrderItemRow[]): OrderDto {
+export function toOrderDto(
+  row: OrderRow,
+  items: OrderItemRow[],
+  proofs: ProofRow[] = [],
+): OrderDto {
+  const proof = proofs.find((candidate) => candidate.order_id === row.id);
   return {
     number: row.number,
     market: row.market,
@@ -90,6 +105,14 @@ export function toOrderDto(row: OrderRow, items: OrderItemRow[]): OrderDto {
     paymentStatus: row.payment_status,
     paymentMethod: row.payment_method,
     paymentProvider: row.payment_provider,
+    paymentProof: proof
+      ? {
+          status: proof.status,
+          rejectionReason:
+            proof.status === "rejected" ? proof.review_note : null,
+          submittedAt: new Date(proof.submitted_at).toISOString(),
+        }
+      : null,
     placedAt: new Date(row.placed_at).toISOString(),
     paidAt: iso(row.paid_at),
     reservationExpiresAt:

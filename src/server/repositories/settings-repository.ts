@@ -8,11 +8,21 @@ export interface Social {
   href: string;
 }
 
+/** Where customers send money. A method that is missing is not offered at checkout. */
+export interface PaymentDetails {
+  bank?: { bankName: string; accountTitle: string; accountNumber: string };
+  easypaisa?: { accountTitle: string; number: string };
+  jazzcash?: { accountTitle: string; number: string };
+}
+
 export interface SettingsRecord {
   shippingFeePk: number;
   shippingFeeDe: number;
   vatRateDePercent: number;
   reservationMinutes: number;
+  /** How long an order that waits for a transfer holds its stock. */
+  manualHoldHours: number;
+  paymentDetails: PaymentDetails;
   contactEmail: string;
   contactAddress: string;
   customerServiceLabel: string;
@@ -26,6 +36,8 @@ interface SettingsRow {
   shipping_fee_de: string;
   vat_rate_de_percent: string;
   reservation_minutes: number;
+  manual_hold_hours: number;
+  payment_details: PaymentDetails;
   contact_email: string;
   contact_address: string;
   customer_service_label: string;
@@ -39,6 +51,9 @@ export interface SettingsChanges {
   shippingFeeDe?: number;
   vatRateDePercent?: number;
   reservationMinutes?: number;
+  manualHoldHours?: number;
+  /** Replaces all payment details: the service merges a patch into the current ones first. */
+  paymentDetails?: PaymentDetails;
   contactEmail?: string;
   contactAddress?: string;
   customerServiceLabel?: string;
@@ -52,6 +67,8 @@ function toRecord(row: SettingsRow): SettingsRecord {
     shippingFeeDe: Number(row.shipping_fee_de),
     vatRateDePercent: Number(row.vat_rate_de_percent),
     reservationMinutes: row.reservation_minutes,
+    manualHoldHours: row.manual_hold_hours,
+    paymentDetails: row.payment_details,
     contactEmail: row.contact_email,
     contactAddress: row.contact_address,
     customerServiceLabel: row.customer_service_label,
@@ -62,6 +79,7 @@ function toRecord(row: SettingsRow): SettingsRecord {
 }
 
 const COLUMNS = `shipping_fee_pk, shipping_fee_de, vat_rate_de_percent, reservation_minutes,
+  manual_hold_hours, payment_details,
   contact_email, contact_address, customer_service_label, customer_service_phone, socials, updated_at`;
 
 export const settingsRepository = {
@@ -99,6 +117,8 @@ export const settingsRepository = {
          shipping_fee_de = COALESCE(:shippingFeeDe, shipping_fee_de),
          vat_rate_de_percent = COALESCE(:vatRateDePercent, vat_rate_de_percent),
          reservation_minutes = COALESCE(:reservationMinutes, reservation_minutes),
+         manual_hold_hours = COALESCE(:manualHoldHours, manual_hold_hours),
+         payment_details = COALESCE(CAST(:paymentDetails AS jsonb), payment_details),
          contact_email = COALESCE(:contactEmail, contact_email),
          contact_address = COALESCE(:contactAddress, contact_address),
          customer_service_label = COALESCE(:customerServiceLabel, customer_service_label),
@@ -111,6 +131,10 @@ export const settingsRepository = {
         shippingFeeDe: changes.shippingFeeDe ?? null,
         vatRateDePercent: changes.vatRateDePercent ?? null,
         reservationMinutes: changes.reservationMinutes ?? null,
+        manualHoldHours: changes.manualHoldHours ?? null,
+        paymentDetails: changes.paymentDetails
+          ? JSON.stringify(changes.paymentDetails)
+          : null,
         contactEmail: changes.contactEmail ?? null,
         contactAddress: changes.contactAddress ?? null,
         customerServiceLabel: changes.customerServiceLabel ?? null,

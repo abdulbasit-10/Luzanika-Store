@@ -14,6 +14,7 @@ import { logger, serializeError } from "@/server/logger";
 import {
   canStaffMove,
   nextStaffStatuses,
+  paymentActions,
   type StaffTargetStatus,
 } from "@/server/orders/order-flow";
 import {
@@ -29,7 +30,7 @@ import {
   type PaymentStatus,
 } from "@/server/repositories/order-repository";
 import type { AdminContext } from "@/server/services/staff-admin-service";
-import { cancelUnpaid } from "@/server/services/order-service";
+import { cancelUnpaid, cancelUnpaidCod } from "@/server/services/order-service";
 import { planRefund, RefundRuleError } from "@/server/orders/refund-rules";
 import { orderNumberSchema } from "@/server/validation/order-schemas";
 import type {
@@ -66,6 +67,19 @@ export interface AdminOrderDto {
   allowedNextStatuses: StaffTargetStatus[];
   paymentStatus: PaymentStatus;
   paymentMethod: string;
+  /** What staff with the "payments.verify" permission may do about the money right now. */
+  paymentActions: { canConfirm: boolean; canReject: boolean };
+  /** What the customer sent as proof of a transfer, oldest first. The screenshot has its own (private) address. */
+  paymentProofs: {
+    id: string;
+    transactionId: string | null;
+    hasScreenshot: boolean;
+    status: "pending" | "approved" | "rejected";
+    submittedAt: string;
+    reviewedAt: string | null;
+    reviewNote: string | null;
+    reviewedBy: { id: string; name: string; email: string } | null;
+  }[];
   stockState: string;
   placedAt: string;
   paidAt: string | null;
@@ -205,13 +219,16 @@ export async function loadAdminOrder(
   row: AdminOrderRow,
   tx?: Tx,
 ): Promise<AdminOrderDto> {
-  const [items, payments, history, refunds, refundItems] = await Promise.all([
-    adminOrderRepository.listItems(row.id, tx),
-    adminOrderRepository.listPayments(row.id, tx),
-    adminOrderRepository.listHistory(row.id, tx),
-    adminOrderRepository.listRefunds(row.id, tx),
-    adminOrderRepository.listRefundItems(row.id, tx),
-  ]);
+  const [items, payments, history, refunds, refundItems, proofs] =
+    await Promise.all([
+      adminOrderRepository.listItems(row.id, tx),
+      adminOrderRepository.listPayments(row.id, tx),
+      adminOrderRepository.listHistory(row.id, tx),
+      adminOrderRepository.listRefunds(row.id, tx),
+      adminOrderRepository.listRefundItems(row.id, tx),
+      adminOrderRepository.listProofs(row.id, tx),
+    ]);
+  const facts = factsOf(row);
 
   const refundedTotal = refunds.reduce(
     (sum, refund) => sum + Number(refund.amount),
@@ -224,9 +241,31 @@ export async function loadAdminOrder(
     market: row.market,
     currency: row.currency,
     status: row.status,
-    allowedNextStatuses: nextStaffStatuses(row.status),
+    allowedNextStatuses: nextStaffStatuses(row.status, facts),
     paymentStatus: row.payment_status,
     paymentMethod: row.payment_method,
+    paymentActions: paymentActions({
+      method: row.payment_method,
+      status: row.status,
+      paymentStatus: row.payment_status,
+    }),
+    paymentProofs: proofs.map((proof) => ({
+      id: proof.id,
+      transactionId: proof.transaction_ref,
+      hasScreenshot: proof.file_key !== null,
+      status: proof.status,
+      submittedAt: new Date(proof.submitted_at).toISOString(),
+      reviewedAt: iso(proof.reviewed_at),
+      reviewNote: proof.review_note,
+      reviewedBy:
+        proof.reviewer_id && proof.reviewer_name && proof.reviewer_email
+          ? {
+              id: proof.reviewer_id,
+              name: proof.reviewer_name,
+              email: proof.reviewer_email,
+            }
+          : null,
+    })),
     stockState: row.stock_state,
     placedAt: new Date(row.placed_at).toISOString(),
     paidAt: iso(row.paid_at),
@@ -354,6 +393,13 @@ export async function notifyCustomer(message: EmailMessage): Promise<void> {
   }
 }
 
+const factsOf = (
+  order: Pick<AdminOrderRow, "payment_method" | "payment_status">,
+) => ({
+  method: order.payment_method,
+  paymentStatus: order.payment_status,
+});
+
 const badMove = (from: OrderStatus, to: StaffTargetStatus) =>
   new ApiError("invalid_status_transition", {
     message:
@@ -377,7 +423,7 @@ export async function changeOrderStatus(
   const number = parseOrderNumber(rawNumber);
   const current = await adminOrderRepository.findByNumber(number);
   if (!current) throw notFound();
-  if (!canStaffMove(current.status, body.status)) {
+  if (!canStaffMove(current.status, body.status, factsOf(current))) {
     throw badMove(current.status, body.status);
   }
 
@@ -385,21 +431,19 @@ export async function changeOrderStatus(
 
   if (body.status === "cancelled") {
     const reason = body.reason ?? "Cancelled by staff";
-    const done = await cancelUnpaid(
-      current.id,
-      "staff",
-      reason,
-      ctx.actor.id,
-      (tx) =>
-        recordAuditFor(ctx, tx, number, current.status, "cancelled", {
-          reason,
-        }),
-    );
+    const audit = (tx: Tx) =>
+      recordAuditFor(ctx, tx, number, current.status, "cancelled", { reason });
+    // Cash on delivery is "processing" from the start, so cancelling it also takes the goods back into stock.
+    const unpaidCod = current.status !== "waiting_payment";
+    const done = unpaidCod
+      ? await cancelUnpaidCod(current.id, ctx.actor.id, reason, audit)
+      : await cancelUnpaid(current.id, "staff", reason, ctx.actor.id, audit);
     // Someone paid or cancelled it in the meantime.
     if (!done) {
       const latest = (await adminOrderRepository.findByNumber(number))!;
       throw badMove(latest.status, "cancelled");
     }
+    if (unpaidCod) refreshCatalogCache();
     email = orderCancelledEmail({
       to: current.email,
       name: current.ship_name,
@@ -410,7 +454,7 @@ export async function changeOrderStatus(
     await withTransaction(async (tx) => {
       const locked = await adminOrderRepository.lockByNumber(number, tx);
       if (!locked) throw notFound();
-      if (!canStaffMove(locked.status, body.status)) {
+      if (!canStaffMove(locked.status, body.status, factsOf(locked))) {
         throw badMove(locked.status, body.status);
       }
 
