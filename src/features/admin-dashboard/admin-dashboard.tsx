@@ -2,9 +2,11 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { CalendarDays, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Dropdown } from "@/components/ui/dropdown";
+import { visibleNavGroups } from "@/features/admin-shell/admin-nav";
 import { useAdminMarket } from "@/features/admin-shell/admin-market";
 import { useAdminSession } from "@/features/admin-shell/admin-session";
 import { AdminPageHead } from "@/features/admin-shell/admin-shell";
@@ -78,6 +80,18 @@ export function AdminDashboard() {
   const { marketParam } = useAdminMarket();
   const allowed = staff.isSuperAdmin || permissions.includes("dashboard.view");
   const gap = "gap-[clamp(0.5rem,1.6dvh,1.5rem)]";
+
+  // Someone whose role has no dashboard lands on the first screen they can use instead.
+  const router = useRouter();
+  const firstAllowedHref = visibleNavGroups({
+    isSuperAdmin: staff.isSuperAdmin,
+    permissions,
+  })
+    .flat()
+    .find((item) => item.href !== "/admin")?.href;
+  useEffect(() => {
+    if (!allowed && firstAllowedHref) router.replace(firstAllowedHref);
+  }, [allowed, firstAllowedHref, router]);
 
   const [periodId, setPeriodId] = useState(DEFAULT_PERIOD_ID);
   const [grouping, setGrouping] = useState<Grouping | null>(null);
