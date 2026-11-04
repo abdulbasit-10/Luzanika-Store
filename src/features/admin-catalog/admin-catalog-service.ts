@@ -139,3 +139,18 @@ export const setHomeSection = (
   section: HomeSectionName,
   productIds: string[],
 ) => apiPut(`/admin/home-sections/${section}`, { productIds });
+
+/** When the "Special offers" row ends, and its headline. Both are optional. */
+export interface Offer {
+  /** ISO 8601, or null for a row without a countdown. */
+  endsAt: string | null;
+  headline: string | null;
+}
+
+export async function fetchOffer(): Promise<Offer> {
+  return (await apiGet<{ offer: Offer }>("/admin/home-offer")).offer;
+}
+
+export async function saveOffer(offer: Offer): Promise<Offer> {
+  return (await apiPut<{ offer: Offer }>("/admin/home-offer", offer)).offer;
+}

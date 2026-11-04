@@ -116,6 +116,8 @@ Everyone sees both markets. A staff member's rights are the union of their roles
 | `stock.adjust`     | Change stock levels                                                                            |
 | `customers.view`   | See customers and their orders                                                                 |
 | `customers.manage` | Block and unblock customers                                                                    |
+| `reviews.view`     | See product reviews                                                                            |
+| `reviews.moderate` | Hide and restore product reviews                                                               |
 | `settings.view`    | See the shop settings                                                                          |
 | `settings.manage`  | Change shipping fees, VAT, hold time and shop details                                          |
 
@@ -349,6 +351,20 @@ the same way the order code does it).
 | GET    | `/customers/:id`         | `customers.view`   | Profile (never secrets), addresses, spend per currency, newest 100 orders.                        |
 | POST   | `/customers/:id/block`   | `customers.manage` | `{ reason }`. Signs them out everywhere and refuses their logins. Orders, cart and wishlist stay. |
 | POST   | `/customers/:id/unblock` | `customers.manage` | `{ note? }`.                                                                                      |
+
+### Reviews and the special offer row
+
+Customers write reviews on the shop (see below); staff only moderate them.
+
+| Method | Path                   | Permission                          | Notes                                                                                                                                                                |
+| ------ | ---------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/reviews`             | `reviews.view`                      | Newest first. Filters `status` (`published`, `hidden`), `rating` (1 to 5), `productId`, `search`, paging.                                                            |
+| POST   | `/reviews/:id/hide`    | `reviews.moderate`                  | `{ reason }`. Takes it off the shop and out of the product's rating. Nothing is deleted.                                                                             |
+| POST   | `/reviews/:id/restore` | `reviews.moderate`                  | Shows it again.                                                                                                                                                      |
+| GET    | `/home-offer`          | `products.view` or `catalog.manage` | `{ offer: { endsAt, headline } }`.                                                                                                                                   |
+| PUT    | `/home-offer`          | `catalog.manage`                    | `{ endsAt, headline }`: an ISO time (or `null` for no countdown) and an optional headline. A past time hides the row. `GET /home-sections` also carries the `offer`. |
+
+**Shop side (customers).** `GET /api/v1/products/:slug/reviews` (public; `page`, `pageSize` up to 50) answers the published reviews, the star `summary`, and `viewer` (`sign_in`, `needs_purchase`, `can_review` or `already_reviewed`). `POST /api/v1/products/:slug/reviews { rating, title?, body }` needs a signed-in customer **with a completed order containing the product**, once per product (`403` / `409` otherwise). `PATCH` and `DELETE /api/v1/reviews/:id` change or remove the customer's own. A review shows at once under "First name L."; staff can hide it. A product's `rating_avg` and `rating_count` are always worked out from its published reviews (the sample catalogue's invented ratings were removed). A deleted account's reviews stay as "Former customer". The "% off" of the offer row is worked out from the products' real price and old price, never typed in.
 
 ### Settings
 

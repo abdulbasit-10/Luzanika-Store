@@ -4,6 +4,7 @@ import { Container } from "@/components/ui/container";
 import { RatingStars } from "@/components/ui/rating-stars";
 import { SpecialOffersSection } from "@/features/home/special-offers-section";
 import { ProductDetailsSection } from "@/features/product-detail/product-details-section";
+import { ProductReviews } from "@/features/reviews/product-reviews";
 import { ProductGallery } from "@/features/product-detail/product-gallery";
 import { ProductPurchasePanel } from "@/features/product-detail/product-purchase-panel";
 import { blockGap } from "@/features/product-detail/spacing";
@@ -45,11 +46,15 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
               </p>
             ) : null}
             {product.rating !== undefined ? (
-              <RatingStars
-                className="mt-2"
-                rating={product.rating}
-                reviewCount={product.reviewCount}
-              />
+              <a
+                href="#reviews"
+                className="mt-2 block w-fit hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <RatingStars
+                  rating={product.rating}
+                  reviewCount={product.reviewCount}
+                />
+              </a>
             ) : null}
             <ProductPrice
               prices={product.prices}
@@ -67,6 +72,10 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
             <ProductDetailsSection sections={product.details} />
           </div>
         ) : null}
+
+        <div className="mt-20 lg:mt-28">
+          <ProductReviews slug={product.slug} />
+        </div>
       </Container>
 
       <SpecialOffersSection />

@@ -16,6 +16,7 @@ import { sessionRepository } from "@/server/repositories/session-repository";
 import { addressRepository } from "@/server/repositories/address-repository";
 import { cartRepository } from "@/server/repositories/cart-repository";
 import { cancelOpenOrders } from "@/server/services/order-service";
+import { reviewRepository } from "@/server/repositories/review-repository";
 import { wishlistRepository } from "@/server/repositories/wishlist-repository";
 import { tokenRepository } from "@/server/repositories/token-repository";
 import { verifyPassword } from "@/server/security/password";
@@ -181,6 +182,8 @@ export async function deleteAccount(input: {
     await addressRepository.deleteAllForCustomer(customer.id, tx);
     await cartRepository.deleteAllForCustomer(customer.id, tx);
     await wishlistRepository.deleteAllForCustomer(customer.id, tx);
+    // Their reviews stay (they were written by a real buyer) but no longer carry their name.
+    await reviewRepository.anonymiseForCustomer(customer.id, tx);
   });
 
   await removeFileQuietly(customer.avatarKey);

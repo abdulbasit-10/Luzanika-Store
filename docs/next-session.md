@@ -30,6 +30,8 @@ Shared admin building blocks (cards, fields, table styles, search box) are in `s
 
 Also built: **Catalogue** (`src/features/admin-catalog/`, menu "Catalogue", `/admin/catalog`): categories (page text, picture, sizes, price slider, types, filter choices), collections and the three home page rows.
 
+Also built: **Reviews** and a real **special offer** row. Customers whose order for a product was completed can review it once (stars, title, text; shown at once as "Ada L.", "Verified purchase"; edit or remove their own). Staff hide or restore reviews in the admin **Reviews** screen (`src/features/admin-reviews/`, permissions `reviews.view` / `reviews.moderate`). A product's stars and count come only from its published reviews (the invented sample ratings were removed; migration `0015`). The home page offers row takes an end time and an optional headline from Catalogue → Home page; the countdown is real, the row hides itself when time is up, and the "up to N% off" is worked out from the products' real price and old price (old prices now show struck through on cards and product pages). Shop code: `src/features/reviews/`, `src/features/home/offer-parts.tsx`.
+
 Not built: the "Edit Items" popup in the Figma (it is a wholesale template with strength, expiry and offer fields, and editing a paid order's items is risky; ask the designer what it is for).
 
 Tests at the last run: 446 unit (integration not re-run, no server code changed), lint and type-check clean.

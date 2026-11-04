@@ -14,7 +14,7 @@ describe("visibleNavGroups", () => {
   it("shows a super admin everything", () => {
     expect(labels({ isSuperAdmin: true, permissions: [] })).toEqual([
       ["Dashboard", "Orders"],
-      ["Products", "Catalogue", "Inventory", "Customers"],
+      ["Products", "Catalogue", "Inventory", "Customers", "Reviews"],
       ["Staff & roles", "Audit log"],
     ]);
   });
@@ -62,6 +62,7 @@ describe("ADMIN_SECTION_SLUGS", () => {
       "catalog",
       "stock",
       "customers",
+      "reviews",
       "staff",
       "audit-log",
       "settings",

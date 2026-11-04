@@ -19,6 +19,7 @@ import {
   type HomeSectionName,
 } from "./admin-catalog-service";
 import { moveItem } from "./catalog-forms";
+import { OfferCard } from "./offer-card";
 import { dangerLinkButton, iconButton, useCatalogChange } from "./catalog-ui";
 
 const MAX_PER_SECTION = 24;
@@ -177,15 +178,32 @@ export function HomeTab() {
 
   const options = products.data.items.map(({ id, name }) => ({ id, name }));
 
+  // The prices of the products now in the offers row, to show what the title will say.
+  const offerIds = new Set(
+    sections.data
+      .find((section) => section.section === "special-offers")
+      ?.products.map((product) => product.id),
+  );
+  const offerProducts = products.data.items.filter((product) =>
+    offerIds.has(product.id),
+  );
+  const offerPrices = {
+    PK: offerProducts.map((product) => product.prices.PK),
+    DE: offerProducts.map((product) => product.prices.DE),
+  };
+
   return (
-    <div className="grid items-start gap-[clamp(0.5rem,1.6dvh,1.25rem)] lg:grid-cols-2">
-      {sections.data.map((section) => (
-        <SectionCard
-          key={section.section}
-          section={section}
-          options={options}
-        />
-      ))}
+    <div className="flex flex-col gap-[clamp(0.5rem,1.6dvh,1.25rem)]">
+      <OfferCard prices={offerPrices} />
+      <div className="grid items-start gap-[clamp(0.5rem,1.6dvh,1.25rem)] lg:grid-cols-2">
+        {sections.data.map((section) => (
+          <SectionCard
+            key={section.section}
+            section={section}
+            options={options}
+          />
+        ))}
+      </div>
     </div>
   );
 }

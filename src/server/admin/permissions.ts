@@ -19,6 +19,8 @@ export const PERMISSIONS = {
   "stock.adjust": "Change stock levels",
   "customers.view": "See customers and their orders",
   "customers.manage": "Block and unblock customers",
+  "reviews.view": "See product reviews",
+  "reviews.moderate": "Hide and restore product reviews",
   "settings.view": "See the shop settings",
   "settings.manage": "Change shipping fees, VAT, hold time and shop details",
 } as const;

@@ -37,7 +37,9 @@ export function RatingStars({
         ))}
       </span>
       {reviewCount !== undefined ? (
-        <span className="text-muted-foreground">{reviewCount} Reviews</span>
+        <span className="text-muted-foreground">
+          {reviewCount} {reviewCount === 1 ? "Review" : "Reviews"}
+        </span>
       ) : null}
     </div>
   );

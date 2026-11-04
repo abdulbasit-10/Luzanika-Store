@@ -1,6 +1,7 @@
 import {
   ClipboardList,
   LayoutDashboard,
+  MessageSquare,
   Package,
   ScrollText,
   Settings,
@@ -61,6 +62,12 @@ export const ADMIN_NAV_GROUPS: AdminNavItem[][] = [
       label: "Customers",
       icon: Users,
       permission: "customers.view",
+    },
+    {
+      href: "/admin/reviews",
+      label: "Reviews",
+      icon: MessageSquare,
+      permission: "reviews.view",
     },
   ],
   [
