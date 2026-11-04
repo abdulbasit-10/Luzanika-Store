@@ -5,6 +5,7 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  Tags,
   Users,
   Warehouse,
   type LucideIcon,
@@ -42,6 +43,12 @@ export const ADMIN_NAV_GROUPS: AdminNavItem[][] = [
       label: "Products",
       icon: Package,
       permission: "products.view",
+    },
+    {
+      href: "/admin/catalog",
+      label: "Catalogue",
+      icon: Tags,
+      permission: "catalog.manage",
     },
     {
       href: "/admin/stock",

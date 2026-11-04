@@ -2,8 +2,7 @@
 
 JSON API for running the shop: orders, products and catalogue, stock,
 customers, settings, staff. Everything is under `/api/v1/admin`. The admin
-screens in `src/app/admin/` use it; categories, collections and the home page
-sections have an API but no screen yet.
+screens in `src/app/admin/` use all of it.
 
 Staff work on **one dashboard for both markets** (Pakistan `PK` / PKR and
 Germany `DE` / EUR). There are no exchange rates, so **PKR and EUR are never

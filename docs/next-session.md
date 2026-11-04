@@ -28,9 +28,11 @@ Built after the table above, in the project's own look because the Figma has no 
 
 Shared admin building blocks (cards, fields, table styles, search box) are in `src/features/admin-shell/admin-ui.tsx`. The order page was restyled to the Figma "Order Details" (header, four-step progress bar, info strip).
 
-Not built: screens for categories, collections and home page sections (API exists), and the "Edit Items" popup in the Figma (it is a wholesale template with strength, expiry and offer fields, and editing a paid order's items is risky; ask the designer what it is for).
+Also built: **Catalogue** (`src/features/admin-catalog/`, menu "Catalogue", `/admin/catalog`): categories (page text, picture, sizes, price slider, types, filter choices), collections and the three home page rows.
 
-Tests at the last run: 437 unit (integration not re-run, no server code changed), lint and type-check clean.
+Not built: the "Edit Items" popup in the Figma (it is a wholesale template with strength, expiry and offer fields, and editing a paid order's items is risky; ask the designer what it is for).
+
+Tests at the last run: 446 unit (integration not re-run, no server code changed), lint and type-check clean.
 
 ## Next
 
