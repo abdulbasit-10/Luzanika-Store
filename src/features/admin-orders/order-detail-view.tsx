@@ -4,19 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
-import { RegionFlag } from "@/components/shared/region-flag";
-import { paymentMethodLabels } from "@/features/orders/payment-methods";
 import { useAdminSession } from "@/features/admin-shell/admin-session";
 import { ApiError } from "@/lib/api-client";
 
 import { fetchAdminOrder } from "./order-detail-service";
 import { OrderCustomerCard, OrderHistoryCard } from "./order-info-cards";
 import { OrderItemsCard } from "./order-items-card";
+import { OrderHeader, OrderProgress, OrderSummaryStrip } from "./order-header";
 import { OrderPaymentCard } from "./order-payment-card";
 import { OrderRefundCard } from "./order-refund-card";
 import { OrderStatusCard } from "./order-status-card";
-import { dateTimeFormat } from "./order-detail-ui";
-import { regionName } from "./orders-labels";
 
 /** One order: what was bought, who it goes to, and every action staff can take on it. */
 export function AdminOrderDetailView({ number }: { number: string }) {
@@ -39,7 +36,7 @@ export function AdminOrderDetailView({ number }: { number: string }) {
       className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <ArrowLeft aria-hidden className="size-4" />
-      Orders
+      Back to Orders
     </Link>
   );
 
@@ -67,33 +64,16 @@ export function AdminOrderDetailView({ number }: { number: string }) {
       </p>
     );
   } else {
-    const methodLabel =
-      (paymentMethodLabels as Record<string, string>)[order.paymentMethod] ??
-      order.paymentMethod;
     body = (
       <>
-        <div>
-          <h1 className="text-[clamp(1.25rem,3.8dvh,2rem)] leading-tight font-semibold tracking-[-0.5px] text-[#151d2b]">
-            Order #{order.number}
-          </h1>
-          <p className="flex flex-wrap items-center gap-x-2 text-[clamp(0.875rem,2.2dvh,1rem)] text-[#6f7b8c]">
-            <span>
-              Placed {dateTimeFormat.format(new Date(order.placedAt))}
-            </span>
-            <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <RegionFlag region={order.market} />
-              {regionName(order.market)} ({order.currency})
-            </span>
-            <span aria-hidden>·</span>
-            <span>{methodLabel}</span>
-          </p>
+        <OrderHeader order={order} />
+        <OrderProgress order={order} />
+        <OrderSummaryStrip order={order} />
+        <div className="grid items-start gap-[clamp(0.5rem,1.6dvh,1.25rem)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
+          <OrderCustomerCard order={order} />
+          <OrderItemsCard order={order} />
         </div>
-        <div className="grid items-start gap-[clamp(0.5rem,1.6dvh,1.25rem)] lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-          <div className="flex flex-col gap-[clamp(0.5rem,1.6dvh,1.25rem)]">
-            <OrderItemsCard order={order} />
-            <OrderHistoryCard order={order} />
-          </div>
+        <div className="grid items-start gap-[clamp(0.5rem,1.6dvh,1.25rem)] lg:grid-cols-2">
           <div className="flex flex-col gap-[clamp(0.5rem,1.6dvh,1.25rem)]">
             <OrderStatusCard order={order} canManage={can("orders.manage")} />
             <OrderPaymentCard
@@ -101,8 +81,8 @@ export function AdminOrderDetailView({ number }: { number: string }) {
               canVerify={can("payments.verify")}
             />
             <OrderRefundCard order={order} canRefund={can("orders.refund")} />
-            <OrderCustomerCard order={order} />
           </div>
+          <OrderHistoryCard order={order} />
         </div>
       </>
     );

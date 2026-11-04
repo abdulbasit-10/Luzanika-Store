@@ -39,7 +39,7 @@ export function OrderItemsCard({ order }: { order: AdminOrderDetail }) {
   const { amounts } = order;
 
   return (
-    <DetailCard title={`Items (${order.items.length})`}>
+    <DetailCard title="Order Items">
       <ul className="divide-y divide-border">
         {order.items.map((item) => (
           <li key={item.id} className="flex items-center gap-3 py-2 first:pt-0">
