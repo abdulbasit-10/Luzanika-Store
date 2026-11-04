@@ -1,8 +1,9 @@
 # Luzanika admin API
 
 JSON API for running the shop: orders, products and catalogue, stock,
-customers, settings, staff. Everything is under `/api/v1/admin`. It is meant
-for the future admin screens; there are no admin pages yet.
+customers, settings, staff. Everything is under `/api/v1/admin`. The admin
+screens in `src/app/admin/` use it; categories, collections and the home page
+sections have an API but no screen yet.
 
 Staff work on **one dashboard for both markets** (Pakistan `PK` / PKR and
 Germany `DE` / EUR). There are no exchange rates, so **PKR and EUR are never

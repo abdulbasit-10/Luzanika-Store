@@ -16,13 +16,23 @@ Admin screens (built this session, on the real API):
 | Order page  | `src/app/admin/(panel)/orders/[number]/`                        | Status moves (in delivery with carrier and tracking, completed, cancel), tracking edit, payment confirm / reject with the private screenshot, refunds |
 | Settings    | `src/features/admin-settings/`                                  | Payment accounts (a transfer method is offered at checkout only once its account is saved here), shipping fees, German VAT, hold times, shop contact  |
 
-Pages not built yet show "This screen is being built" (`src/app/admin/(panel)/[section]/page.tsx`).
+Built after the table above, in the project's own look because the Figma has no screens for them (the designer has not drawn them yet; restyle when they do). All use the real API and were checked in a browser:
 
-Tests at the last run: 404 unit, 546 integration, lint and type-check clean.
+| Screen          | Where                                                             | Notes                                                                                                                                                                                    |
+| --------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Products        | `src/features/admin-products/`, `src/app/admin/(panel)/products/` | List with filters, Add Product (basics, then the product page), prices per market, sizes and colours, photos (upload, order, description, remove), detail text, status, delete / restore |
+| Inventory       | `src/features/admin-stock/`                                       | Stock levels per market (change, exact count, correction with a note, low-stock alert) and the history                                                                                   |
+| Customers       | `src/features/admin-customers/`                                   | List, customer page (spend per currency, orders, addresses), block / unblock                                                                                                             |
+| Staff and roles | `src/features/admin-staff/`                                       | Invite, edit, disable / enable, resend invite, reset authenticator; roles with ticked permissions. Super admin only                                                                      |
+| Audit log       | `src/features/admin-audit/`                                       | Filters, plain-word actions, before / after on click. Super admin only                                                                                                                   |
+
+Shared admin building blocks (cards, fields, table styles, search box) are in `src/features/admin-shell/admin-ui.tsx`. The order page was restyled to the Figma "Order Details" (header, four-step progress bar, info strip).
+
+Not built: screens for categories, collections and home page sections (API exists), and the "Edit Items" popup in the Figma (it is a wholesale template with strength, expiry and offer fields, and editing a paid order's items is risky; ask the designer what it is for).
+
+Tests at the last run: 437 unit (integration not re-run, no server code changed), lint and type-check clean.
 
 ## Next
-
-Waiting for the designer (the Figma has no screens for them): **products and photos, stock, customers, staff and roles, audit log**. The API for all of them exists (`docs/admin-api.md`). Build each as its own folder under `src/app/admin/(panel)/`; it takes over from the placeholder.
 
 Not waiting for the designer:
 
