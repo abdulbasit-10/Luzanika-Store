@@ -2,6 +2,7 @@
 export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "orders.status_change": "Order status changed",
   "orders.delivery_update": "Delivery details changed",
+  "orders.delete": "Order deleted",
   "orders.payment_confirm": "Payment confirmed",
   "orders.payment_reject": "Payment rejected",
   "orders.refund": "Refund recorded",

@@ -1,4 +1,4 @@
-import { apiGet } from "@/lib/api-client";
+import { apiGet, apiPost } from "@/lib/api-client";
 import type { CurrencyCode, RegionCode } from "@/types/region";
 
 export type AdminOrderStatus =
@@ -8,6 +8,13 @@ export type AdminOrderStatus =
   | "completed"
   | "cancelled"
   | "refunded";
+
+/** What the status filter can pick: a status, or the orders staff deleted. */
+export type AdminOrderFilterStatus = AdminOrderStatus | "deleted";
+
+/** A choice of the status dropdown. "processing" confirms the payment of a pending order. */
+export type AdminOrderMove =
+  "processing" | "in_delivery" | "completed" | "cancelled" | "deleted";
 
 export type AdminPaymentStatus =
   | "pending"
@@ -24,6 +31,9 @@ export interface AdminOrderListItem {
   currency: CurrencyCode;
   status: AdminOrderStatus;
   paymentStatus: AdminPaymentStatus;
+  /** What the dropdown may offer; empty when the order is locked or deleted. */
+  allowedMoves: AdminOrderMove[];
+  deleted: boolean;
   total: number;
   refundedTotal: number;
   itemCount: number;
@@ -44,7 +54,7 @@ export interface AdminOrderPage {
 /** What the filter bar can narrow the list by. Empty values mean "all". */
 export interface AdminOrderFilters {
   market?: RegionCode;
-  status?: AdminOrderStatus;
+  status?: AdminOrderFilterStatus;
   paymentStatus?: AdminPaymentStatus;
   /** A day, yyyy-mm-dd. */
   from?: string;
@@ -84,4 +94,28 @@ export async function fetchAllAdminOrders(
     if (all.length >= answer.total || answer.items.length === 0) break;
   }
   return all;
+}
+
+const orderPath = (number: string) =>
+  `/admin/orders/${encodeURIComponent(number)}`;
+
+/** Applies one choice of the status dropdown. A cancel may carry a reason. */
+export function applyOrderMove(
+  number: string,
+  move: AdminOrderMove,
+  reason?: string,
+): Promise<unknown> {
+  switch (move) {
+    case "processing":
+      return apiPost(`${orderPath(number)}/payment/confirm`, {});
+    case "deleted":
+      return apiPost(`${orderPath(number)}/delete`, {});
+    case "cancelled":
+      return apiPost(`${orderPath(number)}/status`, {
+        status: "cancelled",
+        ...(reason ? { reason } : {}),
+      });
+    default:
+      return apiPost(`${orderPath(number)}/status`, { status: move });
+  }
 }

@@ -9,10 +9,10 @@ import type { AdminMarket } from "@/features/admin-shell/admin-market";
 import { cn } from "@/utils/cn";
 
 import type {
-  AdminOrderStatus,
+  AdminOrderFilterStatus,
   AdminPaymentStatus,
 } from "./admin-orders-service";
-import { ORDER_STATUS_OPTIONS, PAYMENT_STATUS_OPTIONS } from "./orders-labels";
+import { ORDER_FILTER_OPTIONS, PAYMENT_STATUS_OPTIONS } from "./orders-labels";
 
 /** The cream box every filter sits in. */
 const boxClass =
@@ -52,7 +52,7 @@ function FilterSelect({
 export interface OrderFilterValues {
   search: string;
   market: AdminMarket;
-  status: AdminOrderStatus | "";
+  status: AdminOrderFilterStatus | "";
   paymentStatus: AdminPaymentStatus | "";
   from: string;
   to: string;
@@ -128,7 +128,7 @@ export function OrdersFilters({
           className="lg:col-span-2"
         >
           <option value="">All Statuses</option>
-          {ORDER_STATUS_OPTIONS.map((option) => (
+          {ORDER_FILTER_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

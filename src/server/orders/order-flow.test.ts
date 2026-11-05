@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { canStaffMove, nextStaffStatuses, paymentActions } from "./order-flow";
+import {
+  canStaffDelete,
+  canStaffMove,
+  nextStaffStatuses,
+  orderMoves,
+  paymentActions,
+} from "./order-flow";
 
 describe("order flow", () => {
   it("allows exactly the three moves", () => {
@@ -126,5 +132,79 @@ describe("what staff may do about the money", () => {
       canConfirm: false,
       canReject: false,
     });
+  });
+});
+
+describe("the status dropdown of the order list", () => {
+  const order = (
+    status: Parameters<typeof orderMoves>[0]["status"],
+    over: Partial<Parameters<typeof orderMoves>[0]> = {},
+  ) => ({
+    status,
+    method: "bank_transfer",
+    paymentStatus: "pending" as const,
+    deletedAt: null,
+    ...over,
+  });
+
+  it("offers a pending transfer order: confirm the payment, or cancel", () => {
+    expect(orderMoves(order("waiting_payment"))).toEqual([
+      "processing",
+      "cancelled",
+    ]);
+  });
+
+  it("offers a processing order only the next step", () => {
+    expect(orderMoves(order("processing", { paymentStatus: "paid" }))).toEqual([
+      "in_delivery",
+    ]);
+    expect(orderMoves(order("in_delivery", { paymentStatus: "paid" }))).toEqual(
+      ["completed"],
+    );
+  });
+
+  it("offers an unpaid cash-on-delivery order a cancel as well", () => {
+    expect(orderMoves(order("processing", { method: "cod" }))).toEqual([
+      "in_delivery",
+      "cancelled",
+    ]);
+  });
+
+  it("never offers Processing for a card order or for an order that is already processing", () => {
+    expect(orderMoves(order("waiting_payment", { method: "card" }))).toEqual([
+      "cancelled",
+    ]);
+    expect(orderMoves(order("processing", { method: "cod" }))).not.toContain(
+      "processing",
+    );
+  });
+
+  it("offers a cancelled order only Delete, once", () => {
+    expect(orderMoves(order("cancelled"))).toEqual(["deleted"]);
+    expect(orderMoves(order("cancelled", { deletedAt: new Date() }))).toEqual(
+      [],
+    );
+  });
+
+  it("locks a delivered order, a refunded one and a deleted one", () => {
+    expect(orderMoves(order("completed", { paymentStatus: "paid" }))).toEqual(
+      [],
+    );
+    expect(
+      orderMoves(order("refunded", { paymentStatus: "refunded" })),
+    ).toEqual([]);
+  });
+
+  it("deletes only a cancelled order that is not deleted yet", () => {
+    expect(canStaffDelete({ status: "cancelled", deletedAt: null })).toBe(true);
+    expect(canStaffDelete({ status: "completed", deletedAt: null })).toBe(
+      false,
+    );
+    expect(canStaffDelete({ status: "waiting_payment", deletedAt: null })).toBe(
+      false,
+    );
+    expect(canStaffDelete({ status: "cancelled", deletedAt: new Date() })).toBe(
+      false,
+    );
   });
 });

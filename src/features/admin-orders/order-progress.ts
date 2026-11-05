@@ -8,9 +8,9 @@ export interface ProgressStep {
 }
 
 /** The road an order takes when nothing goes wrong, in the order it is walked. */
-const STEP_LABELS = ["Placed", "Processing", "In delivery", "Completed"];
+const STEP_LABELS = ["Pending", "Processing", "Shipped", "Delivered"];
 
-/** Which step the order has reached (0-based). Completed is the last step and counts as done. */
+/** Which step the order has reached (0-based). Delivered is the last step and counts as done. */
 const STEP_OF: Partial<Record<AdminOrderStatus, number>> = {
   waiting_payment: 0,
   processing: 1,

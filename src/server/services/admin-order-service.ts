@@ -12,9 +12,13 @@ import {
 import { ApiError } from "@/server/http/api-error";
 import { logger, serializeError } from "@/server/logger";
 import {
+  ORDER_STATUS_NAMES,
+  canStaffDelete,
   canStaffMove,
   nextStaffStatuses,
+  orderMoves,
   paymentActions,
+  type OrderMove,
   type StaffTargetStatus,
 } from "@/server/orders/order-flow";
 import {
@@ -47,6 +51,11 @@ export interface AdminOrderListItemDto {
   currency: Currency;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
+  paymentMethod: string;
+  /** The choices of the status dropdown for this order; empty when the order is locked. */
+  allowedMoves: OrderMove[];
+  /** Hidden from the normal list (shown only under the "Deleted" filter). */
+  deleted: boolean;
   /** Minor units. */
   total: number;
   refundedTotal: number;
@@ -87,6 +96,8 @@ export interface AdminOrderDto {
   cancelReason: string | null;
   shippedAt: string | null;
   completedAt: string | null;
+  /** When staff deleted this (cancelled) order from the list; null if they did not. */
+  deletedAt: string | null;
   reservationExpiresAt: string | null;
   customerId: string | null;
   contact: { email: string; phone: string };
@@ -116,7 +127,6 @@ export interface AdminOrderDto {
     address: string;
     zip: string;
   } | null;
-  delivery: { carrier: string; trackingNumber: string } | null;
   items: {
     id: string;
     slug: string;
@@ -191,6 +201,14 @@ export async function listAdminOrders(
       currency: row.currency,
       status: row.status,
       paymentStatus: row.payment_status,
+      paymentMethod: row.payment_method,
+      allowedMoves: orderMoves({
+        status: row.status,
+        method: row.payment_method,
+        paymentStatus: row.payment_status,
+        deletedAt: row.deleted_at,
+      }),
+      deleted: row.deleted_at !== null,
       total: Number(row.total),
       refundedTotal: Number(row.refunded_total),
       itemCount: row.item_count,
@@ -242,6 +260,7 @@ export async function loadAdminOrder(
     currency: row.currency,
     status: row.status,
     allowedNextStatuses: nextStaffStatuses(row.status, facts),
+    deletedAt: iso(row.deleted_at),
     paymentStatus: row.payment_status,
     paymentMethod: row.payment_method,
     paymentActions: paymentActions({
@@ -306,10 +325,6 @@ export async function loadAdminOrder(
             address: row.bill_address,
             zip: row.bill_zip,
           }
-        : null,
-    delivery:
-      row.carrier !== null && row.tracking_number !== null
-        ? { carrier: row.carrier, trackingNumber: row.tracking_number }
         : null,
     items: items.map((item) => ({
       id: item.id,
@@ -403,16 +418,17 @@ const factsOf = (
 const badMove = (from: OrderStatus, to: StaffTargetStatus) =>
   new ApiError("invalid_status_transition", {
     message:
-      to === "cancelled"
-        ? from === "cancelled"
-          ? "This order is already cancelled."
-          : "Only an unpaid order can be cancelled. Refund a paid order instead."
-        : `An order that is "${from.replace("_", " ")}" cannot be moved to "${to.replace("_", " ")}".`,
+      from === "completed"
+        ? "A delivered order is locked and cannot be changed."
+        : to === "cancelled"
+          ? from === "cancelled"
+            ? "This order is already cancelled."
+            : "Only an unpaid order can be cancelled. Refund a paid order instead."
+          : `A ${ORDER_STATUS_NAMES[from].toLowerCase()} order cannot be moved to ${ORDER_STATUS_NAMES[to].toLowerCase()}.`,
   });
 
 /**
- * Moves an order along: in delivery (needs carrier and tracking number),
- * completed, or cancelled (unpaid orders only). The customer is emailed.
+ * Moves an order along: in delivery, completed, or cancelled (unpaid orders only). The customer is emailed.
  * Every move is recorded in the order's history and in the audit log.
  */
 export async function changeOrderStatus(
@@ -458,13 +474,6 @@ export async function changeOrderStatus(
         throw badMove(locked.status, body.status);
       }
 
-      if (body.status === "in_delivery") {
-        await adminOrderRepository.setDelivery(
-          locked.id,
-          { carrier: body.carrier, trackingNumber: body.trackingNumber },
-          tx,
-        );
-      }
       await adminOrderRepository.setProgress(locked.id, body.status, tx);
       await orderRepository.addHistory(
         {
@@ -473,23 +482,11 @@ export async function changeOrderStatus(
           to: body.status,
           actor: "staff",
           actorId: ctx.actor.id,
-          note:
-            body.status === "in_delivery"
-              ? `${body.carrier}: ${body.trackingNumber}`
-              : null,
+          note: null,
         },
         tx,
       );
-      await recordAuditFor(
-        ctx,
-        tx,
-        number,
-        locked.status,
-        body.status,
-        body.status === "in_delivery"
-          ? { carrier: body.carrier, trackingNumber: body.trackingNumber }
-          : {},
-      );
+      await recordAuditFor(ctx, tx, number, locked.status, body.status, {});
     });
 
     email =
@@ -498,8 +495,6 @@ export async function changeOrderStatus(
             to: current.email,
             name: current.ship_name,
             orderNumber: number,
-            carrier: body.carrier,
-            trackingNumber: body.trackingNumber,
           })
         : orderCompletedEmail({
             to: current.email,
@@ -534,47 +529,42 @@ async function recordAuditFor(
   );
 }
 
-/** Corrects the carrier or tracking number of an order that is already on its way. The customer is not emailed again. */
-export async function updateDelivery(
+/**
+ * Deletes a cancelled order: it leaves the order list, but the order, its
+ * payments and the audit log stay. Any other order (a delivered one is locked)
+ * is refused.
+ */
+export async function deleteOrder(
   ctx: AdminContext,
   rawNumber: string,
-  delivery: { carrier: string; trackingNumber: string },
 ): Promise<AdminOrderDto> {
   const number = parseOrderNumber(rawNumber);
 
   await withTransaction(async (tx) => {
     const locked = await adminOrderRepository.lockByNumber(number, tx);
     if (!locked) throw notFound();
-    if (locked.status !== "in_delivery") {
+    if (
+      !canStaffDelete({ status: locked.status, deletedAt: locked.deleted_at })
+    ) {
       throw new ApiError("conflict", {
         message:
-          "Delivery details can only be changed while the order is in delivery.",
+          locked.deleted_at !== null
+            ? "This order is already deleted."
+            : locked.status === "completed"
+              ? "A delivered order is locked and cannot be deleted."
+              : "Only a cancelled order can be deleted.",
       });
     }
-    await adminOrderRepository.setDelivery(locked.id, delivery, tx);
-    await orderRepository.addHistory(
-      {
-        orderId: locked.id,
-        from: "in_delivery",
-        to: "in_delivery",
-        actor: "staff",
-        actorId: ctx.actor.id,
-        note: `Delivery details changed: ${delivery.carrier}: ${delivery.trackingNumber}`,
-      },
-      tx,
-    );
+    await adminOrderRepository.markDeleted(locked.id, tx);
     await recordAudit(
       tx,
       ctx.actor,
       {
-        action: "orders.delivery_update",
+        action: "orders.delete",
         entityType: "order",
         entityId: number,
-        before: {
-          carrier: locked.carrier,
-          trackingNumber: locked.tracking_number,
-        },
-        after: delivery,
+        before: { status: locked.status, deleted: false },
+        after: { status: locked.status, deleted: true },
       },
       ctx.requestId,
     );

@@ -91,13 +91,11 @@ export function staffPasswordResetEmail(input: {
   };
 }
 
-/** Sent when staff hand an order to the carrier. */
+/** Sent when staff hand an order over for delivery. */
 export function orderShippedEmail(input: {
   to: string;
   name: string;
   orderNumber: string;
-  carrier: string;
-  trackingNumber: string;
 }): EmailMessage {
   return {
     to: input.to,
@@ -105,10 +103,7 @@ export function orderShippedEmail(input: {
     text: [
       `Hi ${input.name},`,
       "",
-      `Good news: your order ${input.orderNumber} has been handed to the carrier.`,
-      "",
-      `Carrier: ${input.carrier}`,
-      `Tracking number: ${input.trackingNumber}`,
+      `Good news: your order ${input.orderNumber} is on its way.`,
       "",
       "You can also follow the status of your order in your account under your orders.",
     ].join("\n"),
@@ -169,7 +164,7 @@ export function orderPaymentConfirmedEmail(input: {
       "",
       `Thank you: we checked your payment and your order ${input.orderNumber} is now being prepared.`,
       "",
-      "We will email you again when it is handed to the carrier.",
+      "We will email you again when it is on its way.",
     ].join("\n"),
   };
 }

@@ -209,25 +209,28 @@ The period defaults to the last 30 days up to and including today (at most
 
 ### Orders
 
-| Method | Path                                                 | Permission        | Notes                                                                                                   |
-| ------ | ---------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
-| GET    | `/orders`                                            | `orders.view`     | Filters `market`, `status`, `paymentStatus`, `from`, `to`, `search` (number, email, recipient), paging. |
-| GET    | `/orders/:number`                                    | `orders.view`     | Items, addresses, payments, status history, refunds, `amounts.refundableTotal`.                         |
-| POST   | `/orders/:number/status`                             | `orders.manage`   | See below. The customer is emailed; an email failure is logged and never undoes the change.             |
-| PATCH  | `/orders/:number/tracking`                           | `orders.manage`   | `{ carrier, trackingNumber }` while in delivery. The customer is not emailed again.                     |
-| POST   | `/orders/:number/refunds`                            | `orders.refund`   | See below.                                                                                              |
-| POST   | `/orders/:number/payment/confirm`                    | `payments.verify` | `{ note? }`. The money is there. See "Payments" below.                                                  |
-| POST   | `/orders/:number/payment/reject`                     | `payments.verify` | `{ reason }`. The customer's payment proof does not check out. See "Payments" below.                    |
-| GET    | `/orders/:number/payment-proofs/:proofId/screenshot` | `payments.verify` | The customer's screenshot (private, never cached).                                                      |
+| Method | Path                                                 | Permission        | Notes                                                                                                                                                                                                                                                   |
+| ------ | ---------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/orders`                                            | `orders.view`     | Filters `market`, `status` (or `deleted`), `paymentStatus`, `from`, `to`, `search` (number, email, recipient), paging. Deleted orders are left out unless `status=deleted`. Each item has `allowedMoves` (the status dropdown's choices) and `deleted`. |
+| GET    | `/orders/:number`                                    | `orders.view`     | Items, addresses, payments, status history, refunds, `amounts.refundableTotal`.                                                                                                                                                                         |
+| POST   | `/orders/:number/status`                             | `orders.manage`   | See below. The customer is emailed; an email failure is logged and never undoes the change.                                                                                                                                                             |
+| POST   | `/orders/:number/delete`                             | `orders.manage`   | Hides a **cancelled** order from the list (record, payments and audit stay). Anything else is `409`. There is no undo.                                                                                                                                  |
+| POST   | `/orders/:number/refunds`                            | `orders.refund`   | See below.                                                                                                                                                                                                                                              |
+| POST   | `/orders/:number/payment/confirm`                    | `payments.verify` | `{ note? }`. The money is there. See "Payments" below.                                                                                                                                                                                                  |
+| POST   | `/orders/:number/payment/reject`                     | `payments.verify` | `{ reason }`. The customer's payment proof does not check out. See "Payments" below.                                                                                                                                                                    |
+| GET    | `/orders/:number/payment-proofs/:proofId/screenshot` | `payments.verify` | The customer's screenshot (private, never cached).                                                                                                                                                                                                      |
 
 `GET /orders/:number` also returns `paymentMethod`, `paymentActions`
 (`{ canConfirm, canReject }`: what to offer right now) and `paymentProofs`.
 
 Statuses: `waiting_payment`, `processing`, `in_delivery`, `completed`,
-`cancelled`, `refunded`. Allowed moves; anything else is `409 invalid_status_transition`:
+`cancelled`, `refunded`. Staff see them as **Pending, Processing, Shipped,
+Delivered, Cancelled, Refunded** (the stored values did not change). A pending
+order moves to Processing by confirming its payment. A **delivered** order is
+locked: no status change, no delete (a refund for a return is still possible). Allowed moves; anything else is `409 invalid_status_transition`:
 
 ```json
-{ "status": "in_delivery", "carrier": "TCS", "trackingNumber": "123" }   // paid -> in delivery
+{ "status": "in_delivery" }                                              // paid -> in delivery
 { "status": "completed" }                                                // in delivery -> completed
 { "status": "cancelled", "reason": "Customer asked" }                   // unpaid -> cancelled, stock goes back
 ```

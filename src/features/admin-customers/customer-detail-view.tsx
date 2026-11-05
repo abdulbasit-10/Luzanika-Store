@@ -10,7 +10,7 @@ import { toast } from "@/components/ui/toaster";
 import { RegionFlag } from "@/components/shared/region-flag";
 import type { AdminOrderStatus } from "@/features/admin-orders/admin-orders-service";
 import { dateTimeFormat } from "@/features/admin-orders/order-detail-ui";
-import { StatusChip } from "@/features/admin-orders/orders-table";
+import { StatusChip } from "@/features/admin-orders/status-chip";
 import { formatMinor } from "@/features/admin-shell/admin-money";
 import { useAdminSession } from "@/features/admin-shell/admin-session";
 import {

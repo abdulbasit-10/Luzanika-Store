@@ -69,7 +69,7 @@ export const adminDashboardRepository = {
   ordersByStatus(period: Period): Promise<StatusCount[]> {
     return selectRows<StatusCount>(
       `SELECT o.market, o.status, count(*)::int AS n FROM orders o
-       WHERE o.placed_at >= :from AND o.placed_at < :to AND ${MARKET_FILTER}
+       WHERE o.placed_at >= :from AND o.placed_at < :to AND o.deleted_at IS NULL AND ${MARKET_FILTER}
        GROUP BY o.market, o.status`,
       params(period),
     );
@@ -141,7 +141,7 @@ export const adminDashboardRepository = {
   ordersPerDay(period: Period): Promise<DayAmount[]> {
     return selectRows<DayAmount>(
       `SELECT ${DAY("o.placed_at")} AS day, o.market, count(*)::int AS n, 0 AS amount FROM orders o
-       WHERE o.placed_at >= :from AND o.placed_at < :to AND ${MARKET_FILTER}
+       WHERE o.placed_at >= :from AND o.placed_at < :to AND o.deleted_at IS NULL AND ${MARKET_FILTER}
        GROUP BY 1, o.market`,
       params(period),
     );

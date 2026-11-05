@@ -1,22 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  majorText,
-  refundProblems,
-  shippingProblems,
-} from "./order-detail-forms";
-
-describe("shippingProblems", () => {
-  it("needs a carrier and a tracking number", () => {
-    expect(shippingProblems({ carrier: " ", trackingNumber: "" })).toEqual({
-      carrier: "Enter the carrier",
-      trackingNumber: "Enter the tracking number",
-    });
-    expect(shippingProblems({ carrier: "TCS", trackingNumber: "123" })).toEqual(
-      {},
-    );
-  });
-});
+import { majorText, refundProblems } from "./order-detail-forms";
 
 describe("refundProblems", () => {
   const ok = { amount: "500", reason: "Damaged" };

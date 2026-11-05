@@ -39,7 +39,7 @@ export function ordersToCsv(orders: AdminOrderListItem[]): string {
       regionName(order.market),
       order.currency,
       (order.total / 100).toFixed(2),
-      orderStatusLabel(order.status),
+      order.deleted ? "Deleted" : orderStatusLabel(order.status),
       paymentStatusLabel(order.paymentStatus),
       order.itemCount,
     ]

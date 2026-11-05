@@ -12,7 +12,8 @@ import type {
 
 export interface AdminOrderFilter {
   market?: Market;
-  status?: OrderStatus;
+  /** An order status, or "deleted" for the orders staff deleted (hidden from every other list). */
+  status?: OrderStatus | "deleted";
   paymentStatus?: PaymentStatus;
   /** Placed on or after this moment. */
   from?: Date;
@@ -28,12 +29,14 @@ export interface AdminOrderListRow {
   currency: Currency;
   status: OrderStatus;
   payment_status: PaymentStatus;
+  payment_method: string;
   total: string;
   email: string;
   ship_name: string;
   customer_id: string | null;
   placed_at: Date;
   paid_at: Date | null;
+  deleted_at: Date | null;
   item_count: number;
   refunded_total: string;
 }
@@ -67,10 +70,9 @@ export interface AdminOrderRow {
   bill_city: string | null;
   bill_address: string | null;
   bill_zip: string | null;
-  carrier: string | null;
-  tracking_number: string | null;
   shipped_at: Date | null;
   completed_at: Date | null;
+  deleted_at: Date | null;
   placed_at: Date;
   paid_at: Date | null;
   cancelled_at: Date | null;
@@ -158,7 +160,7 @@ const ORDER_COLUMNS = `o.id, o.number, o.market, o.currency, o.customer_id, o.em
   o.subtotal, o.discount_total, o.shipping_total, o.tax_total, o.tax_included, o.total,
   o.ship_name, o.ship_company, o.ship_country, o.ship_city, o.ship_address, o.ship_zip,
   o.bill_country, o.bill_city, o.bill_address, o.bill_zip,
-  o.carrier, o.tracking_number, o.shipped_at, o.completed_at,
+  o.shipped_at, o.completed_at, o.deleted_at,
   o.placed_at, o.paid_at, o.cancelled_at, o.cancel_reason`;
 
 export const adminOrderRepository = {
@@ -179,7 +181,8 @@ export const adminOrderRepository = {
       offset,
     };
     const where = `WHERE (CAST(:market AS text) IS NULL OR o.market = :market)
-        AND (CAST(:status AS text) IS NULL OR o.status = :status)
+        AND (CASE WHEN CAST(:status AS text) = 'deleted' THEN o.deleted_at IS NOT NULL
+                  ELSE o.deleted_at IS NULL AND (CAST(:status AS text) IS NULL OR o.status = :status) END)
         AND (CAST(:paymentStatus AS text) IS NULL OR o.payment_status = :paymentStatus)
         AND (CAST(:from AS timestamptz) IS NULL OR o.placed_at >= CAST(:from AS timestamptz))
         AND (CAST(:to AS timestamptz) IS NULL OR o.placed_at < CAST(:to AS timestamptz))
@@ -188,8 +191,8 @@ export const adminOrderRepository = {
 
     const [rows, count] = await Promise.all([
       selectRows<AdminOrderListRow>(
-        `SELECT o.number, o.market, o.currency, o.status, o.payment_status, o.total, o.email,
-                o.ship_name, o.customer_id, o.placed_at, o.paid_at,
+        `SELECT o.number, o.market, o.currency, o.status, o.payment_status, o.payment_method, o.total, o.email,
+                o.ship_name, o.customer_id, o.placed_at, o.paid_at, o.deleted_at,
                 (SELECT COALESCE(sum(i.quantity), 0)::int FROM order_items i WHERE i.order_id = o.id) AS item_count,
                 COALESCE((SELECT sum(r.amount) FROM refunds r WHERE r.order_id = o.id), 0) AS refunded_total
          FROM orders o ${where}
@@ -420,15 +423,11 @@ export const adminOrderRepository = {
     );
   },
 
-  /** Sets the delivery details; they are given together. */
-  async setDelivery(
-    orderId: string,
-    delivery: { carrier: string; trackingNumber: string },
-    tx: Tx,
-  ): Promise<void> {
+  /** Hides a cancelled order from the order list. The order itself stays. */
+  async markDeleted(orderId: string, tx: Tx): Promise<void> {
     await execute(
-      "UPDATE orders SET carrier = :carrier, tracking_number = :trackingNumber WHERE id = :orderId",
-      { orderId, ...delivery },
+      "UPDATE orders SET deleted_at = now() WHERE id = :orderId AND deleted_at IS NULL",
+      { orderId },
       tx,
     );
   },

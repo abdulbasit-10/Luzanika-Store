@@ -16,7 +16,7 @@ export interface PaymentFacts {
  * The allowed moves, and nothing else; there is no going back.
  *
  *   waiting_payment -> cancelled     (staff cancel an order nobody has paid)
- *   processing      -> in_delivery   (it was packed and handed to a carrier)
+ *   processing      -> in_delivery   (it was packed and handed over for delivery)
  *   in_delivery     -> completed     (it arrived)
  *
  * A paid order is never "cancelled": it is refunded (see refund-rules), because
@@ -30,6 +30,16 @@ const MOVES: Record<StaffTargetStatus, OrderStatus> = {
   cancelled: "waiting_payment",
   in_delivery: "processing",
   completed: "in_delivery",
+};
+
+/** What staff see for each status. The stored values stay the same. */
+export const ORDER_STATUS_NAMES: Record<OrderStatus, string> = {
+  waiting_payment: "Pending",
+  processing: "Processing",
+  in_delivery: "Shipped",
+  completed: "Delivered",
+  cancelled: "Cancelled",
+  refunded: "Refunded",
 };
 
 function isUnpaidCod(from: OrderStatus, payment?: PaymentFacts): boolean {
@@ -94,4 +104,42 @@ export function paymentActions(order: {
         order.paymentStatus === "awaiting_verification"),
     canReject: waiting && order.paymentStatus === "awaiting_verification",
   };
+}
+
+/**
+ * Only a cancelled order can be deleted, and only once. Deleting hides it from
+ * the order list; the record stays. A delivered order is locked for good.
+ */
+export function canStaffDelete(order: {
+  status: OrderStatus;
+  deletedAt: Date | null;
+}): boolean {
+  return order.status === "cancelled" && order.deletedAt === null;
+}
+
+/** Everything a staff member can do with an order from the list's status dropdown. */
+export type OrderMove = StaffTargetStatus | "processing" | "deleted";
+
+/**
+ * The dropdown's choices for one order, in the order they are offered. "processing"
+ * is how a pending order moves on: staff confirm that the payment arrived (the
+ * same thing as the Confirm payment button). Nothing is offered for a deleted order.
+ */
+export function orderMoves(order: {
+  status: OrderStatus;
+  method: string;
+  paymentStatus: PaymentStatus;
+  deletedAt: Date | null;
+}): OrderMove[] {
+  if (order.deletedAt !== null) return [];
+  const moves: OrderMove[] = [];
+  if (order.status === "waiting_payment" && paymentActions(order).canConfirm) {
+    moves.push("processing");
+  }
+  // Cancel is always the last of the moves that change the status.
+  const next = nextStaffStatuses(order.status, order);
+  moves.push(...next.filter((move) => move !== "cancelled"));
+  if (next.includes("cancelled")) moves.push("cancelled");
+  if (canStaffDelete(order)) moves.push("deleted");
+  return moves;
 }

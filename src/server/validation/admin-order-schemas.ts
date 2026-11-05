@@ -44,6 +44,7 @@ export const adminOrderListQuerySchema = z.object({
       "completed",
       "cancelled",
       "refunded",
+      "deleted",
     ])
     .optional(),
   paymentStatus: z
@@ -62,25 +63,9 @@ export const adminOrderListQuerySchema = z.object({
   ...pageQuery,
 });
 
-const carrier = z
-  .string()
-  .trim()
-  .min(1, "Enter the carrier")
-  .max(80, "Keep it under 80 characters")
-  .regex(noControl, "Enter a valid carrier");
-
-const trackingNumber = z
-  .string()
-  .trim()
-  .min(1, "Enter the tracking number")
-  .max(120, "Keep it under 120 characters")
-  .regex(noControl, "Enter a valid tracking number");
-
-/** What staff can do to an order's status. Delivery details are required to ship. */
+/** What staff can do to an order's status. */
 export const changeOrderStatusSchema = z.discriminatedUnion("status", [
-  z
-    .object({ status: z.literal("in_delivery"), carrier, trackingNumber })
-    .strict(),
+  z.object({ status: z.literal("in_delivery") }).strict(),
   z.object({ status: z.literal("completed") }).strict(),
   z
     .object({
@@ -97,10 +82,6 @@ export const changeOrderStatusSchema = z.discriminatedUnion("status", [
 ]);
 
 export type ChangeOrderStatusBody = z.infer<typeof changeOrderStatusSchema>;
-
-export const updateTrackingSchema = z
-  .object({ carrier, trackingNumber })
-  .strict();
 
 /**
  * A refund. `amount` is in minor units (paisa / cents). With `restock` the

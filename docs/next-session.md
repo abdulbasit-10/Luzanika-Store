@@ -8,13 +8,13 @@ Backend (all committed earlier): shipping fee, German VAT, settings in the datab
 
 Admin screens (built this session, on the real API):
 
-| Screen      | Where                                                           | Notes                                                                                                                                                 |
-| ----------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Layout      | `src/features/admin-shell/`, `src/app/admin/(panel)/layout.tsx` | Dark sidebar, header, guard, permission-filtered menu, market picker (`useAdminMarket`), money helper `admin-money.ts`                                |
-| Dashboard   | `src/features/admin-dashboard/`                                 | `GET /admin/dashboard`, this period against the one before. PKR and EUR are never added: "All markets" shows one line per currency                    |
-| Orders list | `src/features/admin-orders/`                                    | Filters, search, paging, CSV export, links to the order page                                                                                          |
-| Order page  | `src/app/admin/(panel)/orders/[number]/`                        | Status moves (in delivery with carrier and tracking, completed, cancel), tracking edit, payment confirm / reject with the private screenshot, refunds |
-| Settings    | `src/features/admin-settings/`                                  | Payment accounts (a transfer method is offered at checkout only once its account is saved here), shipping fees, German VAT, hold times, shop contact  |
+| Screen      | Where                                                           | Notes                                                                                                                                                                                        |
+| ----------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Layout      | `src/features/admin-shell/`, `src/app/admin/(panel)/layout.tsx` | Dark sidebar, header, guard, permission-filtered menu, market picker (`useAdminMarket`), money helper `admin-money.ts`                                                                       |
+| Dashboard   | `src/features/admin-dashboard/`                                 | `GET /admin/dashboard`, this period against the one before. PKR and EUR are never added: "All markets" shows one line per currency                                                           |
+| Orders list | `src/features/admin-orders/`                                    | Filters, search, paging, CSV export. Status column is a dropdown (Pending, Processing, Shipped, Delivered; Cancel; Delete a cancelled order). Delivered is locked. Whole row opens the order |
+| Order page  | `src/app/admin/(panel)/orders/[number]/`                        | Status moves, payment confirm / reject with the private screenshot, refunds                                                                                                                  |
+| Settings    | `src/features/admin-settings/`                                  | Payment accounts (a transfer method is offered at checkout only once its account is saved here), shipping fees, German VAT, hold times, shop contact                                         |
 
 Built after the table above, in the project's own look because the Figma has no screens for them (the designer has not drawn them yet; restyle when they do). All use the real API and were checked in a browser:
 
@@ -28,9 +28,9 @@ Built after the table above, in the project's own look because the Figma has no 
 
 Shared admin building blocks (cards, fields, table styles, search box) are in `src/features/admin-shell/admin-ui.tsx`. The order page was restyled to the Figma "Order Details" (header, four-step progress bar, info strip).
 
-Also built: **Catalogue** (`src/features/admin-catalog/`, menu "Catalogue", `/admin/catalog`): categories (page text, picture, sizes, price slider, types, filter choices), collections and the three home page rows.
+Also built: **Catalog** (`src/features/admin-catalog/`, menu "Catalog", `/admin/catalog`): categories (page text, picture, sizes, price slider, types, filter choices), collections and the three home page rows.
 
-Also built: **Reviews** and a real **special offer** row. Customers whose order for a product was completed can review it once (stars, title, text; shown at once as "Ada L.", "Verified purchase"; edit or remove their own). Staff hide or restore reviews in the admin **Reviews** screen (`src/features/admin-reviews/`, permissions `reviews.view` / `reviews.moderate`). A product's stars and count come only from its published reviews (the invented sample ratings were removed; migration `0015`). The home page offers row takes an end time and an optional headline from Catalogue → Home page; the countdown is real, the row hides itself when time is up, and the "up to N% off" is worked out from the products' real price and old price (old prices now show struck through on cards and product pages). Shop code: `src/features/reviews/`, `src/features/home/offer-parts.tsx`.
+Also built: **Reviews** and a real **special offer** row. Customers whose order for a product was completed can review it once (stars, title, text; shown at once as "Ada L.", "Verified purchase"; edit or remove their own). Staff hide or restore reviews in the admin **Reviews** screen (`src/features/admin-reviews/`, permissions `reviews.view` / `reviews.moderate`). A product's stars and count come only from its published reviews (the invented sample ratings were removed; migration `0015`). The home page offers row takes an end time and an optional headline from Catalog → Home page; the countdown is real, the row hides itself when time is up, and the "up to N% off" is worked out from the products' real price and old price (old prices now show struck through on cards and product pages). Shop code: `src/features/reviews/`, `src/features/home/offer-parts.tsx`.
 
 Not built: the "Edit Items" popup in the Figma (it is a wholesale template with strength, expiry and offer fields, and editing a paid order's items is risky; ask the designer what it is for).
 
@@ -40,10 +40,9 @@ Tests at the last run: 446 unit (integration not re-run, no server code changed)
 
 Not waiting for the designer:
 
-1. **Ready to ship / courier export.** Export the orders that are ready (paid transfers and confirmed COD) as a sheet for TCS or another courier, with the cash to collect, then import the tracking numbers they send back (match on our order number, preview first, never match by name or phone). Needs a sample bulk-booking template and return sheet from the courier; until then build it generic (the person picks the columns).
-2. Show the tracking number on the customer's order page (it is only in the status email today).
-3. A "confirmed by phone" step for COD orders, to cut fake orders.
-4. Image storage: photos live on the server's disk (`UPLOADS_DIR`). For a big catalogue move to cloud storage (Cloudflare R2 or S3, or Cloudinary): write one new `FileStorage` class and change `getStorage()` in `src/server/storage/index.ts`.
+1. **Ready to ship / courier export.** Export the orders that are ready (paid transfers and confirmed COD) as a sheet for TCS or another courier, with the cash to collect. Needs a sample bulk-booking template from the courier; until then build it generic (the person picks the columns). Tracking numbers were removed on purpose (decision after talking to the CEO, migration `0016`): no carrier, no tracking number, no tracking import. "In delivery" is a plain status.
+2. A "confirmed by phone" step for COD orders, to cut fake orders.
+3. Image storage: photos live on the server's disk (`UPLOADS_DIR`). For a big catalogue move to cloud storage (Cloudflare R2 or S3, or Cloudinary): write one new `FileStorage` class and change `getStorage()` in `src/server/storage/index.ts`.
 
 ## Open, needs the client
 

@@ -380,7 +380,7 @@ describe("cash on delivery", () => {
     const shipped = await call(statusRoute, {
       staffCookie: staff.cookie,
       params: { number: placed.number },
-      body: { status: "in_delivery", carrier: "TCS", trackingNumber: "T1" },
+      body: { status: "in_delivery" },
     });
     expect(shipped.status).toBe(200);
     expect(shipped.body.order.paymentStatus).toBe("pending");
@@ -461,7 +461,7 @@ describe("cash on delivery", () => {
     await call(statusRoute, {
       staffCookie: staff.cookie,
       params: { number: onItsWay.number },
-      body: { status: "in_delivery", carrier: "TCS", trackingNumber: "T2" },
+      body: { status: "in_delivery" },
     });
     const refusedAtDoor = await call(statusRoute, {
       staffCookie: staff.cookie,

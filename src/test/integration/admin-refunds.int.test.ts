@@ -190,7 +190,7 @@ describe("a partial refund", () => {
       method: "POST",
       staffCookie: staff.cookie,
       params: { number: order.number },
-      body: { status: "in_delivery", carrier: "TCS", trackingNumber: "1" },
+      body: { status: "in_delivery" },
     });
     await call(statusRoute, {
       method: "POST",
@@ -275,7 +275,7 @@ describe("refusing refunds that do not make sense", () => {
       method: "POST",
       staffCookie: staff.cookie,
       params: { number: order.number },
-      body: { status: "in_delivery", carrier: "TCS", trackingNumber: "1" },
+      body: { status: "in_delivery" },
     });
     expect(moved.status).toBe(409);
   });

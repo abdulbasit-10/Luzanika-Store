@@ -7,11 +7,9 @@ import { cn } from "@/utils/cn";
 
 import {
   changeOrderStatus,
-  updateTracking,
   type AdminOrderDetail,
   type StaffTargetStatus,
 } from "./order-detail-service";
-import { shippingProblems } from "./order-detail-forms";
 import {
   DetailCard,
   Fact,
@@ -21,50 +19,30 @@ import {
   inputClass,
   useOrderMutation,
 } from "./order-detail-ui";
-import { StatusChip } from "./orders-table";
+import { StatusChip } from "./status-chip";
 
-type DialogKind = "ship" | "complete" | "cancel" | "tracking";
+type DialogKind = "ship" | "complete" | "cancel";
 
 const MOVES: Record<
   StaffTargetStatus,
   { label: string; dialog: DialogKind; danger?: boolean }
 > = {
-  in_delivery: { label: "Mark as in delivery", dialog: "ship" },
-  completed: { label: "Mark as completed", dialog: "complete" },
+  in_delivery: { label: "Mark as shipped", dialog: "ship" },
+  completed: { label: "Mark as delivered", dialog: "complete" },
   cancelled: { label: "Cancel order", dialog: "cancel", danger: true },
 };
 
-/** Carrier and tracking number: needed to ship an order, and fixable afterwards. */
-function ShippingDialog({
+function ShipDialog({
   order,
-  mode,
   onClose,
 }: {
   order: AdminOrderDetail;
-  mode: "ship" | "tracking";
   onClose: () => void;
 }) {
-  const [carrier, setCarrier] = useState(order.delivery?.carrier ?? "");
-  const [trackingNumber, setTrackingNumber] = useState(
-    order.delivery?.trackingNumber ?? "",
-  );
-  const [shown, setShown] = useState(false);
-  const problems = shippingProblems({ carrier, trackingNumber });
-
   const ship = useOrderMutation(
     order.number,
-    () =>
-      mode === "ship"
-        ? changeOrderStatus(order.number, {
-            status: "in_delivery",
-            carrier: carrier.trim(),
-            trackingNumber: trackingNumber.trim(),
-          })
-        : updateTracking(order.number, {
-            carrier: carrier.trim(),
-            trackingNumber: trackingNumber.trim(),
-          }),
-    mode === "ship" ? "Order is now in delivery" : "Tracking updated",
+    () => changeOrderStatus(order.number, { status: "in_delivery" }),
+    "Order is now shipped",
     onClose,
   );
 
@@ -72,54 +50,14 @@ function ShippingDialog({
     <ConfirmDialog
       open
       onClose={onClose}
-      onConfirm={() => {
-        setShown(true);
-        if (Object.keys(problems).length === 0) ship.mutate();
-      }}
-      title={mode === "ship" ? "Hand to the carrier" : "Change tracking"}
-      description={
-        mode === "ship"
-          ? "The customer is emailed that the order is on its way."
-          : "The customer is not emailed again."
-      }
-      confirmLabel={mode === "ship" ? "Mark as in delivery" : "Save tracking"}
+      onConfirm={() => ship.mutate()}
+      title={`Mark ${order.number} as shipped?`}
+      description="Use this once the parcel has been handed to the courier. The customer is emailed."
+      confirmLabel="Mark as shipped"
       pendingLabel="Saving…"
       pending={ship.isPending}
     >
-      <div className="flex flex-col gap-3">
-        <Field
-          id="carrier"
-          label="Carrier"
-          error={shown ? problems.carrier : undefined}
-        >
-          <input
-            id="carrier"
-            value={carrier}
-            onChange={(e) => setCarrier(e.target.value)}
-            placeholder="e.g. TCS, Leopards, DHL"
-            maxLength={80}
-            aria-invalid={shown && Boolean(problems.carrier)}
-            aria-describedby="carrier-error"
-            className={inputClass}
-          />
-        </Field>
-        <Field
-          id="tracking"
-          label="Tracking number"
-          error={shown ? problems.trackingNumber : undefined}
-        >
-          <input
-            id="tracking"
-            value={trackingNumber}
-            onChange={(e) => setTrackingNumber(e.target.value)}
-            maxLength={120}
-            aria-invalid={shown && Boolean(problems.trackingNumber)}
-            aria-describedby="tracking-error"
-            className={inputClass}
-          />
-        </Field>
-        <FormError error={ship.error} />
-      </div>
+      <FormError error={ship.error} />
     </ConfirmDialog>
   );
 }
@@ -179,7 +117,7 @@ function CompleteDialog({
   const complete = useOrderMutation(
     order.number,
     () => changeOrderStatus(order.number, { status: "completed" }),
-    "Order completed",
+    "Order delivered",
     onClose,
   );
 
@@ -188,9 +126,9 @@ function CompleteDialog({
       open
       onClose={onClose}
       onConfirm={() => complete.mutate()}
-      title={`Mark ${order.number} as completed?`}
-      description="Use this once the parcel has arrived. The customer is emailed."
-      confirmLabel="Mark as completed"
+      title={`Mark ${order.number} as delivered?`}
+      description="Use this once the parcel has arrived. The order is then locked. The customer is emailed."
+      confirmLabel="Mark as delivered"
       pendingLabel="Saving…"
       pending={complete.isPending}
     >
@@ -242,41 +180,32 @@ export function OrderStatusCard({
         </div>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">
-          {canManage
-            ? "No further moves from here."
-            : "You can view this order but not change it."}
+          {!canManage
+            ? "You can view this order but not change it."
+            : order.deletedAt
+              ? "This order was deleted from the order list."
+              : order.status === "completed"
+                ? "This order is delivered and locked."
+                : "No further moves from here."}
         </p>
       )}
 
-      {order.delivery ? (
+      {order.shippedAt || order.completedAt ? (
         <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-border pt-3">
-          <Fact label="Carrier">{order.delivery.carrier}</Fact>
-          <Fact label="Tracking number">{order.delivery.trackingNumber}</Fact>
           {order.shippedAt ? (
             <Fact label="Shipped">
               {dateTimeFormat.format(new Date(order.shippedAt))}
             </Fact>
           ) : null}
           {order.completedAt ? (
-            <Fact label="Completed">
+            <Fact label="Delivered">
               {dateTimeFormat.format(new Date(order.completedAt))}
             </Fact>
           ) : null}
         </dl>
       ) : null}
-      {order.delivery && order.status === "in_delivery" && canManage ? (
-        <button
-          type="button"
-          onClick={() => setDialog("tracking")}
-          className="mt-2 text-sm font-medium text-accent underline-offset-2 hover:underline"
-        >
-          Change tracking
-        </button>
-      ) : null}
 
-      {dialog === "ship" || dialog === "tracking" ? (
-        <ShippingDialog order={order} mode={dialog} onClose={close} />
-      ) : null}
+      {dialog === "ship" ? <ShipDialog order={order} onClose={close} /> : null}
       {dialog === "cancel" ? (
         <CancelDialog order={order} onClose={close} />
       ) : null}

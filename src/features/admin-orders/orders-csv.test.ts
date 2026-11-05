@@ -9,6 +9,8 @@ const order = (over: Partial<AdminOrderListItem> = {}): AdminOrderListItem => ({
   currency: "PKR",
   status: "processing",
   paymentStatus: "pending",
+  allowedMoves: [],
+  deleted: false,
   total: 850000,
   refundedTotal: 0,
   itemCount: 2,
@@ -21,6 +23,13 @@ const order = (over: Partial<AdminOrderListItem> = {}): AdminOrderListItem => ({
 });
 
 describe("ordersToCsv", () => {
+  it("writes Deleted as the status of a deleted order", () => {
+    const line = ordersToCsv([
+      order({ status: "cancelled", deleted: true }),
+    ]).split("\r\n")[1];
+    expect(line).toContain(",Deleted,");
+  });
+
   it("writes a header and one line per order with the amount in major units", () => {
     const lines = ordersToCsv([order()]).split("\r\n");
     expect(lines).toHaveLength(2);

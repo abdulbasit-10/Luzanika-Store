@@ -2,27 +2,6 @@ import { parseMajorToMinor } from "@/features/admin-shell/admin-money";
 
 /** The checks of the forms on the order page, so people hear what is wrong before the server says no. */
 
-export interface ShippingValues {
-  carrier: string;
-  trackingNumber: string;
-}
-
-export function shippingProblems(
-  values: ShippingValues,
-): Partial<Record<keyof ShippingValues, string>> {
-  const problems: Partial<Record<keyof ShippingValues, string>> = {};
-  if (!values.carrier.trim()) problems.carrier = "Enter the carrier";
-  else if (values.carrier.trim().length > 80) {
-    problems.carrier = "Keep it under 80 characters";
-  }
-  if (!values.trackingNumber.trim()) {
-    problems.trackingNumber = "Enter the tracking number";
-  } else if (values.trackingNumber.trim().length > 120) {
-    problems.trackingNumber = "Keep it under 120 characters";
-  }
-  return problems;
-}
-
 export interface RefundValues {
   amount: string;
   reason: string;

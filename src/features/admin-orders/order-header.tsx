@@ -13,7 +13,7 @@ import {
   paymentStatusLabel,
   regionName,
 } from "./orders-labels";
-import { StatusChip } from "./orders-table";
+import { StatusChip } from "./status-chip";
 
 const tag =
   "inline-flex items-center gap-1.5 rounded-md border border-border bg-panel px-2 py-0.5 text-xs font-medium whitespace-nowrap text-foreground";
@@ -40,13 +40,13 @@ export function OrderHeader({ order }: { order: AdminOrderDetail }) {
           {regionName(order.market)} ({order.currency})
         </span>
         <span className={tag}>{methodLabel}</span>
-        <StatusChip status={order.status} />
+        <StatusChip status={order.status} deleted={order.deletedAt !== null} />
       </div>
     </div>
   );
 }
 
-/** The road from placed to completed, or a red end state when the order left it. */
+/** The road from pending to delivered, or a red end state when the order left it. */
 export function OrderProgress({ order }: { order: AdminOrderDetail }) {
   const steps = orderProgress(order.status);
 

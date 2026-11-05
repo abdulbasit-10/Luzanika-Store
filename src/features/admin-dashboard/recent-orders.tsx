@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 
 import { RegionFlag } from "@/components/shared/region-flag";
 import { Dropdown } from "@/components/ui/dropdown";
-import { StatusChip } from "@/features/admin-orders/orders-table";
+import { StatusChip } from "@/features/admin-orders/status-chip";
 import {
   formatOrderTotal,
   regionName,
