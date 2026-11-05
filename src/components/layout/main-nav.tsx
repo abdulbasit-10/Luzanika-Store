@@ -8,7 +8,11 @@ import { Dropdown } from "@/components/ui/dropdown";
 import { categoryLinks, mainNav, type NavLink } from "@/config/navigation";
 import { cn } from "@/utils/cn";
 
-function isActive(pathname: string, { href, exact }: NavLink) {
+/** Reserves the width of the label in bold, so the links around it do not move when it turns bold. */
+const KEEP_WIDTH =
+  "after:invisible after:block after:h-0 after:overflow-hidden after:font-bold after:content-[attr(data-label)]";
+
+export function isActive(pathname: string, { href, exact }: NavLink) {
   return exact ? pathname === href : pathname.startsWith(href);
 }
 
@@ -19,9 +23,11 @@ function MainNavLink({ link, pathname }: { link: NavLink; pathname: string }) {
     <Link
       href={link.href}
       aria-current={active ? "page" : undefined}
+      data-label={link.label}
       className={cn(
-        "border-b py-1 transition-colors hover:border-foreground",
-        active ? "border-foreground" : "border-transparent",
+        "flex flex-col items-center border-b py-1 transition-colors hover:border-foreground",
+        KEEP_WIDTH,
+        active ? "border-foreground font-bold" : "border-transparent",
       )}
     >
       {link.label}
@@ -44,11 +50,18 @@ export function MainNav() {
           <Dropdown
             triggerClassName={cn(
               "border-b py-1",
-              categoryActive ? "border-foreground" : "border-transparent",
+              categoryActive
+                ? "border-foreground font-bold"
+                : "border-transparent",
             )}
             trigger={
               <>
-                {mainNav.categoryLabel}
+                <span
+                  data-label={mainNav.categoryLabel}
+                  className={cn("flex flex-col items-center", KEEP_WIDTH)}
+                >
+                  {mainNav.categoryLabel}
+                </span>
                 <ChevronDown aria-hidden className="size-3.5" />
               </>
             }

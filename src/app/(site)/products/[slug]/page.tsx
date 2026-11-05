@@ -33,7 +33,8 @@ export async function generateMetadata({
 
 export default function ProductPage({ params }: PageProps<"/products/[slug]">) {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       <Suspense fallback={<ProductDetailSkeleton />}>
         <ProductContent params={params} />
       </Suspense>

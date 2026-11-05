@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 
 export default function OrderConfirmationPage() {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       {/* The order number is read from the address, which needs a Suspense boundary. */}
       <Suspense>
         <OrderConfirmationView />

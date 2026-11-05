@@ -4,7 +4,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 
 export function CategorySection() {
   return (
-    <Section>
+    <Section tone="white">
       <SectionHeading eyebrow="Explore by category" title="Shop by Category" />
       <CategoryGrid className="mt-8" />
     </Section>

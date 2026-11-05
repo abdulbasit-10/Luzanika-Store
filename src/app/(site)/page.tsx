@@ -7,7 +7,8 @@ import { SpecialOffersSection } from "@/features/home/special-offers-section";
 
 export default function Home() {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       <HeroSection />
       <CategorySection />
       <FeaturedProductsSection />

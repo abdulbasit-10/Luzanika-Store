@@ -30,7 +30,8 @@ export async function generateMetadata({
 
 export default function CategoryPage({ params }: PageProps<"/[category]">) {
   return (
-    <main className="flex-1">
+    // Figma "Men Collection" and the other collection pages: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       <Suspense fallback={<CatalogSkeleton />}>
         <CategoryContent params={params} />
       </Suspense>

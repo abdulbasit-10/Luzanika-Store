@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 
 export default function CartPage() {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       <CartView />
     </main>
   );

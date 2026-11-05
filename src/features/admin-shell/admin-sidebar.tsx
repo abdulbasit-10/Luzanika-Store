@@ -59,7 +59,7 @@ function NavLink({
       className={cn(
         itemClass,
         active
-          ? "bg-white text-foreground"
+          ? "bg-white font-semibold text-foreground"
           : "text-muted-foreground hover:bg-white/10 hover:text-white",
       )}
     >
