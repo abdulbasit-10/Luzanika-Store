@@ -116,7 +116,11 @@ export interface NewOrderItem {
   imageAlt: string | null;
   imagePosition: string | null;
   quantity: number;
+  /** The list price of one unit, before any discount. */
   unitAmount: number;
+  /** What the whole line was discounted by. 0 when it was not. */
+  discountAmount: number;
+  discountPercent: number | null;
 }
 
 export interface ProofRow {
@@ -184,9 +188,11 @@ export const orderRepository = {
     for (const [position, item] of items.entries()) {
       await execute(
         `INSERT INTO order_items (order_id, position, product_id, variant_id, product_slug, name, sku, color,
-           size, image_src, image_alt, image_position, quantity, unit_amount, line_total)
+           size, image_src, image_alt, image_position, quantity, unit_amount, line_total,
+           discount_amount, discount_percent)
          VALUES (:orderId, :position, :productId, :variantId, :productSlug, :name, :sku, :color,
-           :size, :imageSrc, :imageAlt, :imagePosition, :quantity, :unitAmount, :lineTotal)`,
+           :size, :imageSrc, :imageAlt, :imagePosition, :quantity, :unitAmount, :lineTotal,
+           :discountAmount, :discountPercent)`,
         {
           ...item,
           orderId,

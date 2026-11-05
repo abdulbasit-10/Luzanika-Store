@@ -68,8 +68,12 @@ export interface PriceRow {
   product_id: string;
   market: "PK" | "DE";
   currency: "PKR" | "EUR";
+  /** What the customer pays now (already less any active discount). */
   amount: string;
+  /** The struck-through price: the list price while a discount applies, otherwise the old price staff typed in. */
   compare_at_amount: string | null;
+  /** Percent off while a discount applies, otherwise null. */
+  discount_percent: number | null;
 }
 
 export interface ImageRow {
@@ -212,8 +216,8 @@ export const catalogRepository = {
 
     const [prices, images, variants] = await Promise.all([
       select<PriceRow>(
-        `SELECT product_id, market, currency, amount, compare_at_amount
-         FROM product_prices WHERE product_id IN (:productIds)
+        `SELECT product_id, market, currency, amount, compare_at_amount, discount_percent
+         FROM product_prices_effective WHERE product_id IN (:productIds)
          ORDER BY product_id, CASE market WHEN 'PK' THEN 0 ELSE 1 END`,
         replacements,
       ),

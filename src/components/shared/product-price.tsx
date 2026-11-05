@@ -9,9 +9,20 @@ interface ProductPriceProps {
   className?: string;
 }
 
+/** The "-20%" label shown beside a discounted price. */
+export function DiscountBadge({ percent }: { percent: number }) {
+  return (
+    <span className="inline-flex items-center rounded-md bg-danger px-1.5 py-0.5 align-middle text-[0.7rem] leading-none font-semibold whitespace-nowrap text-white">
+      <span className="sr-only">{percent} percent off</span>
+      <span aria-hidden>−{percent}%</span>
+    </span>
+  );
+}
+
 /**
  * Shows the price for the selected region, with the old price struck through
- * when the product has one. Amounts come from the backend, never converted here.
+ * when the product has one, and a "-20%" label while a discount applies. Amounts
+ * come from the backend, never converted here.
  */
 export function ProductPrice({ prices, className }: ProductPriceProps) {
   const region = useUiStore((state) => state.region);
@@ -34,6 +45,12 @@ export function ProductPrice({ prices, className }: ProductPriceProps) {
             <span className="sr-only">Was </span>
             {formatRegionalPrice(wasPrice, region)}
           </s>
+        </>
+      ) : null}
+      {price.discountPercent !== undefined ? (
+        <>
+          {" "}
+          <DiscountBadge percent={price.discountPercent} />
         </>
       ) : null}
     </span>

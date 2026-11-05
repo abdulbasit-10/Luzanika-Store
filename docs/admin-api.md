@@ -118,6 +118,8 @@ Everyone sees both markets. A staff member's rights are the union of their roles
 | `customers.manage` | Block and unblock customers                                                                    |
 | `reviews.view`     | See product reviews                                                                            |
 | `reviews.moderate` | Publish, hide, show again and delete product reviews                                           |
+| `discounts.view`   | See discounts                                                                                  |
+| `discounts.manage` | Create, change, switch off and delete discounts on products                                    |
 | `contact.view`     | Read messages from the contact form                                                            |
 | `contact.reply`    | Answer contact form messages by email                                                          |
 | `settings.view`    | See the shop settings                                                                          |
@@ -356,6 +358,27 @@ the same way the order code does it).
 | GET    | `/customers/:id`         | `customers.view`   | Profile (never secrets), addresses, spend per currency, newest 100 orders.                        |
 | POST   | `/customers/:id/block`   | `customers.manage` | `{ reason }`. Signs them out everywhere and refuses their logins. Orders, cart and wishlist stay. |
 | POST   | `/customers/:id/unblock` | `customers.manage` | `{ note? }`.                                                                                      |
+
+### Discounts
+
+A discount is a **whole percent (1 to 90) off chosen products, in chosen markets (Pakistan, Germany or both), optionally between two dates**, with an on/off switch. The price the shop charges is worked out in ONE place, the database view `product_prices_effective`: the product pages, the cart, checkout and order placement all read it, so they cannot disagree. Nothing overwrites a product's own price.
+
+- **Status** (computed): `off` (switched off), `scheduled` (starts later), `ended`, or `active`.
+- **Best wins:** if a product is in two discounts, the bigger percent applies; they never add up.
+- **Rounding:** the discounted price of one unit is rounded once to a whole paisa or cent (a discount that would not lower the price, such as 10% of 1 paisa, does not apply).
+- **Old price:** while a discount applies, the struck-through price is the product's list price (it replaces an old price staff typed in); when it stops, the old price comes back.
+- **Shop API:** a price has `amount` (what to pay now), `compareAtAmount` (struck through) and `discountPercent` (only while a discount applies). Cart lines also have `listAmount`.
+- **Orders:** `order_items.unit_amount` stays the list price; each line stores its `discount_amount` and `discount_percent`. `orders.subtotal` is the list total, `orders.discount_total` is what was taken off, and `total = subtotal - discount_total + shipping`. Placed orders never change when a discount is edited or deleted. German VAT is worked out from the total after the discount.
+- **Dates and the shop cache:** the shop pages refresh every 60 seconds and at once after staff save, so a date taking effect shows within about a minute.
+
+| Method | Path                  | Permission         | Notes                                                                                                                         |
+| ------ | --------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/discounts`          | `discounts.view`   | Newest first. Filters `status` (`active`, `scheduled`, `ended`, `off`), `search` (name), paging.                              |
+| GET    | `/discounts/:id`      | `discounts.view`   | The discount and its `products`.                                                                                              |
+| GET    | `/discounts/products` | `discounts.view`   | `?search=` up to 20 products to pick from (name, slug or SKU).                                                                |
+| POST   | `/discounts`          | `discounts.manage` | `{ name, percent, markets, startsAt?, endsAt?, active?, productIds }`. `400` names the box (the end must be after the start). |
+| PATCH  | `/discounts/:id`      | `discounts.manage` | Only the fields sent; `productIds` replaces the list; `active` is the on/off switch.                                          |
+| DELETE | `/discounts/:id`      | `discounts.manage` | `204`. Orders already placed keep their prices.                                                                               |
 
 ### Contact Us messages
 

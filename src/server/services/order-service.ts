@@ -17,7 +17,10 @@ import {
   type PaymentProvider,
 } from "@/server/payments/provider";
 import { adminOrderRepository } from "@/server/repositories/admin-order-repository";
-import { cartRepository } from "@/server/repositories/cart-repository";
+import {
+  cartRepository,
+  type CartLineRow,
+} from "@/server/repositories/cart-repository";
 import type { CustomerRecord } from "@/server/repositories/customer-repository";
 import {
   orderRepository,
@@ -47,6 +50,11 @@ export interface PlacedOrder {
 }
 
 const notFound = () => new ApiError("not_found");
+
+/** What one unit of a cart line is discounted by: its list price less what it costs now. 0 when no discount applies. */
+function discountPerUnit(row: CartLineRow): number {
+  return Math.max(0, Number(row.list_amount) - Number(row.amount));
+}
 
 async function toDto(row: OrderRow, tx?: Tx): Promise<OrderDto> {
   const [items, proofs] = await Promise.all([
@@ -262,7 +270,8 @@ export async function createOrder(
 
     const totals = calculateTotals(
       lines.map(({ row, quantity }) => ({
-        unitAmount: Number(row.amount),
+        unitAmount: Number(row.list_amount),
+        discountPerUnit: discountPerUnit(row),
         quantity,
       })),
       body.market,
@@ -324,7 +333,9 @@ export async function createOrder(
       imageAlt: row.image_alt,
       imagePosition: row.image_position,
       quantity,
-      unitAmount: Number(row.amount),
+      unitAmount: Number(row.list_amount),
+      discountAmount: discountPerUnit(row) * quantity,
+      discountPercent: row.discount_percent,
     }));
     await orderRepository.insertItems(id, items, tx);
     await orderRepository.addHistory(

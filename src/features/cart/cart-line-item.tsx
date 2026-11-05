@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { DiscountBadge } from "@/components/shared/product-price";
 import { toast } from "@/components/ui/toaster";
 import { isBuyable, type CartLine } from "@/features/cart/cart-service";
 import { getUnitPrice } from "@/features/cart/cart-totals";
@@ -112,8 +113,21 @@ export function CartLineItem({
           </p>
         ) : null}
         {buyable && unitPrice !== undefined ? (
-          <p className="mt-1 text-base leading-6 font-bold lg:text-[17px]">
+          <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-base leading-6 font-bold lg:text-[17px]">
             {formatRegionalPrice(unitPrice * line.quantity, region)}
+            {line.unitPrice?.discountPercent !== undefined &&
+            line.unitPrice.listAmount !== undefined ? (
+              <>
+                <s className="text-[0.8em] font-normal text-muted-foreground">
+                  <span className="sr-only">Was </span>
+                  {formatRegionalPrice(
+                    line.unitPrice.listAmount * line.quantity,
+                    region,
+                  )}
+                </s>
+                <DiscountBadge percent={line.unitPrice.discountPercent} />
+              </>
+            ) : null}
           </p>
         ) : null}
         {problem ? (

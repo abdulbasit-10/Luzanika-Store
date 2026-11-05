@@ -17,6 +17,7 @@ describe("visibleNavGroups", () => {
       [
         "Products",
         "Catalog",
+        "Discounts",
         "Inventory",
         "Customers",
         "Reviews",
@@ -67,6 +68,7 @@ describe("ADMIN_SECTION_SLUGS", () => {
       "orders",
       "products",
       "catalog",
+      "discounts",
       "stock",
       "customers",
       "reviews",

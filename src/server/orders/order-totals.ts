@@ -7,8 +7,10 @@ export interface PricingConfig {
 }
 
 export interface PricedLine {
-  /** Minor units. */
+  /** The list price of one unit, before any discount. Minor units. */
   unitAmount: number;
+  /** What one unit is discounted by (0 when it is not). Minor units. */
+  discountPerUnit?: number;
   quantity: number;
 }
 
@@ -37,7 +39,8 @@ export function vatInside(gross: number, ratePercent: number): number {
  * never a rounding surprise.
  *
  * - Shipping: a flat fee per market, only for an order that has goods.
- * - Discounts: not built yet, always 0.
+ * - Discounts: the subtotal is the list price; the discount of every unit is taken off
+ *   it, so total = subtotal - discount + shipping.
  * - Tax: Germany's prices already include VAT, so it is worked out from the
  *   total and shown, but never added. Pakistan has no tax.
  */
@@ -50,7 +53,10 @@ export function calculateTotals(
     (sum, line) => sum + line.unitAmount * line.quantity,
     0,
   );
-  const discountTotal = 0;
+  const discountTotal = lines.reduce(
+    (sum, line) => sum + (line.discountPerUnit ?? 0) * line.quantity,
+    0,
+  );
   const shippingTotal = lines.length > 0 ? config.shippingFee[market] : 0;
   const total = subtotal - discountTotal + shippingTotal;
 

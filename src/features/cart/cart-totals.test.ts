@@ -21,6 +21,58 @@ function line(overrides: Partial<CartLine> = {}): CartLine {
   };
 }
 
+describe("getCartTotals with discounts", () => {
+  it("shows the subtotal at list price, the discount, and a total that is less by that much", () => {
+    const totals = getCartTotals(
+      [
+        // 2 x 1,000.00 with 20% off, ticked.
+        line({
+          unitPrice: {
+            amount: 80000,
+            currency: "PKR",
+            compareAtAmount: 100000,
+            listAmount: 100000,
+            discountPercent: 20,
+          },
+          quantity: 2,
+        }),
+        // 1 x 500.00, no discount, ticked.
+        line({
+          variantId: "v2",
+          unitPrice: { amount: 50000, currency: "PKR" },
+          quantity: 1,
+        }),
+        // A discounted line that is not ticked never counts.
+        line({
+          variantId: "v3",
+          selected: false,
+          unitPrice: {
+            amount: 8000,
+            currency: "PKR",
+            listAmount: 10000,
+            discountPercent: 20,
+          },
+        }),
+      ],
+      {
+        shippingFee: 30000,
+        taxIncluded: false,
+        vatRatePercent: null,
+      } as Pricing,
+    );
+
+    expect(totals.subtotal).toBe(250000);
+    expect(totals.discount).toBe(40000);
+    expect(totals.total).toBe(250000 - 40000 + 30000);
+  });
+
+  it("has no discount when no line is discounted", () => {
+    const totals = getCartTotals([line()]);
+    expect(totals.discount).toBe(0);
+    expect(totals.total).toBe(totals.subtotal);
+  });
+});
+
 describe("getCartTotals", () => {
   it("adds up price times quantity of the ticked lines, in minor units", () => {
     const totals = getCartTotals([

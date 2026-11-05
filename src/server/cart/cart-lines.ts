@@ -19,11 +19,17 @@ export interface CartLineDto {
   /** Only set when the product comes in more than one colour. */
   color?: string;
   size?: string;
-  /** Price in the requested market, minor units. */
+  /**
+   * Price in the requested market, minor units. `amount` is what one unit costs now.
+   * While a discount applies, `listAmount` is the price before it and `discountPercent` the
+   * percent off (and `compareAtAmount` equals `listAmount`).
+   */
   unitPrice: {
     amount: number;
     currency: "PKR" | "EUR";
     compareAtAmount?: number;
+    listAmount?: number;
+    discountPercent?: number;
   } | null;
   /** What will be bought: the requested amount, lowered to the available stock. 0 when it cannot be bought. */
   quantity: number;
@@ -71,6 +77,12 @@ export function toCartLine(row: CartLineRow): CartLineDto {
             currency: row.currency,
             ...(row.compare_at_amount !== null
               ? { compareAtAmount: Number(row.compare_at_amount) }
+              : {}),
+            ...(row.discount_percent !== null && row.list_amount !== null
+              ? {
+                  listAmount: Number(row.list_amount),
+                  discountPercent: row.discount_percent,
+                }
               : {}),
           }
         : null,

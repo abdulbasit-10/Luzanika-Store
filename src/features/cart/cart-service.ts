@@ -24,11 +24,16 @@ export interface CartLine {
   /** Only set when the product comes in more than one colour. */
   color?: string;
   size?: string;
-  /** Price in the selected region, in minor units. */
+  /**
+   * Price in the selected region, in minor units. `amount` is what one unit costs now.
+   * While a discount applies, `listAmount` is the price before it and `discountPercent` the percent off.
+   */
   unitPrice: {
     amount: number;
     currency: CurrencyCode;
     compareAtAmount?: number;
+    listAmount?: number;
+    discountPercent?: number;
   } | null;
   /** What will be bought: the requested amount, lowered to the available stock. */
   quantity: number;

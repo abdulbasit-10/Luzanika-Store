@@ -15,6 +15,9 @@ export const PERMISSIONS = {
   "products.manage": "Create and edit products, variants, prices and photos",
   "products.delete": "Delete (hide) and restore products",
   "catalog.manage": "Manage categories, collections and the home page sections",
+  "discounts.view": "See discounts",
+  "discounts.manage":
+    "Create, change, switch off and delete discounts on products",
   "stock.view": "See stock levels and movements",
   "stock.adjust": "Change stock levels",
   "customers.view": "See customers and their orders",

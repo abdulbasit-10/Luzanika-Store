@@ -1,4 +1,5 @@
 import {
+  BadgePercent,
   ClipboardList,
   LayoutDashboard,
   Mail,
@@ -51,6 +52,12 @@ export const ADMIN_NAV_GROUPS: AdminNavItem[][] = [
       label: "Catalog",
       icon: Tags,
       permission: "catalog.manage",
+    },
+    {
+      href: "/admin/discounts",
+      label: "Discounts",
+      icon: BadgePercent,
+      permission: "discounts.view",
     },
     {
       href: "/admin/stock",
