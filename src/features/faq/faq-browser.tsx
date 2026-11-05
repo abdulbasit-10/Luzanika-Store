@@ -63,7 +63,7 @@ export function FaqBrowser() {
 
   return (
     <div>
-      <div role="search" className="relative max-w-[694px]">
+      <div role="search" className="relative">
         <label htmlFor={searchId} className="sr-only">
           Search questions
         </label>
@@ -79,7 +79,7 @@ export function FaqBrowser() {
           onChange={(event) => setQuery(event.target.value)}
           placeholder={faqPage.searchPlaceholder}
           autoComplete="off"
-          className="h-12 w-full rounded-full bg-white pr-6 pl-14 text-sm text-foreground placeholder:text-foreground/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:h-[53px] lg:pl-[72px] [&::-webkit-search-cancel-button]:hidden"
+          className="h-12 w-full rounded-3xl bg-section pr-6 pl-14 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:h-14 lg:pl-[71px] [&::-webkit-search-cancel-button]:hidden"
         />
       </div>
 
@@ -91,7 +91,7 @@ export function FaqBrowser() {
         <FilterPill
           active={activeId === ALL}
           onClick={() => setActiveId(ALL)}
-          className="px-5 py-[7px] text-sm lg:px-[29px]"
+          className="px-5 py-[7px] text-sm aria-[pressed=false]:border-accent aria-[pressed=false]:hover:bg-section lg:px-[29px]"
         >
           All Questions
         </FilterPill>
@@ -100,7 +100,7 @@ export function FaqBrowser() {
             key={group.id}
             active={activeId === group.id}
             onClick={() => setActiveId(group.id)}
-            className="px-5 py-[7px] text-sm lg:px-[29px]"
+            className="px-5 py-[7px] text-sm aria-[pressed=false]:border-accent aria-[pressed=false]:hover:bg-section lg:px-[29px]"
           >
             {group.pillLabel}
           </FilterPill>
@@ -112,7 +112,7 @@ export function FaqBrowser() {
       </p>
 
       {groups.length > 0 ? (
-        <div className="mt-8 flex flex-col gap-10 lg:mt-12 lg:max-w-[785px] lg:gap-12">
+        <div className="mt-8 flex flex-col gap-10 lg:mt-12 lg:gap-12">
           {groups.map((group) => (
             <section key={group.id} aria-labelledby={`faq-group-${group.id}`}>
               <div className="flex items-center justify-between gap-4">

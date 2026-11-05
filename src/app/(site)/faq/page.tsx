@@ -21,7 +21,7 @@ export default function FaqPage() {
         titleClassName="lg:text-[clamp(2.25rem,3.89vw,3.5rem)]"
         short
       />
-      <Section className="lg:py-25">
+      <Section tone="white" className="lg:py-25">
         <SectionHeading
           eyebrow={faqPage.eyebrow}
           title={faqPage.title}
