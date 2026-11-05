@@ -34,3 +34,27 @@ export const contactSchema = z
   .strict();
 
 export type ContactBody = z.infer<typeof contactSchema>;
+
+export const adminContactListQuerySchema = z.object({
+  status: z.enum(["new", "replied"]).optional(),
+  search: z.string().trim().min(1).max(100).optional(),
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+});
+
+/** What staff send to answer a message. */
+export const contactReplySchema = z
+  .object({
+    message: z
+      .string()
+      .trim()
+      .min(1, "Please write a reply")
+      .max(5000, "Please keep the reply under 5000 characters")
+      .refine(
+        (value) => !BAD_CONTROL.test(value),
+        "Please enter a valid reply",
+      ),
+  })
+  .strict();
+
+export type ContactReplyBody = z.infer<typeof contactReplySchema>;

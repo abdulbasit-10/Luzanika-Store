@@ -21,6 +21,8 @@ export const PERMISSIONS = {
   "customers.manage": "Block and unblock customers",
   "reviews.view": "See product reviews",
   "reviews.moderate": "Hide and restore product reviews",
+  "contact.view": "See messages from the contact form",
+  "contact.reply": "Reply to contact form messages by email",
   "settings.view": "See the shop settings",
   "settings.manage": "Change shipping fees, VAT, hold time and shop details",
 } as const;

@@ -118,6 +118,8 @@ Everyone sees both markets. A staff member's rights are the union of their roles
 | `customers.manage` | Block and unblock customers                                                                    |
 | `reviews.view`     | See product reviews                                                                            |
 | `reviews.moderate` | Publish, hide, show again and delete product reviews                                           |
+| `contact.view`     | Read messages from the contact form                                                            |
+| `contact.reply`    | Answer contact form messages by email                                                          |
 | `settings.view`    | See the shop settings                                                                          |
 | `settings.manage`  | Change shipping fees, VAT, hold time and shop details                                          |
 
@@ -354,6 +356,16 @@ the same way the order code does it).
 | GET    | `/customers/:id`         | `customers.view`   | Profile (never secrets), addresses, spend per currency, newest 100 orders.                        |
 | POST   | `/customers/:id/block`   | `customers.manage` | `{ reason }`. Signs them out everywhere and refuses their logins. Orders, cart and wishlist stay. |
 | POST   | `/customers/:id/unblock` | `customers.manage` | `{ note? }`.                                                                                      |
+
+### Contact Us messages
+
+`POST /api/v1/contact` (the shop's contact form) now **saves** every message, then also emails the shop when `CONTACT_TO_EMAIL` is set (a failed notification email never fails the form). Staff read and answer the messages here. Answers are emailed to the visitor; their reply to that email goes to the shop's contact address (Settings), not into the admin.
+
+| Method | Path                 | Permission      | Notes                                                                                                                                                                                                                              |
+| ------ | -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/contact`           | `contact.view`  | Newest first. Filters `status` (`new`, `replied`), `search` (name, email, text), paging. Each item has `replyCount`.                                                                                                               |
+| GET    | `/contact/:id`       | `contact.view`  | `{ message }` with `replies` (text, who, when), oldest first.                                                                                                                                                                      |
+| POST   | `/contact/:id/reply` | `contact.reply` | `{ message }` (up to 5000 characters). Emails the visitor first; if that fails the answer is `503` and nothing is saved. Then records it, sets the message to `replied`, and writes the audit log. More than one reply is allowed. |
 
 ### Reviews and the special offer row
 

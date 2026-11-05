@@ -25,6 +25,40 @@ export function contactMessageEmail(input: {
   };
 }
 
+/**
+ * A staff member's answer to a contact-form message, for the visitor. The
+ * visitor's own message is quoted underneath. Replies to it go to the shop's
+ * contact address.
+ */
+export function contactReplyEmail(input: {
+  to: string;
+  name: string;
+  reply: string;
+  originalMessage: string;
+  replyTo: string;
+}): EmailMessage {
+  const quoted = input.originalMessage
+    .split(/\r?\n/)
+    .map((line) => `> ${line}`);
+  return {
+    to: input.to,
+    replyTo: input.replyTo,
+    subject: "Re: your message to Luzanika",
+    text: [
+      `Hi ${input.name},`,
+      "",
+      input.reply,
+      "",
+      "Kind regards,",
+      "The Luzanika team",
+      "",
+      "-----",
+      "Your message:",
+      ...quoted,
+    ].join("\n"),
+  };
+}
+
 export function passwordResetEmail(input: {
   to: string;
   firstName: string;

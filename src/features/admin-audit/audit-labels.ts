@@ -20,6 +20,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "variants.update": "Size or colour changed",
   "stock.adjust": "Stock changed",
   "stock.threshold": "Low-stock alert changed",
+  "contact.reply": "Contact message answered",
   "reviews.publish": "Review published",
   "reviews.hide": "Review hidden",
   "reviews.delete": "Review deleted",

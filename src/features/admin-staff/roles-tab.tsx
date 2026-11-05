@@ -37,6 +37,7 @@ const GROUP_LABEL: Record<string, string> = {
   stock: "Inventory",
   customers: "Customers",
   reviews: "Reviews",
+  contact: "Contact Us",
   settings: "Settings",
 };
 
