@@ -32,14 +32,29 @@ import {
 import { cn } from "@/utils/cn";
 
 import {
+  deleteReview,
+  fetchReviewedProducts,
   fetchReviews,
   hideReview,
+  publishReview,
   restoreReview,
   type AdminReview,
   type ReviewStatus,
 } from "./admin-reviews-service";
 
 const PAGE_SIZE = 10;
+
+const STATUS_LABEL: Record<ReviewStatus, string> = {
+  pending: "Pending",
+  published: "Published",
+  hidden: "Hidden",
+};
+
+const STATUS_STYLE: Record<ReviewStatus, string> = {
+  pending: "border-[#ff9f24]/10 bg-[#ff9f24]/10 text-[#ff9f24]",
+  published: "border-[#279f51]/10 bg-[#279f51]/10 text-success",
+  hidden: "border-danger/10 bg-[#feeff2] text-danger",
+};
 
 function StarsLine({ rating }: { rating: number }) {
   return (
@@ -161,21 +176,85 @@ function RestoreDialog({
   );
 }
 
+function PublishDialog({
+  review,
+  onClose,
+}: {
+  review: AdminReview;
+  onClose: () => void;
+}) {
+  const publish = useReviewChange(
+    () => publishReview(review.id),
+    "Review published",
+    onClose,
+  );
+  return (
+    <ConfirmDialog
+      open
+      onClose={onClose}
+      onConfirm={() => publish.mutate(undefined)}
+      title="Publish this review?"
+      description={`It appears on ${review.product.name} and counts in its star rating.`}
+      confirmLabel="Publish review"
+      pendingLabel="Publishing…"
+      pending={publish.isPending}
+    >
+      <FormError error={publish.error} />
+    </ConfirmDialog>
+  );
+}
+
+function DeleteDialog({
+  review,
+  onClose,
+}: {
+  review: AdminReview;
+  onClose: () => void;
+}) {
+  const remove = useReviewChange(
+    () => deleteReview(review.id),
+    "Review deleted",
+    onClose,
+  );
+  return (
+    <ConfirmDialog
+      open
+      onClose={onClose}
+      onConfirm={() => remove.mutate(undefined)}
+      title="Delete this review?"
+      description={`It is removed for good from ${review.product.name}. The audit log keeps what it said. This cannot be undone.`}
+      confirmLabel="Delete review"
+      pendingLabel="Deleting…"
+      pending={remove.isPending}
+    >
+      <FormError error={remove.error} />
+    </ConfirmDialog>
+  );
+}
+
+const dangerButton =
+  "text-sm font-medium text-danger underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
 const linkButton =
   "text-sm font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-/** Reviews: what customers wrote, newest first. Staff can hide one (and show it again). */
+/**
+ * Reviews: what customers wrote, newest first. A new review is pending until
+ * staff publish it; they can also hide, show again and delete.
+ */
 export function AdminReviewsView() {
   const { staff, permissions } = useAdminSession();
   const can = (permission: string) =>
     staff.isSuperAdmin || permissions.includes(permission);
 
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<ReviewStatus | "">("");
+  // New reviews wait here, so this is the first thing staff see.
+  const [status, setStatus] = useState<ReviewStatus | "">("pending");
+  const [productId, setProductId] = useState("");
   const [rating, setRating] = useState("");
   const [page, setPage] = useState(1);
   const [dialog, setDialog] = useState<{
-    kind: "hide" | "restore";
+    kind: "publish" | "hide" | "restore" | "delete";
     review: AdminReview;
   } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -185,7 +264,14 @@ export function AdminReviewsView() {
     search: settled || undefined,
     status: status || undefined,
     rating: rating ? Number(rating) : undefined,
+    productId: productId || undefined,
   };
+  const products = useQuery({
+    queryKey: ["admin", "reviews", "products"],
+    queryFn: fetchReviewedProducts,
+    enabled: can("reviews.view"),
+    staleTime: 60_000,
+  });
   const reviews = useQuery({
     queryKey: ["admin", "reviews", filters, page],
     queryFn: () => fetchReviews(filters, page, PAGE_SIZE),
@@ -204,7 +290,11 @@ export function AdminReviewsView() {
     message =
       "We couldn't load the reviews. Check your connection and try again.";
   else if (reviews.isPending) message = "Loading reviews…";
-  else if (rows.length === 0) message = "No reviews match these filters.";
+  else if (rows.length === 0)
+    message =
+      status === "pending" && !settled && !rating && !productId
+        ? "No reviews are waiting to be published."
+        : "No reviews match these filters.";
 
   const select = (
     label: string,
@@ -240,7 +330,7 @@ export function AdminReviewsView() {
     <div className="mx-auto flex h-full w-full max-w-[75rem] flex-col gap-[clamp(0.5rem,1.8dvh,1.6rem)]">
       <AdminPageHead
         title="Reviews"
-        subtitle="What customers who received a product wrote about it."
+        subtitle="Customers' reviews wait here until you publish them."
       />
       {can("reviews.view") ? (
         <>
@@ -254,16 +344,29 @@ export function AdminReviewsView() {
                   setSearch(value);
                   setPage(1);
                 }}
-                className="col-span-2 lg:col-span-6"
+                className="col-span-2 lg:col-span-4"
               />
               {select(
                 "Status",
                 status,
                 (value) => setStatus(value as ReviewStatus | ""),
                 [
-                  ["", "All reviews"],
-                  ["published", "Shown"],
+                  ["pending", "Pending"],
+                  ["published", "Published"],
                   ["hidden", "Hidden"],
+                  ["", "All reviews"],
+                ],
+                "lg:col-span-2",
+              )}
+              {select(
+                "Product",
+                productId,
+                setProductId,
+                [
+                  ["", "All products"],
+                  ...(products.data?.items ?? []).map(
+                    (product): [string, string] => [product.id, product.name],
+                  ),
                 ],
                 "lg:col-span-3",
               )}
@@ -292,11 +395,11 @@ export function AdminReviewsView() {
             <div className="min-h-0 flex-[0_1_auto] overflow-auto">
               <table className="w-full min-w-[52rem] table-fixed border-separate border-spacing-0">
                 <colgroup>
-                  <col className="w-[22%]" />
+                  <col className="w-[18%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[36%]" />
                   <col className="w-[12%]" />
-                  <col className="w-[40%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[14%]" />
+                  <col className="w-[23%]" />
                 </colgroup>
                 <thead className="sticky top-0 z-10">
                   <tr>
@@ -379,37 +482,57 @@ export function AdminReviewsView() {
                           <span
                             className={cn(
                               "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
-                              review.status === "published"
-                                ? "border-[#279f51]/10 bg-[#279f51]/10 text-success"
-                                : "border-danger/10 bg-[#feeff2] text-danger",
+                              STATUS_STYLE[review.status],
                             )}
                           >
-                            {review.status === "published" ? "Shown" : "Hidden"}
+                            {STATUS_LABEL[review.status]}
                           </span>
                         </td>
                         <td className={cn(bodyCell, "h-auto py-2")}>
                           {can("reviews.moderate") ? (
-                            review.status === "published" ? (
+                            <div className="flex flex-wrap gap-x-3 gap-y-1">
+                              {review.status === "pending" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDialog({ kind: "publish", review })
+                                  }
+                                  className={linkButton}
+                                >
+                                  Publish
+                                </button>
+                              ) : null}
+                              {review.status === "hidden" ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDialog({ kind: "restore", review })
+                                  }
+                                  className={linkButton}
+                                >
+                                  Show again
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDialog({ kind: "hide", review })
+                                  }
+                                  className={dangerButton}
+                                >
+                                  Hide
+                                </button>
+                              )}
                               <button
                                 type="button"
                                 onClick={() =>
-                                  setDialog({ kind: "hide", review })
+                                  setDialog({ kind: "delete", review })
                                 }
-                                className="text-sm font-medium text-danger underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                                className={dangerButton}
                               >
-                                Hide
+                                Delete
                               </button>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setDialog({ kind: "restore", review })
-                                }
-                                className={linkButton}
-                              >
-                                Show again
-                              </button>
-                            )
+                            </div>
                           ) : null}
                         </td>
                       </tr>
@@ -431,6 +554,12 @@ export function AdminReviewsView() {
           Your role does not include reviews.
         </p>
       )}
+      {dialog?.kind === "publish" ? (
+        <PublishDialog review={dialog.review} onClose={() => setDialog(null)} />
+      ) : null}
+      {dialog?.kind === "delete" ? (
+        <DeleteDialog review={dialog.review} onClose={() => setDialog(null)} />
+      ) : null}
       {dialog?.kind === "hide" ? (
         <HideDialog review={dialog.review} onClose={() => setDialog(null)} />
       ) : null}

@@ -17,7 +17,7 @@ export interface AdminReviewDto {
   title: string | null;
   body: string;
   authorName: string;
-  status: "published" | "hidden";
+  status: "pending" | "published" | "hidden";
   hiddenReason: string | null;
   hiddenAt: string | null;
   hiddenBy: string | null;
@@ -71,7 +71,46 @@ async function getReview(id: string): Promise<AdminReviewDto> {
   return toDto(row);
 }
 
-/** Hides a review from the shop (and from the rating) with a reason. Nothing is deleted. */
+/**
+ * Approves a pending review: it now shows on the product page and counts in
+ * the product's stars.
+ */
+export async function publishReview(
+  ctx: AdminContext,
+  id: string,
+): Promise<AdminReviewDto> {
+  await withTransaction(async (tx) => {
+    const row = await reviewRepository.lockById(id, tx);
+    if (!row) throw new ApiError("not_found");
+    if (row.status !== "pending") {
+      throw new ApiError("conflict", {
+        message: "This review is not waiting to be published.",
+      });
+    }
+    await reviewRepository.setPublished(id, tx);
+    await reviewRepository.refreshProductRating(row.product_id, tx);
+    await recordAudit(
+      tx,
+      ctx.actor,
+      {
+        action: "reviews.publish",
+        entityType: "review",
+        entityId: id,
+        before: { status: "pending", rating: row.rating },
+        after: { status: "published", rating: row.rating },
+      },
+      ctx.requestId,
+    );
+  });
+  refreshCatalogCache();
+  return getReview(id);
+}
+
+/**
+ * Hides a pending or a published review from the shop (and from the rating)
+ * with a reason. Nothing is deleted. Hiding a pending review is how staff
+ * turn it down.
+ */
 export async function hideReview(
   ctx: AdminContext,
   id: string,
@@ -85,6 +124,7 @@ export async function hideReview(
         message: "This review is already hidden.",
       });
     }
+    const was = row.status;
     await reviewRepository.setHidden(id, { by: ctx.actor.id, reason }, tx);
     await reviewRepository.refreshProductRating(row.product_id, tx);
     await recordAudit(
@@ -94,7 +134,7 @@ export async function hideReview(
         action: "reviews.hide",
         entityType: "review",
         entityId: id,
-        before: { status: "published", rating: row.rating },
+        before: { status: was, rating: row.rating },
         after: { status: "hidden", reason },
       },
       ctx.requestId,
@@ -117,7 +157,7 @@ export async function restoreReview(
         message: "This review is not hidden.",
       });
     }
-    await reviewRepository.setHidden(id, null, tx);
+    await reviewRepository.setPublished(id, tx);
     await reviewRepository.refreshProductRating(row.product_id, tx);
     await recordAudit(
       tx,
@@ -134,4 +174,47 @@ export async function restoreReview(
   });
   refreshCatalogCache();
   return getReview(id);
+}
+
+/**
+ * Deletes a review for good, whatever its status. The audit log keeps what it
+ * said. The product's stars are worked out again, and the customer may then
+ * write a new review.
+ */
+export async function deleteReviewByStaff(
+  ctx: AdminContext,
+  id: string,
+): Promise<void> {
+  await withTransaction(async (tx) => {
+    const row = await reviewRepository.adminFind(id, tx);
+    if (!row) throw new ApiError("not_found");
+    await reviewRepository.lockById(id, tx);
+    await reviewRepository.delete(id, tx);
+    await reviewRepository.refreshProductRating(row.product_id, tx);
+    await recordAudit(
+      tx,
+      ctx.actor,
+      {
+        action: "reviews.delete",
+        entityType: "review",
+        entityId: id,
+        before: {
+          status: row.status,
+          rating: row.rating,
+          title: row.title,
+          body: row.body,
+          author: row.author_name,
+          product: row.product_name,
+        },
+        after: null,
+      },
+      ctx.requestId,
+    );
+  });
+  refreshCatalogCache();
+}
+
+/** The products that have reviews, for the admin's product filter. */
+export function listReviewedProducts() {
+  return reviewRepository.reviewedProducts();
 }

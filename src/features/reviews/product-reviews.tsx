@@ -145,7 +145,7 @@ function ReviewForm({
     },
     onSuccess: async () => {
       toast.success(
-        existing ? "Your review was updated" : "Thank you for your review",
+        "Thank you! Your review has been received and will appear on this page soon.",
       );
       await queryClient.invalidateQueries({ queryKey: ["reviews", slug] });
       // The stars under the product name are part of the page, so it reloads them.
@@ -292,6 +292,12 @@ function MyReview({
   return (
     <div className="rounded-xl border border-black/10 bg-panel p-5">
       <p className="text-sm font-bold">Your review</p>
+      {review.status === "pending" ? (
+        <p role="status" className="mt-1 text-xs text-muted-foreground">
+          Thank you for sharing your feedback. Your review will appear on this
+          page soon.
+        </p>
+      ) : null}
       {review.status === "hidden" ? (
         <p role="status" className="mt-1 text-xs text-muted-foreground">
           Our team has hidden this review, so it is not shown to others.
@@ -304,7 +310,7 @@ function MyReview({
         </p>
       ) : null}
       <div className="mt-1 flex flex-wrap items-center gap-3">
-        {review.status === "published" ? (
+        {review.status !== "hidden" ? (
           <Button type="button" size="sm" variant="secondary" onClick={onEdit}>
             Change
           </Button>

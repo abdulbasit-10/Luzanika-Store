@@ -26,7 +26,7 @@ export interface ReviewDto {
 
 /** The customer's own review also says whether staff have hidden it. */
 export interface OwnReviewDto extends ReviewDto {
-  status: "published" | "hidden";
+  status: "pending" | "published" | "hidden";
 }
 
 /**
@@ -127,7 +127,11 @@ export async function getProductReviews(
   };
 }
 
-/** Writes a review. Only a customer with a completed order for the product may, once per product. */
+/**
+ * Writes a review. Only a customer with a completed order for the product may,
+ * once per product. It starts as pending: the shop and the rating show it only
+ * after staff publish it.
+ */
 export async function createReview(
   customer: CustomerRecord,
   slug: string,
@@ -160,7 +164,6 @@ export async function createReview(
         },
         tx,
       );
-      await reviewRepository.refreshProductRating(product.id, tx);
       return inserted;
     });
   } catch (error) {
@@ -172,7 +175,6 @@ export async function createReview(
     }
     throw error;
   }
-  refreshCatalogCache();
   return toOwnDto(row);
 }
 
@@ -187,7 +189,11 @@ async function ownReview(
   return row;
 }
 
-/** A customer changes their own review. A review staff hid cannot be edited. */
+/**
+ * A customer changes their own review. A published review goes back to pending
+ * (staff look at the new text first); a pending one stays pending. A review
+ * staff hid cannot be edited.
+ */
 export async function updateReview(
   customer: CustomerRecord,
   id: string,
@@ -205,11 +211,17 @@ export async function updateReview(
       { rating: body.rating, title: body.title, body: body.body },
       tx,
     );
-    await reviewRepository.refreshProductRating(current.product_id, tx);
-    return (await reviewRepository.findById(id, tx)) as ReviewRow;
+    if (current.status === "published") {
+      await reviewRepository.setPending(id, tx);
+      await reviewRepository.refreshProductRating(current.product_id, tx);
+    }
+    return {
+      row: (await reviewRepository.findById(id, tx)) as ReviewRow,
+      wasPublished: current.status === "published",
+    };
   });
-  refreshCatalogCache();
-  return toOwnDto(row);
+  if (row.wasPublished) refreshCatalogCache();
+  return toOwnDto(row.row);
 }
 
 /** A customer removes their own review. */

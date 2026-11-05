@@ -3,7 +3,7 @@ import "server-only";
 import { execute, selectRows } from "@/server/db/query";
 import type { Tx } from "@/server/db/transaction";
 
-export type ReviewStatus = "published" | "hidden";
+export type ReviewStatus = "pending" | "published" | "hidden";
 
 export interface ReviewRow {
   id: string;
@@ -182,17 +182,33 @@ export const reviewRepository = {
     return execute(`DELETE FROM product_reviews WHERE id = :id`, { id }, tx);
   },
 
-  /** Hides a review (with who and why), or brings it back when `hiddenBy` is null. */
+  /** Puts a published review back to waiting for staff (the customer changed it). */
+  setPending(id: string, tx: Tx): Promise<number> {
+    return execute(
+      `UPDATE product_reviews SET status = 'pending' WHERE id = :id`,
+      { id },
+      tx,
+    );
+  },
+
+  /** Shows a review on the shop: a pending one that staff approve, or a hidden one they bring back. */
+  setPublished(id: string, tx: Tx): Promise<number> {
+    return execute(
+      `UPDATE product_reviews SET status = 'published', hidden_at = NULL, hidden_by = NULL, hidden_reason = NULL WHERE id = :id`,
+      { id },
+      tx,
+    );
+  },
+
+  /** Hides a review (with who and why). */
   setHidden(
     id: string,
-    hidden: { by: string; reason: string } | null,
+    hidden: { by: string; reason: string },
     tx: Tx,
   ): Promise<number> {
     return execute(
-      hidden
-        ? `UPDATE product_reviews SET status = 'hidden', hidden_at = now(), hidden_by = :by, hidden_reason = :reason WHERE id = :id`
-        : `UPDATE product_reviews SET status = 'published', hidden_at = NULL, hidden_by = NULL, hidden_reason = NULL WHERE id = :id`,
-      { id, by: hidden?.by ?? null, reason: hidden?.reason ?? null },
+      `UPDATE product_reviews SET status = 'hidden', hidden_at = now(), hidden_by = :by, hidden_reason = :reason WHERE id = :id`,
+      { id, by: hidden.by, reason: hidden.reason },
       tx,
     );
   },
@@ -254,6 +270,15 @@ export const reviewRepository = {
       ),
     ]);
     return { rows, total: count[0].n };
+  },
+
+  /** The products that have at least one review, for the admin filter. */
+  reviewedProducts(): Promise<{ id: string; name: string }[]> {
+    return selectRows<{ id: string; name: string }>(
+      `SELECT p.id, p.name FROM products p
+       WHERE EXISTS (SELECT 1 FROM product_reviews r WHERE r.product_id = p.id)
+       ORDER BY p.name, p.id`,
+    );
   },
 
   async adminFind(id: string, tx?: Tx): Promise<AdminReviewRow | undefined> {

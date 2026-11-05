@@ -14,7 +14,7 @@ export interface Review {
 
 /** The visitor's own review also says whether our team hid it. */
 export interface OwnReview extends Review {
-  status: "published" | "hidden";
+  status: "pending" | "published" | "hidden";
 }
 
 export type ReviewViewer =

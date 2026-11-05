@@ -43,7 +43,7 @@ export const reviewListQuerySchema = z.object({
 });
 
 export const adminReviewListQuerySchema = z.object({
-  status: z.enum(["published", "hidden"]).optional(),
+  status: z.enum(["pending", "published", "hidden"]).optional(),
   rating: z.coerce.number().int().min(1).max(5).optional(),
   productId: z.uuid().optional(),
   search: z.string().trim().min(1).max(100).optional(),

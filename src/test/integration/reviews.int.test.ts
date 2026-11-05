@@ -1,8 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { DELETE as deleteAccountRoute } from "@/app/api/v1/account/route";
 import { GET as adminListRoute } from "@/app/api/v1/admin/reviews/route";
+import { DELETE as adminDeleteRoute } from "@/app/api/v1/admin/reviews/[id]/route";
 import { POST as hideRoute } from "@/app/api/v1/admin/reviews/[id]/hide/route";
+import { POST as publishRoute } from "@/app/api/v1/admin/reviews/[id]/publish/route";
+import { GET as reviewedProductsRoute } from "@/app/api/v1/admin/reviews/products/route";
 import { POST as restoreRoute } from "@/app/api/v1/admin/reviews/[id]/restore/route";
 import {
   GET as offerGetRoute,
@@ -35,6 +38,11 @@ beforeEach(async () => {
   await resetShopData();
   await exec("DELETE FROM product_reviews");
   await exec("UPDATE products SET rating_avg = NULL, rating_count = 0");
+  await exec("UPDATE home_offer SET ends_at = NULL, headline = NULL");
+});
+
+// The offer tests set an end time; leave the shared database as other test files expect it.
+afterAll(async () => {
   await exec("UPDATE home_offer SET ends_at = NULL, headline = NULL");
 });
 
@@ -71,6 +79,28 @@ const remove = (customer: TestCustomer, id: string) =>
     cookie: customer.cookie,
     params: { id },
   });
+
+/** What staff do to a pending review: publish it, so it shows on the product page. */
+async function approve(id: string): Promise<void> {
+  const staff = await signedInStaff({
+    permissions: ["reviews.view", "reviews.moderate"],
+  });
+  const result = await call(publishRoute, {
+    method: "POST",
+    staffCookie: staff.cookie,
+    params: { id },
+    body: {},
+  });
+  expect(result.status).toBe(200);
+}
+
+/** A customer writes a review and staff publish it. */
+async function post(customer: TestCustomer, body: unknown = good) {
+  const made = await write(customer, body);
+  expect(made.status).toBe(201);
+  await approve(made.body.review.id);
+  return made;
+}
 
 /** A customer whose order for the dress was delivered. */
 async function buyer(): Promise<TestCustomer> {
@@ -164,10 +194,31 @@ describe("writing, changing and removing a review", () => {
     expect((await read()).body.summary.count).toBe(0);
   });
 
-  it("publishes a review under the first name and last initial, once per product", async () => {
+  it("starts pending: the author sees it, nobody else does, and it is not counted", async () => {
     const customer = await buyer();
     const made = await write(customer);
+
     expect(made.status).toBe(201);
+    expect(made.body.review.status).toBe("pending");
+    expect((await read()).body.summary.count).toBe(0);
+    expect((await read()).body.items).toEqual([]);
+    expect(await productRating()).toEqual({ average: null, count: 0 });
+    expect((await read(customer)).body.viewer).toMatchObject({
+      state: "already_reviewed",
+      mine: { id: made.body.review.id, status: "pending" },
+    });
+    // A pending review can still be changed by its author, and stays pending.
+    const changed = await change(customer, made.body.review.id, {
+      ...good,
+      body: "Changed my mind: the fit is a little loose.",
+    });
+    expect(changed.status).toBe(200);
+    expect(changed.body.review.status).toBe("pending");
+  });
+
+  it("shows a published review under the first name and last initial, once per product", async () => {
+    const customer = await buyer();
+    const made = await post(customer);
     expect(made.body.review.authorName).toBe("Ada L.");
     expect((await write(customer)).status).toBe(409);
 
@@ -188,12 +239,19 @@ describe("writing, changing and removing a review", () => {
     const second = await buyer();
     expect(await productRating()).toEqual({ average: null, count: 0 });
 
-    const a = await write(first, { ...good, rating: 5 });
+    const a = await post(first, { ...good, rating: 5 });
     expect(await productRating()).toEqual({ average: 5, count: 1 });
-    const b = await write(second, { ...good, rating: 2 });
+    const b = await post(second, { ...good, rating: 2 });
     expect(await productRating()).toEqual({ average: 3.5, count: 2 });
 
-    await change(first, a.body.review.id, { ...good, rating: 4 });
+    // Changing a published review takes it off the shop until staff publish it again.
+    const edited = await change(first, a.body.review.id, {
+      ...good,
+      rating: 4,
+    });
+    expect(edited.body.review.status).toBe("pending");
+    expect(await productRating()).toEqual({ average: 2, count: 1 });
+    await approve(a.body.review.id);
     expect(await productRating()).toEqual({ average: 3, count: 2 });
 
     expect((await remove(second, b.body.review.id)).status).toBe(204);
@@ -205,7 +263,7 @@ describe("writing, changing and removing a review", () => {
   it("lets only the author change or remove a review", async () => {
     const author = await buyer();
     const other = await buyer();
-    const made = await write(author);
+    const made = await post(author);
     const id = made.body.review.id as string;
 
     expect((await change(other, id)).status).toBe(404);
@@ -217,7 +275,7 @@ describe("writing, changing and removing a review", () => {
 
   it("pages through the reviews, newest first", async () => {
     for (let i = 0; i < 3; i++)
-      await write(await buyer(), { ...good, title: `Review ${i}` });
+      await post(await buyer(), { ...good, title: `Review ${i}` });
     const page = await read(undefined, "?pageSize=2&page=1");
     expect(page.body.items).toHaveLength(2);
     expect(page.body.total).toBe(3);
@@ -227,7 +285,7 @@ describe("writing, changing and removing a review", () => {
 
   it("keeps a review under 'Former customer' when the customer deletes their account", async () => {
     const customer = await buyer();
-    await write(customer);
+    await post(customer);
     const deleted = await call(deleteAccountRoute, {
       method: "DELETE",
       cookie: customer.cookie,
@@ -268,7 +326,7 @@ describe("staff moderation", () => {
 
   it("lets viewing and moderating be given separately", async () => {
     const customer = await buyer();
-    const id = (await write(customer)).body.review.id as string;
+    const id = (await post(customer)).body.review.id as string;
     const seeOnly = await signedInStaff({ permissions: ["reviews.view"] });
     const moderateOnly = await signedInStaff({
       permissions: ["reviews.moderate"],
@@ -284,7 +342,7 @@ describe("staff moderation", () => {
 
   it("hides a review from the shop and the rating, and shows it again, with an audit trail", async () => {
     const customer = await buyer();
-    const id = (await write(customer, { ...good, rating: 4 })).body.review
+    const id = (await post(customer, { ...good, rating: 4 })).body.review
       .id as string;
     const staff = await signedInStaff({
       permissions: ["reviews.view", "reviews.moderate"],
@@ -318,6 +376,7 @@ describe("staff moderation", () => {
       { id },
     );
     expect(audit.map((row) => row.action)).toEqual([
+      "reviews.publish",
       "reviews.hide",
       "reviews.restore",
     ]);
@@ -325,12 +384,12 @@ describe("staff moderation", () => {
 
   it("filters the list", async () => {
     const staff = await signedInStaff({ permissions: ["reviews.view"] });
-    await write(await buyer(), {
+    await post(await buyer(), {
       ...good,
       rating: 5,
       body: "Wonderful fabric indeed",
     });
-    await write(await buyer(), {
+    await post(await buyer(), {
       ...good,
       rating: 2,
       body: "The seams came apart quickly",
@@ -343,6 +402,142 @@ describe("staff moderation", () => {
       (await list(staff.cookie, "?status=hidden")).body.items,
     ).toHaveLength(0);
     expect((await list(staff.cookie, "?rating=9")).status).toBe(400);
+  });
+});
+
+describe("publishing, hiding and deleting reviews", () => {
+  const moderator = () =>
+    signedInStaff({ permissions: ["reviews.view", "reviews.moderate"] });
+  const list = (cookie: string | undefined, query = "") =>
+    call(adminListRoute, {
+      method: "GET",
+      staffCookie: cookie,
+      path: `/api/v1/admin/reviews${query}`,
+    });
+  const publish = (cookie: string | undefined, id: string) =>
+    call(publishRoute, {
+      method: "POST",
+      staffCookie: cookie,
+      params: { id },
+      body: {},
+    });
+  const hide = (cookie: string | undefined, id: string) =>
+    call(hideRoute, {
+      method: "POST",
+      staffCookie: cookie,
+      params: { id },
+      body: { reason: "Not suitable" },
+    });
+  const erase = (cookie: string | undefined, id: string) =>
+    call(adminDeleteRoute, {
+      method: "DELETE",
+      staffCookie: cookie,
+      params: { id },
+    });
+
+  it("lists a new review as pending, and publishing it puts it on the shop and in the rating", async () => {
+    const staff = await moderator();
+    const customer = await buyer();
+    const id = (await write(customer, { ...good, rating: 4 })).body.review
+      .id as string;
+
+    const pending = await list(staff.cookie, "?status=pending");
+    expect(pending.body.items).toHaveLength(1);
+    expect(pending.body.items[0]).toMatchObject({ id, status: "pending" });
+    expect((await list(staff.cookie, "?status=published")).body.items).toEqual(
+      [],
+    );
+
+    const published = await publish(staff.cookie, id);
+    expect(published.status).toBe(200);
+    expect(published.body.review.status).toBe("published");
+    expect((await read()).body.summary).toMatchObject({
+      count: 1,
+      average: 4,
+    });
+    expect(await productRating()).toEqual({ average: 4, count: 1 });
+    // Only a pending review can be published.
+    expect((await publish(staff.cookie, id)).status).toBe(409);
+    expect((await list(staff.cookie, "?status=pending")).body.items).toEqual(
+      [],
+    );
+  });
+
+  it("lets staff turn a pending review down by hiding it", async () => {
+    const staff = await moderator();
+    const customer = await buyer();
+    const id = (await write(customer)).body.review.id as string;
+
+    expect((await hide(staff.cookie, id)).body.review.status).toBe("hidden");
+    expect((await read()).body.summary.count).toBe(0);
+    expect((await publish(staff.cookie, id)).status).toBe(409);
+  });
+
+  it("deletes a review for good, in any status, and the customer may write a new one", async () => {
+    const staff = await moderator();
+    const first = await buyer();
+    const second = await buyer();
+    const pendingId = (await write(first)).body.review.id as string;
+    const publishedId = (await post(second, { ...good, rating: 3 })).body.review
+      .id as string;
+    expect(await productRating()).toEqual({ average: 3, count: 1 });
+
+    expect((await erase(staff.cookie, publishedId)).status).toBe(204);
+    expect((await erase(staff.cookie, pendingId)).status).toBe(204);
+    expect((await erase(staff.cookie, pendingId)).status).toBe(404);
+    expect(await productRating()).toEqual({ average: null, count: 0 });
+    expect((await list(staff.cookie)).body.items).toEqual([]);
+    expect((await write(first)).status).toBe(201);
+
+    const [audit] = await sql<{ before: Record<string, unknown> }>(
+      "SELECT before FROM audit_log WHERE action = 'reviews.delete' AND entity_id = :id",
+      { id: publishedId },
+    );
+    expect(audit.before).toMatchObject({
+      status: "published",
+      rating: 3,
+      body: good.body,
+    });
+  });
+
+  it("needs the moderate permission to publish or delete", async () => {
+    const customer = await buyer();
+    const id = (await write(customer)).body.review.id as string;
+    const seeOnly = await signedInStaff({ permissions: ["reviews.view"] });
+
+    expect((await publish(undefined, id)).status).toBe(401);
+    expect((await publish(seeOnly.cookie, id)).status).toBe(403);
+    expect((await erase(seeOnly.cookie, id)).status).toBe(403);
+    expect((await list(seeOnly.cookie, "?status=pending")).status).toBe(200);
+  });
+
+  it("filters by product, and lists the products that have reviews", async () => {
+    const staff = await moderator();
+    await write(await buyer());
+    const [dress] = await sql<{ id: string; name: string }>(
+      "SELECT id, name FROM products WHERE slug = :slug",
+      { slug: DRESS },
+    );
+
+    const products = await call(reviewedProductsRoute, {
+      method: "GET",
+      staffCookie: staff.cookie,
+    });
+    expect(products.status).toBe(200);
+    expect(products.body.items).toEqual([{ id: dress.id, name: dress.name }]);
+
+    expect(
+      (await list(staff.cookie, `?productId=${dress.id}`)).body.items,
+    ).toHaveLength(1);
+    expect(
+      (
+        await list(
+          staff.cookie,
+          "?productId=00000000-0000-4000-8000-000000000000",
+        )
+      ).body.items,
+    ).toEqual([]);
+    expect((await list(staff.cookie, "?productId=nope")).status).toBe(400);
   });
 });
 
