@@ -28,11 +28,11 @@ export function AdminCatalogView() {
     <div className="mx-auto flex w-full max-w-[75rem] flex-col gap-[clamp(0.5rem,1.8dvh,1.6rem)]">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <AdminPageHead
-          title="Catalogue"
+          title="Catalog"
           subtitle="How the shop is organised: menu pages, collections and the home page."
         />
         {allowed ? (
-          <div role="tablist" aria-label="Catalogue" className="flex gap-2">
+          <div role="tablist" aria-label="Catalog" className="flex gap-2">
             {TABS.map((item) => (
               <button
                 key={item.id}
@@ -63,7 +63,7 @@ export function AdminCatalogView() {
         )
       ) : (
         <p className="text-sm text-muted-foreground">
-          Your role does not include managing the catalogue.
+          Your role does not include managing the catalog.
         </p>
       )}
     </div>

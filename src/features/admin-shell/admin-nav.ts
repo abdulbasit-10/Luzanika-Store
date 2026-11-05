@@ -47,7 +47,7 @@ export const ADMIN_NAV_GROUPS: AdminNavItem[][] = [
     },
     {
       href: "/admin/catalog",
-      label: "Catalogue",
+      label: "Catalog",
       icon: Tags,
       permission: "catalog.manage",
     },

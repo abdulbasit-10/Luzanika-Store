@@ -33,7 +33,7 @@ const GROUP_LABEL: Record<string, string> = {
   orders: "Orders",
   payments: "Payments",
   products: "Products",
-  catalog: "Catalogue",
+  catalog: "Catalog",
   stock: "Inventory",
   customers: "Customers",
   reviews: "Reviews",
