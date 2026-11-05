@@ -44,10 +44,18 @@ export const adminOrderListQuerySchema = z.object({
       "completed",
       "cancelled",
       "refunded",
+      "deleted",
     ])
     .optional(),
   paymentStatus: z
-    .enum(["pending", "paid", "failed", "refunded", "partially_refunded"])
+    .enum([
+      "pending",
+      "awaiting_verification",
+      "paid",
+      "failed",
+      "refunded",
+      "partially_refunded",
+    ])
     .optional(),
   from: dateParam("start", false).optional(),
   to: dateParam("end", true).optional(),
@@ -55,25 +63,9 @@ export const adminOrderListQuerySchema = z.object({
   ...pageQuery,
 });
 
-const carrier = z
-  .string()
-  .trim()
-  .min(1, "Enter the carrier")
-  .max(80, "Keep it under 80 characters")
-  .regex(noControl, "Enter a valid carrier");
-
-const trackingNumber = z
-  .string()
-  .trim()
-  .min(1, "Enter the tracking number")
-  .max(120, "Keep it under 120 characters")
-  .regex(noControl, "Enter a valid tracking number");
-
-/** What staff can do to an order's status. Delivery details are required to ship. */
+/** What staff can do to an order's status. */
 export const changeOrderStatusSchema = z.discriminatedUnion("status", [
-  z
-    .object({ status: z.literal("in_delivery"), carrier, trackingNumber })
-    .strict(),
+  z.object({ status: z.literal("in_delivery") }).strict(),
   z.object({ status: z.literal("completed") }).strict(),
   z
     .object({
@@ -90,10 +82,6 @@ export const changeOrderStatusSchema = z.discriminatedUnion("status", [
 ]);
 
 export type ChangeOrderStatusBody = z.infer<typeof changeOrderStatusSchema>;
-
-export const updateTrackingSchema = z
-  .object({ carrier, trackingNumber })
-  .strict();
 
 /**
  * A refund. `amount` is in minor units (paisa / cents). With `restock` the
@@ -129,3 +117,32 @@ export const createRefundSchema = z
   .strict();
 
 export type CreateRefundBody = z.infer<typeof createRefundSchema>;
+
+/** Confirming a payment: an optional note for the order's history ("TID 123 checked in the bank app"). */
+export const confirmPaymentSchema = z
+  .object({
+    note: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200, "Keep it under 200 characters")
+      .regex(noControl, "Enter a valid note")
+      .optional(),
+  })
+  .strict();
+
+export type ConfirmPaymentBody = z.infer<typeof confirmPaymentSchema>;
+
+/** Rejecting a payment proof: the reason is sent to the customer, so they know what to fix. */
+export const rejectPaymentSchema = z
+  .object({
+    reason: z
+      .string()
+      .trim()
+      .min(1, "Please give a reason")
+      .max(300, "Keep it under 300 characters")
+      .regex(noControl, "Enter a valid reason"),
+  })
+  .strict();
+
+export type RejectPaymentBody = z.infer<typeof rejectPaymentSchema>;

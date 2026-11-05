@@ -7,10 +7,20 @@ import { logger, serializeError } from "@/server/logger";
 import { calculateTotals } from "@/server/orders/order-totals";
 import { toOrderDto, type OrderDto } from "@/server/orders/order-dto";
 import {
+  allowedInMarket,
+  isOfflineMethod,
+  isTransferMethod,
+  type PaymentMethod,
+} from "@/server/payments/methods";
+import {
   getPaymentProvider,
   type PaymentProvider,
 } from "@/server/payments/provider";
-import { cartRepository } from "@/server/repositories/cart-repository";
+import { adminOrderRepository } from "@/server/repositories/admin-order-repository";
+import {
+  cartRepository,
+  type CartLineRow,
+} from "@/server/repositories/cart-repository";
 import type { CustomerRecord } from "@/server/repositories/customer-repository";
 import {
   orderRepository,
@@ -19,6 +29,7 @@ import {
   type OrderRow,
 } from "@/server/repositories/order-repository";
 import {
+  getPaymentSettings,
   getPricingConfig,
   getReservationMinutes,
 } from "@/server/services/settings-service";
@@ -31,13 +42,50 @@ export const MAX_ORDERS_LISTED = 50;
 
 export interface PlacedOrder {
   order: OrderDto;
-  payment: { provider: PaymentProvider["name"]; clientSecret?: string };
+  /** "manual": cash on delivery or a transfer; the customer pays outside the shop. */
+  payment: {
+    provider: PaymentProvider["name"] | "manual";
+    clientSecret?: string;
+  };
 }
 
 const notFound = () => new ApiError("not_found");
 
+/** What one unit of a cart line is discounted by: its list price less what it costs now. 0 when no discount applies. */
+function discountPerUnit(row: CartLineRow): number {
+  return Math.max(0, Number(row.list_amount) - Number(row.amount));
+}
+
 async function toDto(row: OrderRow, tx?: Tx): Promise<OrderDto> {
-  return toOrderDto(row, await orderRepository.listItems([row.id], tx));
+  const [items, proofs] = await Promise.all([
+    orderRepository.listItems([row.id], tx),
+    orderRepository.listLatestProofs([row.id], tx),
+  ]);
+  return toOrderDto(row, items, proofs);
+}
+
+/** A method that cannot be used: not for this market, or its payment details are not set up yet. */
+async function assertMethodAvailable(
+  method: PaymentMethod,
+  market: "PK" | "DE",
+  tx: Tx,
+): Promise<void> {
+  if (!allowedInMarket(method, market)) {
+    throw new ApiError("validation_failed", {
+      message: "That payment method is not available in your country.",
+      fields: { paymentMethod: "Please choose another payment method." },
+    });
+  }
+  if (!isTransferMethod(method)) return;
+
+  const { details } = await getPaymentSettings(tx);
+  const key = method === "bank_transfer" ? "bank" : method;
+  if (!details[key]) {
+    throw new ApiError("validation_failed", {
+      message: "That payment method is not available right now.",
+      fields: { paymentMethod: "Please choose another payment method." },
+    });
+  }
 }
 
 /*
@@ -160,8 +208,11 @@ export async function createOrder(
   body: CreateOrderBody,
   idempotencyKey: string | null,
 ): Promise<PlacedOrder> {
-  // Fails early (503) when no payment provider is set up, before anything is reserved.
-  const provider = getPaymentProvider();
+  // Cash and transfers need no payment provider. Cards fail early (503) when none is set up, before anything is reserved.
+  const provider = isOfflineMethod(body.paymentMethod)
+    ? null
+    : getPaymentProvider();
+  const providerName = provider?.name ?? "manual";
   // Stock held by orders nobody paid for is freed first, so it can be bought now.
   await sweepQuietly();
 
@@ -180,6 +231,8 @@ export async function createOrder(
         return same.id;
       }
     }
+
+    await assertMethodAvailable(body.paymentMethod, body.market, tx);
 
     const cart = (
       await cartRepository.listLines(customer.id, body.market, tx)
@@ -217,7 +270,8 @@ export async function createOrder(
 
     const totals = calculateTotals(
       lines.map(({ row, quantity }) => ({
-        unitAmount: Number(row.amount),
+        unitAmount: Number(row.list_amount),
+        discountPerUnit: discountPerUnit(row),
         quantity,
       })),
       body.market,
@@ -248,8 +302,12 @@ export async function createOrder(
         email: body.contact.email,
         phone: body.contact.phone,
         paymentMethod: body.paymentMethod,
+        // A transfer takes longer than a card payment: the customer has to go to their bank or wallet app.
         reservationExpiresAt: new Date(
-          Date.now() + (await getReservationMinutes(tx)) * 60_000,
+          Date.now() +
+            (isTransferMethod(body.paymentMethod)
+              ? (await getPaymentSettings(tx)).manualHoldHours * 3_600_000
+              : (await getReservationMinutes(tx)) * 60_000),
         ),
         ...totals,
         shipName: body.shipping.fullName,
@@ -275,7 +333,9 @@ export async function createOrder(
       imageAlt: row.image_alt,
       imagePosition: row.image_position,
       quantity,
-      unitAmount: Number(row.amount),
+      unitAmount: Number(row.list_amount),
+      discountAmount: discountPerUnit(row) * quantity,
+      discountPercent: row.discount_percent,
     }));
     await orderRepository.insertItems(id, items, tx);
     await orderRepository.addHistory(
@@ -291,7 +351,7 @@ export async function createOrder(
     await orderRepository.insertPayment(
       {
         orderId: id,
-        provider: provider.name,
+        provider: providerName,
         method: body.paymentMethod,
         amount: totals.total,
         currency,
@@ -299,8 +359,48 @@ export async function createOrder(
       tx,
     );
 
-    for (const { row, quantity } of lines) {
-      await orderRepository.reserve(row.variant_id, body.market, quantity, tx);
+    if (body.paymentMethod === "cod") {
+      // Cash on delivery: nothing to wait for. The goods are sold now, the order goes straight to staff,
+      // and the payment stays pending until the cash is collected.
+      for (const { row, quantity } of lines) {
+        await orderRepository.sell(
+          row.variant_id,
+          body.market,
+          quantity,
+          false,
+          id,
+          tx,
+          "Order placed (cash on delivery)",
+        );
+      }
+      await orderRepository.update(
+        id,
+        {
+          status: "processing",
+          stockState: "committed",
+          clearReservation: true,
+        },
+        tx,
+      );
+      await orderRepository.addHistory(
+        {
+          orderId: id,
+          from: "waiting_payment",
+          to: "processing",
+          actor: "system",
+          note: "Cash on delivery: confirmed at checkout",
+        },
+        tx,
+      );
+    } else {
+      for (const { row, quantity } of lines) {
+        await orderRepository.reserve(
+          row.variant_id,
+          body.market,
+          quantity,
+          tx,
+        );
+      }
     }
     // What was ordered leaves the cart; anything left unticked stays.
     await cartRepository.remove(
@@ -313,7 +413,9 @@ export async function createOrder(
 
   const row = (await orderRepository.findById(orderId))!;
   const order = await toDto(row);
-  if (repeated) return { order, payment: { provider: provider.name } };
+  if (repeated || !provider) {
+    return { order, payment: { provider: providerName } };
+  }
 
   try {
     const start = await provider.start({
@@ -373,8 +475,12 @@ export async function listOrders(customerId: string): Promise<OrderDto[]> {
     customerId,
     MAX_ORDERS_LISTED,
   );
-  const items = await orderRepository.listItems(rows.map((row) => row.id));
-  return rows.map((row) => toOrderDto(row, items));
+  const ids = rows.map((row) => row.id);
+  const [items, proofs] = await Promise.all([
+    orderRepository.listItems(ids),
+    orderRepository.listLatestProofs(ids),
+  ]);
+  return rows.map((row) => toOrderDto(row, items, proofs));
 }
 
 function parseNumber(raw: string): string {
@@ -411,6 +517,13 @@ export async function cancelOrder(
   const row = await orderRepository.findOwned(customerId, number);
   if (!row) throw notFound();
 
+  if (row.payment_status === "awaiting_verification") {
+    throw new ApiError("conflict", {
+      message:
+        "We are checking your payment, so this order cannot be cancelled now. Please contact us if you want to cancel it.",
+    });
+  }
+
   const cancelled = await cancelUnpaid(
     row.id,
     "customer",
@@ -444,7 +557,29 @@ export async function cancelOpenOrders(customerId: string): Promise<void> {
  * the first call changes anything. This is what a verified webhook calls.
  */
 export async function confirmPayment(orderId: string): Promise<void> {
-  await withTransaction(async (tx) => {
+  await withTransaction((tx) =>
+    confirmPaymentIn(tx, orderId, { actor: "payment" }),
+  );
+}
+
+/** Who says the money arrived, for the order's history: the provider, or a member of staff who checked a transfer. */
+export interface PaymentConfirmer {
+  actor: ActorType;
+  actorId?: string | null;
+  note?: string | null;
+}
+
+/**
+ * confirmPayment inside the caller's transaction, so something that must be
+ * saved with it (the admin's audit row and the approved proof) is saved
+ * together or not at all.
+ */
+export async function confirmPaymentIn(
+  tx: Tx,
+  orderId: string,
+  by: PaymentConfirmer,
+): Promise<void> {
+  {
     const order = await orderRepository.lockById(orderId, tx);
     if (!order) throw notFound();
     if (order.payment_status === "paid") return;
@@ -493,7 +628,9 @@ export async function confirmPayment(orderId: string): Promise<void> {
           orderId: order.id,
           from: "waiting_payment",
           to: "processing",
-          actor: "payment",
+          actor: by.actor,
+          actorId: by.actorId ?? null,
+          note: by.note ?? null,
         },
         tx,
       );
@@ -536,7 +673,8 @@ export async function confirmPayment(orderId: string): Promise<void> {
           orderId: order.id,
           from: "cancelled",
           to: "processing",
-          actor: "payment",
+          actor: by.actor,
+          actorId: by.actorId ?? null,
           note: "Paid after the order was cancelled; the stock was still available.",
         },
         tx,
@@ -554,7 +692,8 @@ export async function confirmPayment(orderId: string): Promise<void> {
         orderId: order.id,
         from: "cancelled",
         to: "cancelled",
-        actor: "payment",
+        actor: by.actor,
+        actorId: by.actorId ?? null,
         note: "PAID AFTER CANCELLATION and the stock is gone: this order needs a refund.",
       },
       tx,
@@ -562,6 +701,75 @@ export async function confirmPayment(orderId: string): Promise<void> {
     logger.warn("an order was paid after it was cancelled and needs a refund", {
       orderNumber: order.number,
     });
+  }
+}
+
+/**
+ * Staff cancel a cash-on-delivery order that was never paid (a fake order, or
+ * the customer refused it at the door). Its goods were already sold at
+ * checkout, so they go back on the shelf. Returns false if the order is not
+ * such an order (any more). `inTransaction` runs in the same transaction.
+ */
+export async function cancelUnpaidCod(
+  orderId: string,
+  staffId: string,
+  reason: string,
+  inTransaction?: (tx: Tx) => Promise<void>,
+): Promise<boolean> {
+  return withTransaction(async (tx) => {
+    const order = await orderRepository.lockById(orderId, tx);
+    if (
+      !order ||
+      order.payment_method !== "cod" ||
+      order.payment_status !== "pending" ||
+      (order.status !== "processing" && order.status !== "in_delivery")
+    ) {
+      return false;
+    }
+
+    const items = await orderRepository.listItems([order.id], tx);
+    const stocked = items.filter((item) => item.variant_id !== null);
+    await orderRepository.lockInventory(
+      [...new Set(stocked.map((item) => item.variant_id!))],
+      order.market,
+      tx,
+    );
+    // Always in variant order, like the order code, so two jobs never wait on each other.
+    for (const item of [...stocked].sort((a, b) =>
+      a.variant_id!.localeCompare(b.variant_id!),
+    )) {
+      await adminOrderRepository.restock(
+        {
+          variantId: item.variant_id!,
+          market: order.market,
+          quantity: item.quantity,
+          orderId: order.id,
+          staffId,
+          note: `Cancelled before the cash was collected: order ${order.number}`,
+        },
+        tx,
+      );
+    }
+
+    await orderRepository.update(
+      order.id,
+      { status: "cancelled", stockState: "released", cancel: { reason } },
+      tx,
+    );
+    await orderRepository.setPaymentStatus(order.id, "cancelled", tx);
+    await orderRepository.addHistory(
+      {
+        orderId: order.id,
+        from: order.status,
+        to: "cancelled",
+        actor: "staff",
+        actorId: staffId,
+        note: reason,
+      },
+      tx,
+    );
+    if (inTransaction) await inTransaction(tx);
+    return true;
   });
 }
 

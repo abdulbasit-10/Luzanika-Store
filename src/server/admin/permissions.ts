@@ -9,14 +9,23 @@ export const PERMISSIONS = {
   "orders.manage":
     "Move orders along (delivery, completed) and cancel unpaid orders",
   "orders.refund": "Record refunds, including cancelling a paid order",
+  "payments.verify":
+    "Check payment proofs, confirm bank, Easypaisa, JazzCash and cash payments, and see the screenshots",
   "products.view": "See products, prices and photos",
   "products.manage": "Create and edit products, variants, prices and photos",
   "products.delete": "Delete (hide) and restore products",
   "catalog.manage": "Manage categories, collections and the home page sections",
+  "discounts.view": "See discounts",
+  "discounts.manage":
+    "Create, change, switch off and delete discounts on products",
   "stock.view": "See stock levels and movements",
   "stock.adjust": "Change stock levels",
   "customers.view": "See customers and their orders",
   "customers.manage": "Block and unblock customers",
+  "reviews.view": "See product reviews",
+  "reviews.moderate": "Hide and restore product reviews",
+  "contact.view": "See messages from the contact form",
+  "contact.reply": "Reply to contact form messages by email",
   "settings.view": "See the shop settings",
   "settings.manage": "Change shipping fees, VAT, hold time and shop details",
 } as const;

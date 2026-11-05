@@ -20,7 +20,8 @@ export function Footer() {
   const { address, email, customerService } = siteConfig.contact;
 
   return (
-    <footer className="bg-white text-foreground">
+    // Figma "Footer": the page's grey background (#D9D9D9), a 1px black line on top, text and icons in #252525.
+    <footer className="border-t border-black bg-background text-foreground">
       <Container className="py-10">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[481fr_284fr_283fr_max-content] lg:gap-0">
           <div className="flex flex-col gap-2 sm:col-span-2 lg:col-span-1">
@@ -66,7 +67,7 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-foreground pt-6 text-xs">
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-foreground pt-6 text-sm">
           <p>
             &copy; <CopyrightYear /> {siteConfig.name}
           </p>

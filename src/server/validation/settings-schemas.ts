@@ -35,6 +35,38 @@ const social = z
   })
   .strict();
 
+const detail = (label: string, max: number) =>
+  z
+    .string()
+    .trim()
+    .min(1, `Enter the ${label}`)
+    .max(max, `Keep it under ${max} characters`)
+    .regex(noControl, `Enter a valid ${label}`);
+
+/** A wallet number or account number people type into their banking app. */
+const walletNumber = z
+  .string()
+  .trim()
+  .regex(/^\+?[\d\s()-]{6,20}$/, "Enter a valid number");
+
+const bankDetails = z
+  .object({
+    bankName: detail("bank name", 80),
+    accountTitle: detail("account title", 80),
+    accountNumber: z
+      .string()
+      .trim()
+      .regex(
+        /^[A-Za-z0-9][A-Za-z0-9\s-]{2,39}$/,
+        "Enter the account number or IBAN (letters, digits, spaces)",
+      ),
+  })
+  .strict();
+
+const walletDetails = z
+  .object({ accountTitle: detail("account title", 80), number: walletNumber })
+  .strict();
+
 /** PATCH: only what is sent changes. Unknown fields are refused. */
 export const updateSettingsSchema = z
   .object({
@@ -52,6 +84,20 @@ export const updateSettingsSchema = z
       .int("Enter a whole number of minutes")
       .min(5, "At least 5 minutes")
       .max(1440, "At most 1440 minutes (one day)"),
+    /** A method set to null is no longer offered at checkout; one that is left out stays as it is. */
+    payments: z
+      .object({
+        manualHoldHours: z
+          .number()
+          .int("Enter a whole number of hours")
+          .min(1, "At least 1 hour")
+          .max(336, "At most 336 hours (two weeks)"),
+        bank: bankDetails.nullable(),
+        easypaisa: walletDetails.nullable(),
+        jazzcash: walletDetails.nullable(),
+      })
+      .partial()
+      .strict(),
     contact: z
       .object({
         email,

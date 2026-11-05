@@ -93,6 +93,7 @@ export async function orderBody(
   cookie: string,
   market: Market,
   email = "ada@example.com",
+  paymentMethod = "card",
 ) {
   const cart = await call(getCartRoute, {
     method: "GET",
@@ -122,7 +123,7 @@ export async function orderBody(
       zip: "10115",
     },
     billing: "same",
-    paymentMethod: "card",
+    paymentMethod,
     acceptTerms: true,
     expected: {
       total: goods + (pricing.body.shippingFee as number),
@@ -151,6 +152,8 @@ export async function placeTestOrder(
     quantity?: number;
     email?: string;
     customer?: TestCustomer;
+    /** card (the default), cod, bank_transfer, easypaisa or jazzcash. */
+    paymentMethod?: string;
   } = {},
 ): Promise<PlacedTestOrder> {
   const market = options.market ?? "PK";
@@ -162,7 +165,12 @@ export async function placeTestOrder(
   const placed = await call(createRoute, {
     method: "POST",
     cookie: customer.cookie,
-    body: await orderBody(customer.cookie, market, email),
+    body: await orderBody(
+      customer.cookie,
+      market,
+      email,
+      options.paymentMethod,
+    ),
   });
   if (placed.status !== 201) {
     throw new Error(

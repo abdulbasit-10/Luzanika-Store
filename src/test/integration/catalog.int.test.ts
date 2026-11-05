@@ -25,11 +25,18 @@ import { catalogService } from "@/server/services/catalog-service";
 
 import { call, exec, sql } from "./helpers";
 
-/** Drops `undefined` fields and database ids, so shapes can be compared. */
+/**
+ * Ratings in the sample data are invented. The import does not copy them
+ * (a rating only ever comes from real reviews), so they are left out of the
+ * comparison.
+ */
+const INVENTED = ["rating", "reviewCount"];
+
+/** Drops `undefined` fields, database ids and the invented ratings, so shapes can be compared. */
 function plain<T>(value: T, omit: string[] = []): unknown {
   return JSON.parse(
     JSON.stringify(value, (key, item) =>
-      omit.includes(key) ? undefined : item,
+      omit.includes(key) || INVENTED.includes(key) ? undefined : item,
     ),
   );
 }

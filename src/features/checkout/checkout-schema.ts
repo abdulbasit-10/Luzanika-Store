@@ -1,7 +1,6 @@
 import { z } from "zod";
 
-export const PAYMENT_METHODS = ["card", "paypal", "gift-card"] as const;
-export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+import { PAYMENT_METHODS } from "@/features/orders/payment-methods";
 
 const required = (message: string) => z.string().trim().min(1, message);
 

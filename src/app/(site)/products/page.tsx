@@ -13,7 +13,8 @@ export const metadata: Metadata = {
 
 export default function ProductsPage() {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       {/* The search text is read from the URL on the client, which needs a Suspense boundary. */}
       <Suspense fallback={<ProductsSkeleton />}>
         <ProductsContent />

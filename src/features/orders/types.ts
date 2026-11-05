@@ -1,3 +1,4 @@
+import type { PaymentMethod } from "@/features/orders/payment-methods";
 import type { ProductImage } from "@/types/product";
 import type { CurrencyCode, RegionCode } from "@/types/region";
 
@@ -11,7 +12,20 @@ export type OrderStatus =
   | "refunded";
 
 export type PaymentStatus =
-  "pending" | "paid" | "failed" | "refunded" | "partially_refunded";
+  | "pending"
+  | "awaiting_verification"
+  | "paid"
+  | "failed"
+  | "refunded"
+  | "partially_refunded";
+
+/** The newest payment proof of a transfer order and what staff made of it. */
+export interface PaymentProof {
+  status: "pending" | "approved" | "rejected";
+  /** Why staff rejected it, so the shopper can fix it. */
+  rejectionReason: string | null;
+  submittedAt: string;
+}
 
 export interface OrderItem {
   slug: string;
@@ -41,9 +55,11 @@ export interface Order {
   currency: CurrencyCode;
   status: OrderStatus;
   paymentStatus: PaymentStatus;
-  paymentMethod: "card";
-  /** "simulated" only in development; null when no payment was started. */
+  paymentMethod: PaymentMethod;
+  /** "simulated" only in development, "manual" for cash and transfers; null when no payment was started. */
   paymentProvider: string | null;
+  /** For a transfer: the newest proof sent. Null until one is sent. */
+  paymentProof: PaymentProof | null;
   /** ISO 8601. */
   placedAt: string;
   paidAt: string | null;

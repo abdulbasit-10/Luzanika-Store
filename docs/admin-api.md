@@ -1,8 +1,8 @@
 # Luzanika admin API
 
 JSON API for running the shop: orders, products and catalogue, stock,
-customers, settings, staff. Everything is under `/api/v1/admin`. It is meant
-for the future admin screens; there are no admin pages yet.
+customers, settings, staff. Everything is under `/api/v1/admin`. The admin
+screens in `src/app/admin/` use all of it.
 
 Staff work on **one dashboard for both markets** (Pakistan `PK` / PKR and
 Germany `DE` / EUR). There are no exchange rates, so **PKR and EUR are never
@@ -101,22 +101,29 @@ the shell) and refuses to run when a super admin already exists unless
 Roles are made by the super admin with ticked permissions and given to staff.
 Everyone sees both markets. A staff member's rights are the union of their roles.
 
-| Permission         | Allows                                                           |
-| ------------------ | ---------------------------------------------------------------- |
-| `dashboard.view`   | See the dashboard numbers                                        |
-| `orders.view`      | See orders and their history                                     |
-| `orders.manage`    | Move orders along (delivery, completed) and cancel unpaid orders |
-| `orders.refund`    | Record refunds, including cancelling a paid order                |
-| `products.view`    | See products, prices and photos                                  |
-| `products.manage`  | Create and edit products, variants, prices and photos            |
-| `products.delete`  | Delete (hide) and restore products                               |
-| `catalog.manage`   | Manage categories, collections and the home page sections        |
-| `stock.view`       | See stock levels and movements                                   |
-| `stock.adjust`     | Change stock levels                                              |
-| `customers.view`   | See customers and their orders                                   |
-| `customers.manage` | Block and unblock customers                                      |
-| `settings.view`    | See the shop settings                                            |
-| `settings.manage`  | Change shipping fees, VAT, hold time and shop details            |
+| Permission         | Allows                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------- |
+| `dashboard.view`   | See the dashboard numbers                                                                      |
+| `orders.view`      | See orders and their history                                                                   |
+| `orders.manage`    | Move orders along (delivery, completed) and cancel unpaid orders                               |
+| `orders.refund`    | Record refunds, including cancelling a paid order                                              |
+| `payments.verify`  | Check payment proofs, confirm cash / bank / Easypaisa / JazzCash payments, see the screenshots |
+| `products.view`    | See products, prices and photos                                                                |
+| `products.manage`  | Create and edit products, variants, prices and photos                                          |
+| `products.delete`  | Delete (hide) and restore products                                                             |
+| `catalog.manage`   | Manage categories, collections and the home page sections                                      |
+| `stock.view`       | See stock levels and movements                                                                 |
+| `stock.adjust`     | Change stock levels                                                                            |
+| `customers.view`   | See customers and their orders                                                                 |
+| `customers.manage` | Block and unblock customers                                                                    |
+| `reviews.view`     | See product reviews                                                                            |
+| `reviews.moderate` | Publish, hide, show again and delete product reviews                                           |
+| `discounts.view`   | See discounts                                                                                  |
+| `discounts.manage` | Create, change, switch off and delete discounts on products                                    |
+| `contact.view`     | Read messages from the contact form                                                            |
+| `contact.reply`    | Answer contact form messages by email                                                          |
+| `settings.view`    | See the shop settings                                                                          |
+| `settings.manage`  | Change shipping fees, VAT, hold time and shop details                                          |
 
 **Super admin only** (a role can never give these away): managing staff,
 managing roles and reading the audit log. A super admin has every permission.
@@ -206,25 +213,37 @@ The period defaults to the last 30 days up to and including today (at most
 
 ### Orders
 
-| Method | Path                       | Permission      | Notes                                                                                                   |
-| ------ | -------------------------- | --------------- | ------------------------------------------------------------------------------------------------------- |
-| GET    | `/orders`                  | `orders.view`   | Filters `market`, `status`, `paymentStatus`, `from`, `to`, `search` (number, email, recipient), paging. |
-| GET    | `/orders/:number`          | `orders.view`   | Items, addresses, payments, status history, refunds, `amounts.refundableTotal`.                         |
-| POST   | `/orders/:number/status`   | `orders.manage` | See below. The customer is emailed; an email failure is logged and never undoes the change.             |
-| PATCH  | `/orders/:number/tracking` | `orders.manage` | `{ carrier, trackingNumber }` while in delivery. The customer is not emailed again.                     |
-| POST   | `/orders/:number/refunds`  | `orders.refund` | See below.                                                                                              |
+| Method | Path                                                 | Permission        | Notes                                                                                                                                                                                                                                                   |
+| ------ | ---------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/orders`                                            | `orders.view`     | Filters `market`, `status` (or `deleted`), `paymentStatus`, `from`, `to`, `search` (number, email, recipient), paging. Deleted orders are left out unless `status=deleted`. Each item has `allowedMoves` (the status dropdown's choices) and `deleted`. |
+| GET    | `/orders/:number`                                    | `orders.view`     | Items, addresses, payments, status history, refunds, `amounts.refundableTotal`.                                                                                                                                                                         |
+| POST   | `/orders/:number/status`                             | `orders.manage`   | See below. The customer is emailed; an email failure is logged and never undoes the change.                                                                                                                                                             |
+| POST   | `/orders/:number/delete`                             | `orders.manage`   | Hides a **cancelled** order from the list (record, payments and audit stay). Anything else is `409`. There is no undo.                                                                                                                                  |
+| POST   | `/orders/:number/refunds`                            | `orders.refund`   | See below.                                                                                                                                                                                                                                              |
+| POST   | `/orders/:number/payment/confirm`                    | `payments.verify` | `{ note? }`. The money is there. See "Payments" below.                                                                                                                                                                                                  |
+| POST   | `/orders/:number/payment/reject`                     | `payments.verify` | `{ reason }`. The customer's payment proof does not check out. See "Payments" below.                                                                                                                                                                    |
+| GET    | `/orders/:number/payment-proofs/:proofId/screenshot` | `payments.verify` | The customer's screenshot (private, never cached).                                                                                                                                                                                                      |
+
+`GET /orders/:number` also returns `paymentMethod`, `paymentActions`
+(`{ canConfirm, canReject }`: what to offer right now) and `paymentProofs`.
 
 Statuses: `waiting_payment`, `processing`, `in_delivery`, `completed`,
-`cancelled`, `refunded`. Allowed moves; anything else is `409 invalid_status_transition`:
+`cancelled`, `refunded`. Staff see them as **Pending, Processing, Shipped,
+Delivered, Cancelled, Refunded** (the stored values did not change). A pending
+order moves to Processing by confirming its payment. A **delivered** order is
+locked: no status change, no delete (a refund for a return is still possible). Allowed moves; anything else is `409 invalid_status_transition`:
 
 ```json
-{ "status": "in_delivery", "carrier": "TCS", "trackingNumber": "123" }   // paid -> in delivery
+{ "status": "in_delivery" }                                              // paid -> in delivery
 { "status": "completed" }                                                // in delivery -> completed
 { "status": "cancelled", "reason": "Customer asked" }                   // unpaid -> cancelled, stock goes back
 ```
 
 There is no going back. A **paid** order is never cancelled here: record a
-refund instead; a full refund ends it as `refunded`.
+refund instead; a full refund ends it as `refunded`. The one exception is an
+unpaid **cash on delivery** order: it is `processing` from the start, so while
+its cash has not been collected staff can still cancel it (a fake order, a
+parcel refused at the door) and its goods go back into stock.
 
 **Refund**: `{ amount, reason, restock?, items?: [{ orderItemId, quantity }] }`.
 `amount` may not exceed what is still refundable. A partial refund sets
@@ -233,6 +252,39 @@ items go back into stock (list them in `items`, or leave `items` out to put
 back everything not yet back) and a `return` row is written to the stock
 ledger. No money moves until a payment provider exists; the record is the
 bookkeeping.
+
+### Payments (cash on delivery, bank transfer, Easypaisa, JazzCash)
+
+There is no payment gateway for these: the customer pays outside the shop and
+staff confirm it. Pakistan only; Germany keeps cards. The customer chooses at
+checkout (`GET /api/v1/payment-methods?market=PK` lists what is offered; a
+transfer method is only offered once its account is set in the settings).
+
+| Method                                   | At checkout                                                                                                                            | Staff                                                                                                                                  |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `cod`                                    | The order goes straight to `processing`, payment `pending`; the goods are sold now. No limit.                                          | Phone the customer if needed, ship, then `payment/confirm` when the courier hands over the cash. Until then it can still be cancelled. |
+| `bank_transfer`, `easypaisa`, `jazzcash` | The order is `waiting_payment` and holds its stock for `payments.manualHoldHours` (default 48). The customer sees the account details. | See below.                                                                                                                             |
+
+**Transfers.** After sending the money, the customer posts a transaction ID
+and/or a screenshot to `POST /api/v1/orders/:number/payment-proof` (multipart:
+`transactionId`, `screenshot`; at least one). The payment becomes
+`awaiting_verification`, and the order keeps its stock until staff decide (it
+does not expire while waiting). Staff then:
+
+- `payment/confirm`: sold stock, `processing`, payment `paid`, the proof is
+  `approved`, the customer is emailed. Also works for a customer who paid but
+  sent no proof (staff saw the money in the bank app).
+- `payment/reject { reason }`: payment `failed`, the reason is emailed and shown to
+  the customer, the order gets a fresh hold time, and the customer can send a
+  new proof (at most 5 per order).
+
+A transaction ID cannot pay two orders (a rejected one can be used again).
+Screenshots are re-encoded to WebP (max 2000 px) and kept in private storage
+(`payment-proofs/…`): only `payments.verify` can see them, never the public
+photo address. Everything is written to the audit log (`orders.payment_confirm`,
+`orders.payment_reject`). The dashboard shows `awaitingVerification` (proofs not
+yet checked). Revenue counts an order when it is **paid**, so a cash order counts
+once the cash is collected.
 
 ### Products and photos
 
@@ -307,12 +359,65 @@ the same way the order code does it).
 | POST   | `/customers/:id/block`   | `customers.manage` | `{ reason }`. Signs them out everywhere and refuses their logins. Orders, cart and wishlist stay. |
 | POST   | `/customers/:id/unblock` | `customers.manage` | `{ note? }`.                                                                                      |
 
+### Discounts
+
+A discount is a **whole percent (1 to 90) off chosen products, in chosen markets (Pakistan, Germany or both), optionally between two dates**, with an on/off switch. The price the shop charges is worked out in ONE place, the database view `product_prices_effective`: the product pages, the cart, checkout and order placement all read it, so they cannot disagree. Nothing overwrites a product's own price.
+
+- **Status** (computed): `off` (switched off), `scheduled` (starts later), `ended`, or `active`.
+- **Best wins:** if a product is in two discounts, the bigger percent applies; they never add up.
+- **Rounding:** the discounted price of one unit is rounded once to a whole paisa or cent (a discount that would not lower the price, such as 10% of 1 paisa, does not apply).
+- **Old price:** while a discount applies, the struck-through price is the product's list price (it replaces an old price staff typed in); when it stops, the old price comes back.
+- **Shop API:** a price has `amount` (what to pay now), `compareAtAmount` (struck through) and `discountPercent` (only while a discount applies). Cart lines also have `listAmount`.
+- **Orders:** `order_items.unit_amount` stays the list price; each line stores its `discount_amount` and `discount_percent`. `orders.subtotal` is the list total, `orders.discount_total` is what was taken off, and `total = subtotal - discount_total + shipping`. Placed orders never change when a discount is edited or deleted. German VAT is worked out from the total after the discount.
+- **Dates and the shop cache:** the shop pages refresh every 60 seconds and at once after staff save, so a date taking effect shows within about a minute.
+
+| Method | Path                  | Permission         | Notes                                                                                                                         |
+| ------ | --------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/discounts`          | `discounts.view`   | Newest first. Filters `status` (`active`, `scheduled`, `ended`, `off`), `search` (name), paging.                              |
+| GET    | `/discounts/:id`      | `discounts.view`   | The discount and its `products`.                                                                                              |
+| GET    | `/discounts/products` | `discounts.view`   | `?search=` up to 20 products to pick from (name, slug or SKU).                                                                |
+| POST   | `/discounts`          | `discounts.manage` | `{ name, percent, markets, startsAt?, endsAt?, active?, productIds }`. `400` names the box (the end must be after the start). |
+| PATCH  | `/discounts/:id`      | `discounts.manage` | Only the fields sent; `productIds` replaces the list; `active` is the on/off switch.                                          |
+| DELETE | `/discounts/:id`      | `discounts.manage` | `204`. Orders already placed keep their prices.                                                                               |
+
+### Contact Us messages
+
+`POST /api/v1/contact` (the shop's contact form) now **saves** every message, then also emails the shop when `CONTACT_TO_EMAIL` is set (a failed notification email never fails the form). Staff read and answer the messages here. Answers are emailed to the visitor; their reply to that email goes to the shop's contact address (Settings), not into the admin.
+
+| Method | Path                 | Permission      | Notes                                                                                                                                                                                                                              |
+| ------ | -------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/contact`           | `contact.view`  | Newest first. Filters `status` (`new`, `replied`), `search` (name, email, text), paging. Each item has `replyCount`.                                                                                                               |
+| GET    | `/contact/:id`       | `contact.view`  | `{ message }` with `replies` (text, who, when), oldest first.                                                                                                                                                                      |
+| POST   | `/contact/:id/reply` | `contact.reply` | `{ message }` (up to 5000 characters). Emails the visitor first; if that fails the answer is `503` and nothing is saved. Then records it, sets the message to `replied`, and writes the audit log. More than one reply is allowed. |
+
+### Reviews and the special offer row
+
+Customers write reviews on the shop (see below); staff only moderate them.
+
+| Method | Path                   | Permission                          | Notes                                                                                                                                                                        |
+| ------ | ---------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/reviews`             | `reviews.view`                      | Newest first. Filters `status` (`pending`, `published`, `hidden`), `rating` (1 to 5), `productId`, `search`, paging.                                                         |
+| GET    | `/reviews/products`    | `reviews.view`                      | The products that have reviews (`{ items: [{ id, name }] }`), for the product filter.                                                                                        |
+| POST   | `/reviews/:id/publish` | `reviews.moderate`                  | Approves a **pending** review: it shows on the product page and counts in the stars (`409` if it is not pending).                                                            |
+| DELETE | `/reviews/:id`         | `reviews.moderate`                  | Deletes the review for good, any status (`204`). The audit log keeps its text.                                                                                               |
+| POST   | `/reviews/:id/hide`    | `reviews.moderate`                  | `{ reason }`. Works on a pending or published review: takes it off the shop and out of the product's rating (on a pending one it turns the review down). Nothing is deleted. |
+| POST   | `/reviews/:id/restore` | `reviews.moderate`                  | Shows it again.                                                                                                                                                              |
+| GET    | `/home-offer`          | `products.view` or `catalog.manage` | `{ offer: { endsAt, headline } }`.                                                                                                                                           |
+| PUT    | `/home-offer`          | `catalog.manage`                    | `{ endsAt, headline }`: an ISO time (or `null` for no countdown) and an optional headline. A past time hides the row. `GET /home-sections` also carries the `offer`.         |
+
+**Shop side (customers).** `GET /api/v1/products/:slug/reviews` (public; `page`, `pageSize` up to 50) answers the published reviews, the star `summary`, and `viewer` (`sign_in`, `needs_purchase`, `can_review` or `already_reviewed`). `POST /api/v1/products/:slug/reviews { rating, title?, body }` needs a signed-in customer **with a completed order containing the product**, once per product (`403` / `409` otherwise). `PATCH` and `DELETE /api/v1/reviews/:id` change or remove the customer's own. A new review is **pending**: only its author sees it (viewer `mine.status` is `pending`) until staff publish it, then it shows under "First name L.". When the author changes a published review it goes back to pending; a pending one stays pending; a hidden one cannot be changed. A product's `rating_avg` and `rating_count` are always worked out from its published reviews (the sample catalogue's invented ratings were removed). A deleted account's reviews stay as "Former customer". The "% off" of the offer row is worked out from the products' real price and old price, never typed in.
+
 ### Settings
 
 | Method | Path        | Permission        | Notes                                                                                                              |
 | ------ | ----------- | ----------------- | ------------------------------------------------------------------------------------------------------------------ |
 | GET    | `/settings` | `settings.view`   | Shipping fee per market, German VAT rate, unpaid-order hold time, shop contact details.                            |
 | PATCH  | `/settings` | `settings.manage` | Changes only what is sent. New orders use the new values at once; existing orders keep what they were placed with. |
+
+`PATCH /settings` also takes `payments`: `{ manualHoldHours?, bank?, easypaisa?,
+jazzcash? }`, where `bank` is `{ bankName, accountTitle, accountNumber }` and
+the wallets are `{ accountTitle, number }`. A method that is left out stays as it
+is; `null` removes it (it is then no longer offered at checkout).
 
 These live in the database (not environment variables). The shop reads the
 public part (contact details) at `GET /api/v1/settings/shop`, and the cart

@@ -15,15 +15,20 @@ export const orderStatusLabels: Record<OrderStatus, string> = {
   refunded: "Refunded",
 } as Record<OrderStatus, string>;
 
-export const paymentMethodLabels = {
-  card: "Credit or debit card",
-} as const;
+export { paymentMethodLabels } from "@/features/orders/payment-methods";
 
 export const orderDateFormat = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
   month: "long",
   day: "numeric",
 });
+
+/** "45 minutes", or "2 hours" once it is long: transfers are held for many hours. */
+export function formatTimeLeft(minutes: number): string {
+  if (minutes < 120)
+    return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+  return `${Math.round(minutes / 60)} hours`;
+}
 
 /** Whole minutes left to pay, never below 0. Null when there is no deadline. */
 export function minutesToPay(

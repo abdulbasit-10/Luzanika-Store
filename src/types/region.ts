@@ -21,5 +21,8 @@ export interface RegionalPrice {
   currency: CurrencyCode;
   /** Minor units (cents/paisa): 85000 is 850.00. */
   amount: number;
+  /** The old price, shown struck through. While a discount applies it is the price before the discount. */
   compareAtAmount?: number;
+  /** Whole percent off while a discount applies; `amount` is already the discounted price. */
+  discountPercent?: number;
 }

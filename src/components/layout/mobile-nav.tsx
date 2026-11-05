@@ -2,6 +2,7 @@
 
 import { Menu, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import {
   categoryLinks,
@@ -9,8 +10,10 @@ import {
   mainNav,
   type NavLink,
 } from "@/config/navigation";
+import { isActive } from "@/components/layout/main-nav";
 import { useAccountHref } from "@/features/auth/use-account-href";
 import { useUiStore } from "@/stores/ui-store";
+import { cn } from "@/utils/cn";
 
 export function MobileNavToggle() {
   const isOpen = useUiStore((state) => state.isMobileNavOpen);
@@ -43,6 +46,7 @@ function MobileNavSection({
   links: NavLink[];
   onNavigate: () => void;
 }) {
+  const pathname = usePathname();
   return (
     <div className="flex flex-col gap-1">
       {title ? (
@@ -56,7 +60,11 @@ function MobileNavSection({
             <Link
               href={link.href}
               onClick={onNavigate}
-              className="block py-2 text-sm font-medium"
+              aria-current={isActive(pathname, link) ? "page" : undefined}
+              className={cn(
+                "block py-2 text-sm",
+                isActive(pathname, link) ? "font-bold" : "font-medium",
+              )}
             >
               {link.label}
             </Link>
@@ -80,7 +88,7 @@ export function MobileNavPanel() {
     <nav
       id="mobile-nav"
       aria-label="Mobile"
-      className="absolute inset-x-0 top-full flex max-h-[calc(100dvh-var(--header-height))] flex-col gap-4 overflow-y-auto border-t border-border bg-surface px-(--page-pad) py-4 shadow-overlay lg:hidden"
+      className="absolute inset-x-0 top-full flex max-h-[calc(100dvh-var(--header-height))] flex-col gap-4 overflow-y-auto border-t border-border bg-background px-(--page-pad) py-4 shadow-overlay lg:hidden"
     >
       <MobileNavSection links={mainNav.links} onNavigate={close} />
       <MobileNavSection

@@ -38,7 +38,7 @@ function IconLink({
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-40 bg-surface">
+    <header className="sticky top-0 z-40 bg-background">
       <Container className="flex h-(--header-height) items-center justify-between gap-6">
         <Logo />
         <MainNav />

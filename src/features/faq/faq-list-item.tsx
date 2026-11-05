@@ -9,13 +9,13 @@ interface FaqListItemProps {
   onToggle: () => void;
 }
 
-/** White question card with a chevron; the answer expands below the question. */
+/** Cream question card with a chevron; the answer expands below the question. */
 export function FaqListItem({ item, open, onToggle }: FaqListItemProps) {
   const buttonId = `faq-item-${item.id}-button`;
   const panelId = `faq-item-${item.id}-panel`;
 
   return (
-    <div className="rounded-lg bg-white px-5 py-5 shadow-[0_2px_4px_rgba(0,0,0,0.08)] lg:px-7 lg:py-7">
+    <div className="rounded-md bg-section px-5 py-5 shadow-[0_1px_2px_rgba(0,0,0,0.05)] lg:px-7 lg:py-7">
       <h3>
         <button
           type="button"

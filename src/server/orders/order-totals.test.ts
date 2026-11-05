@@ -32,6 +32,38 @@ describe("calculateTotals", () => {
     });
   });
 
+  it("takes the discount of every unit off the list-price subtotal", () => {
+    // 2 x 1,000.00 with 20% off (200.00 each) plus 1 x 500.00 without a discount.
+    expect(
+      calculateTotals(
+        [
+          { unitAmount: 100000, discountPerUnit: 20000, quantity: 2 },
+          { unitAmount: 50000, quantity: 1 },
+        ],
+        "PK",
+        WITH_FEES,
+      ),
+    ).toEqual({
+      subtotal: 250000,
+      discountTotal: 40000,
+      shippingTotal: 30000,
+      taxTotal: 0,
+      taxIncluded: null,
+      total: 250000 - 40000 + 30000,
+    });
+  });
+
+  it("works the German VAT out from the total after the discount", () => {
+    const totals = calculateTotals(
+      [{ unitAmount: 10000, discountPerUnit: 2000, quantity: 1 }],
+      "DE",
+      WITH_FEES,
+    );
+    expect(totals.discountTotal).toBe(2000);
+    expect(totals.total).toBe(10000 - 2000 + 590);
+    expect(totals.taxTotal).toBe(vatInside(totals.total, 19));
+  });
+
   it("is zero for no lines, even when shipping has a fee", () => {
     expect(calculateTotals([], "PK", WITH_FEES)).toMatchObject({
       shippingTotal: 0,

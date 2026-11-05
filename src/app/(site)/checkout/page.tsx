@@ -9,7 +9,8 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer.
+    <main className="flex-1 bg-white">
       <CheckoutView />
     </main>
   );

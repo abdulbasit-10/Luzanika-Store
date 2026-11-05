@@ -59,6 +59,9 @@ function toPrice(row: PriceRow): RegionalPrice {
     ...(row.compare_at_amount !== null
       ? { compareAtAmount: Number(row.compare_at_amount) }
       : {}),
+    ...(row.discount_percent !== null
+      ? { discountPercent: row.discount_percent }
+      : {}),
   };
 }
 

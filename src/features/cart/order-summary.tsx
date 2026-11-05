@@ -33,7 +33,10 @@ export function OrderSummary({
       <dl className="mt-4 flex flex-col gap-2 border-b border-black/[0.06] pb-4 text-sm leading-6 text-muted-foreground">
         {[
           ["Total Price", money(totals.subtotal)],
-          ["Total Price (Discount)", money(totals.discount)],
+          [
+            "Total Price (Discount)",
+            totals.discount > 0 ? `− ${money(totals.discount)}` : money(0),
+          ],
           [
             "Shipping",
             !totals.pricingReady

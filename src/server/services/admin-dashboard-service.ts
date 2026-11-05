@@ -39,6 +39,8 @@ export interface MarketSummary {
   waitingPayment: number;
   /** Right now: paid and waiting to be shipped. */
   awaitingShipment: number;
+  /** Right now: payment proofs (bank, Easypaisa, JazzCash) that staff still have to check. */
+  awaitingVerification: number;
   /** One entry per UTC day of the period. */
   series: {
     date: string;
@@ -69,6 +71,7 @@ export async function getDashboard(query: DashboardQuery, now = new Date()) {
     paid,
     refunded,
     backlog,
+    verification,
     newCustomers,
     orderDays,
     paidDays,
@@ -80,6 +83,7 @@ export async function getDashboard(query: DashboardQuery, now = new Date()) {
     adminDashboardRepository.paid(period),
     adminDashboardRepository.refunded(period),
     adminDashboardRepository.currentBacklog(period.market),
+    adminDashboardRepository.awaitingVerification(period.market),
     adminDashboardRepository.newCustomers(period),
     adminDashboardRepository.ordersPerDay(period),
     adminDashboardRepository.paidPerDay(period),
@@ -124,6 +128,8 @@ export async function getDashboard(query: DashboardQuery, now = new Date()) {
         backlog.find(
           (row) => row.market === market && row.status === "processing",
         )?.n ?? 0,
+      awaitingVerification:
+        verification.find((row) => row.market === market)?.n ?? 0,
       series: days.map((date) => {
         const paidAmount = paidByDay.get(date)?.amount ?? 0;
         const refundedAmount = refundedByDay.get(date)?.amount ?? 0;

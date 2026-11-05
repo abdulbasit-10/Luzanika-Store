@@ -21,6 +21,8 @@ function row(overrides: Partial<CartLineRow> = {}): CartLineRow {
     currency: "PKR",
     amount: "85000",
     compare_at_amount: null,
+    list_amount: "85000",
+    discount_percent: null,
     available: 10,
     image_src: "/a.jpg",
     image_alt: "A shirt",
@@ -30,6 +32,31 @@ function row(overrides: Partial<CartLineRow> = {}): CartLineRow {
 }
 
 describe("toCartLine", () => {
+  it("shows the price before the discount and the percent off while a discount applies", () => {
+    const line = toCartLine(
+      row({
+        amount: "68000",
+        compare_at_amount: "85000",
+        list_amount: "85000",
+        discount_percent: 20,
+      }),
+    );
+    expect(line.unitPrice).toEqual({
+      amount: 68000,
+      currency: "PKR",
+      compareAtAmount: 85000,
+      listAmount: 85000,
+      discountPercent: 20,
+    });
+  });
+
+  it("has no discount fields when none applies", () => {
+    expect(toCartLine(row()).unitPrice).toEqual({
+      amount: 85000,
+      currency: "PKR",
+    });
+  });
+
   it("is ok when the stock covers what was asked for", () => {
     expect(toCartLine(row())).toMatchObject({
       status: "ok",

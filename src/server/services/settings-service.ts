@@ -5,6 +5,7 @@ import { withTransaction, type Tx } from "@/server/db/transaction";
 import type { PricingConfig } from "@/server/orders/order-totals";
 import {
   settingsRepository,
+  type PaymentDetails,
   type SettingsChanges,
   type SettingsRecord,
   type Social,
@@ -18,6 +19,14 @@ export interface ShopSettingsDto {
   vatRateDePercent: number;
   /** How long an unpaid order holds its stock. Only affects orders placed afterwards. */
   reservationMinutes: number;
+  /** Bank, Easypaisa and JazzCash: where customers send the money (null: not offered). */
+  payments: {
+    /** How long an order waiting for a transfer holds its stock. Only affects orders placed afterwards. */
+    manualHoldHours: number;
+    bank: PaymentDetails["bank"] | null;
+    easypaisa: PaymentDetails["easypaisa"] | null;
+    jazzcash: PaymentDetails["jazzcash"] | null;
+  };
   contact: {
     email: string;
     address: string;
@@ -39,6 +48,12 @@ function toDto(record: SettingsRecord): ShopSettingsDto {
     shippingFee: { PK: record.shippingFeePk, DE: record.shippingFeeDe },
     vatRateDePercent: record.vatRateDePercent,
     reservationMinutes: record.reservationMinutes,
+    payments: {
+      manualHoldHours: record.manualHoldHours,
+      bank: record.paymentDetails.bank ?? null,
+      easypaisa: record.paymentDetails.easypaisa ?? null,
+      jazzcash: record.paymentDetails.jazzcash ?? null,
+    },
     contact: {
       email: record.contactEmail,
       address: record.contactAddress,
@@ -63,6 +78,17 @@ export async function getReservationMinutes(tx?: Tx): Promise<number> {
   return (await settingsRepository.get(tx)).reservationMinutes;
 }
 
+/** How long to hold stock for an order waiting for a transfer, and where the money should be sent. Read inside the order's transaction. */
+export async function getPaymentSettings(
+  tx?: Tx,
+): Promise<{ manualHoldHours: number; details: PaymentDetails }> {
+  const settings = await settingsRepository.get(tx);
+  return {
+    manualHoldHours: settings.manualHoldHours,
+    details: settings.paymentDetails,
+  };
+}
+
 export async function getShopSettings(): Promise<ShopSettingsDto> {
   return toDto(await settingsRepository.get());
 }
@@ -76,28 +102,52 @@ export interface SettingsPatch {
   shippingFee?: { PK?: number; DE?: number };
   vatRateDePercent?: number;
   reservationMinutes?: number;
+  /** A method set to null is removed (no longer offered); one that is left out stays as it is. */
+  payments?: {
+    manualHoldHours?: number;
+    bank?: PaymentDetails["bank"] | null;
+    easypaisa?: PaymentDetails["easypaisa"] | null;
+    jazzcash?: PaymentDetails["jazzcash"] | null;
+  };
   contact?: Partial<ShopSettingsDto["contact"]>;
   socials?: Social[];
+}
+
+/** The payment details after a patch: a given method replaces the old one, null removes it, a missing one stays. */
+function mergeDetails(
+  current: PaymentDetails,
+  patch: SettingsPatch["payments"],
+): PaymentDetails | undefined {
+  if (!patch) return undefined;
+  const next: PaymentDetails = { ...current };
+  for (const key of ["bank", "easypaisa", "jazzcash"] as const) {
+    if (patch[key] === undefined) continue;
+    if (patch[key] === null) delete next[key];
+    else Object.assign(next, { [key]: patch[key] });
+  }
+  return next;
 }
 
 export async function updateShopSettings(
   ctx: AdminContext,
   patch: SettingsPatch,
 ): Promise<ShopSettingsDto> {
-  const changes: SettingsChanges = {
-    shippingFeePk: patch.shippingFee?.PK,
-    shippingFeeDe: patch.shippingFee?.DE,
-    vatRateDePercent: patch.vatRateDePercent,
-    reservationMinutes: patch.reservationMinutes,
-    contactEmail: patch.contact?.email,
-    contactAddress: patch.contact?.address,
-    customerServiceLabel: patch.contact?.customerServiceLabel,
-    customerServicePhone: patch.contact?.customerServicePhone,
-    socials: patch.socials,
-  };
-
   return withTransaction(async (tx) => {
-    const before = toDto(await settingsRepository.lock(tx));
+    const current = await settingsRepository.lock(tx);
+    const before = toDto(current);
+    const changes: SettingsChanges = {
+      shippingFeePk: patch.shippingFee?.PK,
+      shippingFeeDe: patch.shippingFee?.DE,
+      vatRateDePercent: patch.vatRateDePercent,
+      reservationMinutes: patch.reservationMinutes,
+      manualHoldHours: patch.payments?.manualHoldHours,
+      paymentDetails: mergeDetails(current.paymentDetails, patch.payments),
+      contactEmail: patch.contact?.email,
+      contactAddress: patch.contact?.address,
+      customerServiceLabel: patch.contact?.customerServiceLabel,
+      customerServicePhone: patch.contact?.customerServicePhone,
+      socials: patch.socials,
+    };
     await settingsRepository.update(changes, ctx.actor.id, tx);
     const after = toDto(await settingsRepository.get(tx));
 

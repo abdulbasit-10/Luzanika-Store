@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import { POST as contactRoute } from "@/app/api/v1/contact/route";
 import { setEmailSender, type EmailMessage } from "@/server/email/email-sender";
 
-import { call, newIp, uniqueEmail } from "./helpers";
+import { call, newIp, sql, uniqueEmail } from "./helpers";
 
 // Set before the first message: the settings are read once, on first use.
 process.env.CONTACT_TO_EMAIL = "inbox@shop.example.com";
@@ -124,18 +124,38 @@ describe("POST /api/v1/contact", () => {
     expect(sent).toHaveLength(3);
   });
 
-  it("tells the visitor when the email could not be sent, without leaking details", async () => {
+  it("still accepts the message when the notification email cannot be sent: it is saved for the admin", async () => {
     setEmailSender({
       async send() {
         throw new Error("connect ECONNREFUSED 10.0.0.5:587");
       },
     });
+    const body = message();
 
-    const result = await send(message());
+    const result = await send(body);
 
-    expect(result.status).toBe(503);
-    expect(result.body.error.code).toBe("service_unavailable");
+    expect(result.status).toBe(204);
     expect(result.raw).not.toContain("10.0.0.5");
-    expect(result.raw).not.toContain("ECONNREFUSED");
+    const saved = await sql<{ email: string; message: string }>(
+      "SELECT email::text AS email, message FROM contact_messages WHERE email = :email",
+      { email: body.email },
+    );
+    expect(saved).toEqual([{ email: body.email, message: body.message }]);
+  });
+
+  it("saves every accepted message for the admin", async () => {
+    const body = message({ phone: "" });
+
+    await send(body);
+
+    const [row] = await sql<{
+      name: string;
+      phone: string;
+      status: string;
+    }>(
+      "SELECT name, phone, status FROM contact_messages WHERE email = :email",
+      { email: body.email },
+    );
+    expect(row).toEqual({ name: "Ada Lovelace", phone: "", status: "new" });
   });
 });

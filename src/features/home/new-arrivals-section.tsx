@@ -7,7 +7,7 @@ export async function NewArrivalsSection() {
   const { newArrivals } = await getCachedHomeProducts();
 
   return (
-    <Section>
+    <Section tone="white">
       <SectionHeading
         eyebrow="New arrivals"
         title="Explore the latest additions to our collections"

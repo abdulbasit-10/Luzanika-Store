@@ -235,8 +235,9 @@ export async function importSampleCatalog(
           designed.has(source.slug)
             ? Boolean(detail.isNew)
             : Boolean(source.isNew),
-          detail.rating ?? null,
-          detail.reviewCount ?? 0,
+          // The sample ratings are invented: a rating only ever comes from real reviews.
+          null,
+          0,
           detail.notes ?? [],
           detail.hasSizeGuide ?? false,
           source.listed,

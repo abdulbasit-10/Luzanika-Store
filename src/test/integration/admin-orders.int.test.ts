@@ -2,8 +2,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { GET as listRoute } from "@/app/api/v1/admin/orders/route";
 import { GET as getRoute } from "@/app/api/v1/admin/orders/[number]/route";
+import { POST as deleteRoute } from "@/app/api/v1/admin/orders/[number]/delete/route";
 import { POST as statusRoute } from "@/app/api/v1/admin/orders/[number]/status/route";
-import { PATCH as trackingRoute } from "@/app/api/v1/admin/orders/[number]/tracking/route";
 import { GET as customerOrderRoute } from "@/app/api/v1/orders/[number]/route";
 import { setEmailSender, type EmailMessage } from "@/server/email/email-sender";
 
@@ -47,14 +47,13 @@ const get = (staffCookie: string | undefined, number: string) =>
 const move = (staffCookie: string | undefined, number: string, body: unknown) =>
   call(statusRoute, { method: "POST", staffCookie, params: { number }, body });
 
+const remove = (staffCookie: string | undefined, number: string) =>
+  call(deleteRoute, { method: "POST", staffCookie, params: { number } });
+
 const manager = () =>
   signedInStaff({ permissions: ["orders.view", "orders.manage"] });
 
-const SHIP = {
-  status: "in_delivery",
-  carrier: "TCS",
-  trackingNumber: "TCS-123456",
-};
+const SHIP = { status: "in_delivery" };
 
 describe("who may see and change orders", () => {
   it("needs a signed-in staff member", async () => {
@@ -62,11 +61,6 @@ describe("who may see and change orders", () => {
       list(undefined),
       get(undefined, "LZ-PK-000001"),
       move(undefined, "LZ-PK-000001", { status: "completed" }),
-      call(trackingRoute, {
-        method: "PATCH",
-        params: { number: "LZ-PK-000001" },
-        body: { carrier: "x", trackingNumber: "y" },
-      }),
     ]);
     for (const result of results) expect(result.status).toBe(401);
   });
@@ -86,16 +80,6 @@ describe("who may see and change orders", () => {
     });
     expect(refused.status).toBe(403);
     expect(refused.body.error.code).toBe("forbidden");
-    expect(
-      (
-        await call(trackingRoute, {
-          method: "PATCH",
-          staffCookie: viewer.cookie,
-          params: { number: order.number },
-          body: { carrier: "x", trackingNumber: "y" },
-        })
-      ).status,
-    ).toBe(403);
   });
 });
 
@@ -247,7 +231,6 @@ describe("one order", () => {
       contact: { email: "ada@example.com", phone: "+49 30 1234567" },
       shipping: { name: "Ada Lovelace", city: "Lahore" },
       billing: null,
-      delivery: null,
       customerId: order.customer.id,
     });
     expect(body.amounts).toMatchObject({
@@ -301,7 +284,7 @@ describe("one order", () => {
 });
 
 describe("shipping an order", () => {
-  it("moves a paid order to in delivery with the carrier, tells the customer, and records it", async () => {
+  it("moves a paid order to in delivery, tells the customer, and records it", async () => {
     const order = await placeTestOrder({ email: "buyer@example.com" });
     await payOrder(order.customer, order.number);
     const staff = await manager();
@@ -312,7 +295,6 @@ describe("shipping an order", () => {
     expect(result.body.order).toMatchObject({
       status: "in_delivery",
       allowedNextStatuses: ["completed"],
-      delivery: { carrier: "TCS", trackingNumber: "TCS-123456" },
     });
     expect(result.body.order.shippedAt).toBeTruthy();
 
@@ -322,14 +304,14 @@ describe("shipping an order", () => {
       to: "in_delivery",
       actorType: "staff",
       actor: { id: staff.id, email: staff.email },
-      note: "TCS: TCS-123456",
+      note: null,
     });
 
     expect(sent).toHaveLength(1);
     expect(sent[0].to).toBe("buyer@example.com");
     expect(sent[0].subject).toContain(order.number);
-    expect(sent[0].text).toContain("TCS");
-    expect(sent[0].text).toContain("TCS-123456");
+    expect(sent[0].text).toContain("on its way");
+    expect(sent[0].text).not.toContain("Tracking");
 
     // The customer sees it in their own orders, too.
     const mine = await call(customerOrderRoute, {
@@ -349,23 +331,18 @@ describe("shipping an order", () => {
     );
     expect(audit.staff_email).toBe(staff.email);
     expect(audit.before).toEqual({ status: "processing" });
-    expect(audit.after).toMatchObject({
-      status: "in_delivery",
-      carrier: "TCS",
-    });
+    expect(audit.after).toMatchObject({ status: "in_delivery" });
   });
 
-  it("needs the carrier and the tracking number", async () => {
+  it("takes no delivery details: a carrier or tracking number is refused", async () => {
     const order = await placeTestOrder();
     await payOrder(order.customer, order.number);
     const staff = await manager();
 
     for (const body of [
-      { status: "in_delivery" },
       { status: "in_delivery", carrier: "TCS" },
       { status: "in_delivery", trackingNumber: "123" },
-      { status: "in_delivery", carrier: "  ", trackingNumber: "123" },
-      { status: "in_delivery", carrier: "TCS", trackingNumber: "1\n2" },
+      { status: "in_delivery", carrier: "TCS", trackingNumber: "123" },
     ]) {
       expect(
         (await move(staff.cookie, order.number, body)).status,
@@ -465,11 +442,7 @@ describe("shipping an order", () => {
 
     const [first, second] = await Promise.all([
       move(a.cookie, order.number, SHIP),
-      move(b.cookie, order.number, {
-        ...SHIP,
-        carrier: "DHL",
-        trackingNumber: "DHL-1",
-      }),
+      move(b.cookie, order.number, SHIP),
     ]);
 
     expect([first.status, second.status].sort()).toEqual([200, 409]);
@@ -479,57 +452,6 @@ describe("shipping an order", () => {
     );
     expect(Number(history[0].n)).toBe(1);
     expect(sent).toHaveLength(1);
-  });
-});
-
-describe("correcting the delivery details", () => {
-  it("changes carrier and tracking while in delivery, records it, and does not email again", async () => {
-    const order = await placeTestOrder();
-    await payOrder(order.customer, order.number);
-    const staff = await manager();
-    await move(staff.cookie, order.number, SHIP);
-    sent = [];
-
-    const result = await call(trackingRoute, {
-      method: "PATCH",
-      staffCookie: staff.cookie,
-      params: { number: order.number },
-      body: { carrier: "DHL", trackingNumber: "DHL-999" },
-    });
-
-    expect(result.status).toBe(200);
-    expect(result.body.order.delivery).toEqual({
-      carrier: "DHL",
-      trackingNumber: "DHL-999",
-    });
-    expect(result.body.order.history.at(-1).note).toContain("DHL-999");
-    expect(sent).toHaveLength(0);
-    const [audit] = await sql<{
-      before: Record<string, string>;
-      after: Record<string, string>;
-    }>(
-      "SELECT before, after FROM audit_log WHERE action = 'orders.delivery_update'",
-    );
-    expect(audit.before.trackingNumber).toBe("TCS-123456");
-    expect(audit.after.trackingNumber).toBe("DHL-999");
-  });
-
-  it("is refused before shipping and after completing", async () => {
-    const order = await placeTestOrder();
-    await payOrder(order.customer, order.number);
-    const staff = await manager();
-    const change = () =>
-      call(trackingRoute, {
-        method: "PATCH",
-        staffCookie: staff.cookie,
-        params: { number: order.number },
-        body: { carrier: "DHL", trackingNumber: "1" },
-      });
-
-    expect((await change()).status).toBe(409);
-    await move(staff.cookie, order.number, SHIP);
-    await move(staff.cookie, order.number, { status: "completed" });
-    expect((await change()).status).toBe(409);
   });
 });
 
@@ -628,5 +550,147 @@ describe("cancelling an unpaid order", () => {
       status: "cancelled",
       reason: "Duplicate order",
     });
+  });
+});
+
+describe("the status dropdown of the list", () => {
+  it("offers each order only the moves it may make", async () => {
+    const pending = await placeTestOrder();
+    const cod = await placeTestOrder({ paymentMethod: "cod" });
+    const paid = await placeTestOrder();
+    await payOrder(paid.customer, paid.number);
+    const staff = await manager();
+
+    const items = (await list(staff.cookie)).body.items as {
+      number: string;
+      allowedMoves: string[];
+      deleted: boolean;
+    }[];
+    const movesOf = (number: string) =>
+      items.find((item) => item.number === number)?.allowedMoves;
+
+    expect(movesOf(pending.number)).toEqual(["cancelled"]);
+    expect(movesOf(cod.number)).toEqual(["in_delivery", "cancelled"]);
+    expect(movesOf(paid.number)).toEqual(["in_delivery"]);
+    expect(items.every((item) => item.deleted === false)).toBe(true);
+  });
+
+  it("locks a delivered order: no status change, no delete", async () => {
+    const order = await placeTestOrder();
+    await payOrder(order.customer, order.number);
+    const staff = await manager();
+    await move(staff.cookie, order.number, SHIP);
+    await move(staff.cookie, order.number, { status: "completed" });
+
+    const row = (await list(staff.cookie)).body.items[0];
+    expect(row.status).toBe("completed");
+    expect(row.allowedMoves).toEqual([]);
+
+    for (const body of [
+      SHIP,
+      { status: "completed" },
+      { status: "cancelled" },
+    ]) {
+      const result = await move(staff.cookie, order.number, body);
+      expect(result.status, JSON.stringify(body)).toBe(409);
+      expect(result.body.error.message).toMatch(/locked/);
+    }
+    const removed = await remove(staff.cookie, order.number);
+    expect(removed.status).toBe(409);
+    expect(removed.body.error.message).toMatch(/locked/);
+  });
+});
+
+describe("deleting a cancelled order", () => {
+  const cancelled = async (staff: { cookie: string }) => {
+    const order = await placeTestOrder();
+    await move(staff.cookie, order.number, { status: "cancelled" });
+    return order;
+  };
+
+  it("hides it from the list but keeps the order, and records who did it", async () => {
+    const staff = await manager();
+    const order = await cancelled(staff);
+    const other = await placeTestOrder();
+
+    const result = await remove(staff.cookie, order.number);
+
+    expect(result.status).toBe(200);
+    expect(result.body.order.deletedAt).toBeTruthy();
+    const names = async (query: string) =>
+      (await list(staff.cookie, query)).body.items.map(
+        (item: { number: string }) => item.number,
+      );
+    expect(await names("")).toEqual([other.number]);
+    expect(await names("?status=cancelled")).toEqual([]);
+
+    const shown = (await list(staff.cookie, "?status=deleted")).body.items;
+    expect(shown).toHaveLength(1);
+    expect(shown[0]).toMatchObject({
+      number: order.number,
+      deleted: true,
+      allowedMoves: [],
+    });
+
+    // The order is still there for staff and for the customer.
+    expect((await get(staff.cookie, order.number)).status).toBe(200);
+    const mine = await call(customerOrderRoute, {
+      method: "GET",
+      cookie: order.customer.cookie,
+      params: { number: order.number },
+    });
+    expect(mine.body.order.status).toBe("cancelled");
+
+    const [audit] = await sql<{ staff_email: string; after: unknown }>(
+      "SELECT staff_email, after FROM audit_log WHERE action = 'orders.delete' AND entity_id = :number",
+      { number: order.number },
+    );
+    expect(audit.staff_email).toBe(staff.email);
+    expect(audit.after).toEqual({ status: "cancelled", deleted: true });
+  });
+
+  it("offers Delete only on a cancelled order", async () => {
+    const staff = await manager();
+    const order = await cancelled(staff);
+
+    const row = (await list(staff.cookie)).body.items[0];
+    expect(row.allowedMoves).toEqual(["deleted"]);
+    expect(order.number).toBe(row.number);
+  });
+
+  it("refuses an order that is not cancelled, and a second delete", async () => {
+    const staff = await manager();
+    const pending = await placeTestOrder();
+    const paid = await placeTestOrder();
+    await payOrder(paid.customer, paid.number);
+    const order = await cancelled(staff);
+
+    expect((await remove(staff.cookie, pending.number)).status).toBe(409);
+    expect((await remove(staff.cookie, paid.number)).status).toBe(409);
+    expect((await remove(staff.cookie, order.number)).status).toBe(200);
+    const again = await remove(staff.cookie, order.number);
+    expect(again.status).toBe(409);
+    expect(again.body.error.message).toMatch(/already deleted/);
+    expect((await remove(staff.cookie, "LZ-PK-999999")).status).toBe(404);
+  });
+
+  it("needs orders.manage", async () => {
+    const staff = await manager();
+    const order = await cancelled(staff);
+    const viewer = await signedInStaff({ permissions: ["orders.view"] });
+
+    expect((await remove(undefined, order.number)).status).toBe(401);
+    expect((await remove(viewer.cookie, order.number)).status).toBe(403);
+  });
+
+  it("leaves deleted orders out of the dashboard counts", async () => {
+    const staff = await manager();
+    const order = await cancelled(staff);
+    await remove(staff.cookie, order.number);
+
+    const [row] = await sql<{ n: string }>(
+      "SELECT count(*) AS n FROM orders WHERE deleted_at IS NOT NULL",
+    );
+    expect(Number(row.n)).toBe(1);
   });
 });

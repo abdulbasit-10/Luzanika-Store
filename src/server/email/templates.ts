@@ -25,6 +25,40 @@ export function contactMessageEmail(input: {
   };
 }
 
+/**
+ * A staff member's answer to a contact-form message, for the visitor. The
+ * visitor's own message is quoted underneath. Replies to it go to the shop's
+ * contact address.
+ */
+export function contactReplyEmail(input: {
+  to: string;
+  name: string;
+  reply: string;
+  originalMessage: string;
+  replyTo: string;
+}): EmailMessage {
+  const quoted = input.originalMessage
+    .split(/\r?\n/)
+    .map((line) => `> ${line}`);
+  return {
+    to: input.to,
+    replyTo: input.replyTo,
+    subject: "Re: your message to Luzanika",
+    text: [
+      `Hi ${input.name},`,
+      "",
+      input.reply,
+      "",
+      "Kind regards,",
+      "The Luzanika team",
+      "",
+      "-----",
+      "Your message:",
+      ...quoted,
+    ].join("\n"),
+  };
+}
+
 export function passwordResetEmail(input: {
   to: string;
   firstName: string;
@@ -91,13 +125,11 @@ export function staffPasswordResetEmail(input: {
   };
 }
 
-/** Sent when staff hand an order to the carrier. */
+/** Sent when staff hand an order over for delivery. */
 export function orderShippedEmail(input: {
   to: string;
   name: string;
   orderNumber: string;
-  carrier: string;
-  trackingNumber: string;
 }): EmailMessage {
   return {
     to: input.to,
@@ -105,10 +137,7 @@ export function orderShippedEmail(input: {
     text: [
       `Hi ${input.name},`,
       "",
-      `Good news: your order ${input.orderNumber} has been handed to the carrier.`,
-      "",
-      `Carrier: ${input.carrier}`,
-      `Tracking number: ${input.trackingNumber}`,
+      `Good news: your order ${input.orderNumber} is on its way.`,
       "",
       "You can also follow the status of your order in your account under your orders.",
     ].join("\n"),
@@ -151,6 +180,48 @@ export function orderCancelledEmail(input: {
       ...(input.reason ? ["", `Reason: ${input.reason}`] : []),
       "",
       "If you still want the items, you are welcome to place a new order.",
+    ].join("\n"),
+  };
+}
+
+/** Sent when staff have checked a transfer (bank, Easypaisa, JazzCash) and the money is there. */
+export function orderPaymentConfirmedEmail(input: {
+  to: string;
+  name: string;
+  orderNumber: string;
+}): EmailMessage {
+  return {
+    to: input.to,
+    subject: `We received your payment for order ${input.orderNumber}`,
+    text: [
+      `Hi ${input.name},`,
+      "",
+      `Thank you: we checked your payment and your order ${input.orderNumber} is now being prepared.`,
+      "",
+      "We will email you again when it is on its way.",
+    ].join("\n"),
+  };
+}
+
+/** Sent when staff cannot match a payment proof, so the customer can send a correct one. */
+export function orderPaymentRejectedEmail(input: {
+  to: string;
+  name: string;
+  orderNumber: string;
+  reason: string;
+}): EmailMessage {
+  return {
+    to: input.to,
+    subject: `We could not confirm your payment for order ${input.orderNumber}`,
+    text: [
+      `Hi ${input.name},`,
+      "",
+      `We could not confirm the payment proof you sent for order ${input.orderNumber}.`,
+      "",
+      `Reason: ${input.reason}`,
+      "",
+      "Please open your order in your account and send the transaction ID or a clear screenshot again.",
+      "Your items are still being held for you for a little longer.",
     ].join("\n"),
   };
 }

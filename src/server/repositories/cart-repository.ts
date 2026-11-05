@@ -20,8 +20,12 @@ export interface CartLineRow {
   color_count: number;
   purchasable: boolean;
   currency: "PKR" | "EUR" | null;
+  /** What one unit costs now, after any discount. */
   amount: string | null;
   compare_at_amount: string | null;
+  /** The product's own price, before any discount (same as `amount` when none applies). */
+  list_amount: string | null;
+  discount_percent: number | null;
   available: number;
   image_src: string | null;
   image_alt: string | null;
@@ -57,13 +61,13 @@ export const cartRepository = {
             WHERE product_id = p.id AND active) AS color_count,
          (v.active AND p.status = 'active' AND p.deleted_at IS NULL
             AND pr.amount IS NOT NULL) AS purchasable,
-         pr.currency, pr.amount, pr.compare_at_amount,
+         pr.currency, pr.amount, pr.compare_at_amount, pr.list_amount, pr.discount_percent,
          COALESCE(i.on_hand - i.reserved, 0)::int AS available,
          img.src AS image_src, img.alt AS image_alt, img.position AS image_position
        FROM cart_items ci
        JOIN product_variants v ON v.id = ci.variant_id
        JOIN products p ON p.id = v.product_id
-       LEFT JOIN product_prices pr ON pr.product_id = p.id AND pr.market = :market
+       LEFT JOIN product_prices_effective pr ON pr.product_id = p.id AND pr.market = :market
        LEFT JOIN inventory i ON i.variant_id = v.id AND i.market = :market
        LEFT JOIN LATERAL (
          SELECT src, alt, position FROM product_images
@@ -87,7 +91,7 @@ export const cartRepository = {
               COALESCE(i.on_hand - i.reserved, 0)::int AS available
        FROM product_variants v
        JOIN products p ON p.id = v.product_id
-       LEFT JOIN product_prices pr ON pr.product_id = p.id AND pr.market = :market
+       LEFT JOIN product_prices_effective pr ON pr.product_id = p.id AND pr.market = :market
        LEFT JOIN inventory i ON i.variant_id = v.id AND i.market = :market
        WHERE v.id = :variantId`,
       { variantId, market },

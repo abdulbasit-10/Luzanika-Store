@@ -63,6 +63,7 @@ const parts: ProductParts = {
       currency: "PKR",
       amount: "85000",
       compare_at_amount: "99000",
+      discount_percent: null,
     },
     {
       product_id: "p1",
@@ -70,6 +71,7 @@ const parts: ProductParts = {
       currency: "EUR",
       amount: "8500",
       compare_at_amount: null,
+      discount_percent: null,
     },
   ],
   images: [

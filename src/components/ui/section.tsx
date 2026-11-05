@@ -3,10 +3,12 @@ import type { ComponentProps } from "react";
 import { Container } from "@/components/ui/container";
 import { cn } from "@/utils/cn";
 
-type SectionTone = "default" | "cream";
+type SectionTone = "default" | "white" | "cream";
 
 const tones: Record<SectionTone, string> = {
+  // default is the page grey (#D9D9D9); white and cream are the other two section colours of the Figma.
   default: "bg-background",
+  white: "bg-white",
   cream: "bg-section",
 };
 

@@ -894,7 +894,7 @@ describe("product photos", () => {
     const staff = await manager();
     const product = await newProduct(staff.cookie);
     const [row] = await sql<{ id: string }>(
-      "INSERT INTO product_images (product_id, src, alt, sort) VALUES (:id, '/images/hero.png', 'Sample', 0) RETURNING id",
+      "INSERT INTO product_images (product_id, src, alt, sort) VALUES (:id, '/images/hero.webp', 'Sample', 0) RETURNING id",
       { id: product.id },
     );
 

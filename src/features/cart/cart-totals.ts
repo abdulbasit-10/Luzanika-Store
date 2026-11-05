@@ -2,8 +2,9 @@ import { isBuyable, type CartLine } from "@/features/cart/cart-service";
 import type { Pricing } from "@/features/cart/pricing-service";
 
 export interface CartTotals {
-  /** Sum of the selected lines (unit price x quantity). */
+  /** Sum of the selected lines at their list price (before any discount). */
   subtotal: number;
+  /** What the discounts take off the subtotal. 0 when no line is discounted. */
   discount: number;
   /** Flat shipping fee of the market; 0 when nothing is selected or the fee is not set. */
   shipping: number;
@@ -17,9 +18,14 @@ export interface CartTotals {
   pricingReady: boolean;
 }
 
-/** The unit price in minor units. The cart is read for the selected region, so this is already that region's price. */
+/** The unit price in minor units, after any discount. The cart is read for the selected region, so this is already that region's price. */
 export function getUnitPrice(line: CartLine) {
   return line.unitPrice?.amount;
+}
+
+/** The unit price before any discount (the same as the unit price when none applies). */
+export function getListPrice(line: CartLine) {
+  return line.unitPrice?.listAmount ?? line.unitPrice?.amount;
 }
 
 /**
@@ -33,7 +39,7 @@ function vatInside(gross: number, ratePercent: number) {
 /**
  * Totals of the selected lines, the way the server will work them out:
  * total = subtotal - discount + shipping (+ tax added on top, which is none today).
- * Discounts are 0 until they are built.
+ * The subtotal is at list price and the discount is what the active discounts take off.
  */
 export function getCartTotals(
   lines: CartLine[],
@@ -42,10 +48,15 @@ export function getCartTotals(
   // A line that cannot be bought (sold out, no longer sold) never counts, even if it was ticked.
   const selected = lines.filter((line) => line.selected && isBuyable(line));
   const subtotal = selected.reduce(
-    (sum, line) => sum + (getUnitPrice(line) ?? 0) * line.quantity,
+    (sum, line) => sum + (getListPrice(line) ?? 0) * line.quantity,
     0,
   );
-  const discount = 0;
+  const discount = selected.reduce(
+    (sum, line) =>
+      sum +
+      ((getListPrice(line) ?? 0) - (getUnitPrice(line) ?? 0)) * line.quantity,
+    0,
+  );
   const shipping = selected.length > 0 ? (pricing?.shippingFee ?? 0) : 0;
   const tax = 0;
   const total = subtotal - discount + shipping + tax;

@@ -1,16 +1,26 @@
+import type { ComponentProps, ReactElement } from "react";
+
 import {
   FacebookIcon,
+  InstagramIcon,
   LinkedInIcon,
+  TikTokIcon,
   XIcon,
 } from "@/components/shared/social-icons";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/utils/cn";
 
-const socialIcons = {
+/** One icon for every network named in siteConfig.socials; adding a network there without an icon here is a type error. */
+const socialIcons: Record<
+  (typeof siteConfig.socials)[number]["name"] | "LinkedIn" | "X",
+  (props: ComponentProps<"svg">) => ReactElement
+> = {
   LinkedIn: LinkedInIcon,
   X: XIcon,
   Facebook: FacebookIcon,
-} as const;
+  Instagram: InstagramIcon,
+  TikTok: TikTokIcon,
+};
 
 const variants = {
   footer: {

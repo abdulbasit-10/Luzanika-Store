@@ -2,6 +2,7 @@ import "server-only";
 
 import { execute, selectRows } from "@/server/db/query";
 import type { Tx } from "@/server/db/transaction";
+import type { PaymentMethod } from "@/server/payments/methods";
 
 export type Market = "PK" | "DE";
 export type Currency = "PKR" | "EUR";
@@ -13,7 +14,13 @@ export type OrderStatus =
   | "cancelled"
   | "refunded";
 export type PaymentStatus =
-  "pending" | "paid" | "failed" | "refunded" | "partially_refunded";
+  | "pending"
+  | "awaiting_verification"
+  | "paid"
+  | "failed"
+  | "refunded"
+  | "partially_refunded";
+export type ProofStatus = "pending" | "approved" | "rejected";
 export type StockState = "reserved" | "committed" | "released";
 export type ActorType = "customer" | "system" | "payment" | "staff";
 
@@ -27,7 +34,7 @@ export interface OrderRow {
   phone: string;
   status: OrderStatus;
   payment_status: PaymentStatus;
-  payment_method: "card";
+  payment_method: PaymentMethod;
   /** Who collects the money for the newest payment attempt. */
   payment_provider: string | null;
   stock_state: StockState;
@@ -80,7 +87,7 @@ export interface NewOrder {
   idempotencyKey: string | null;
   email: string;
   phone: string;
-  paymentMethod: "card";
+  paymentMethod: PaymentMethod;
   reservationExpiresAt: Date;
   subtotal: number;
   discountTotal: number;
@@ -109,7 +116,18 @@ export interface NewOrderItem {
   imageAlt: string | null;
   imagePosition: string | null;
   quantity: number;
+  /** The list price of one unit, before any discount. */
   unitAmount: number;
+  /** What the whole line was discounted by. 0 when it was not. */
+  discountAmount: number;
+  discountPercent: number | null;
+}
+
+export interface ProofRow {
+  order_id: string;
+  status: ProofStatus;
+  review_note: string | null;
+  submitted_at: Date;
 }
 
 export interface InventoryLock {
@@ -170,9 +188,11 @@ export const orderRepository = {
     for (const [position, item] of items.entries()) {
       await execute(
         `INSERT INTO order_items (order_id, position, product_id, variant_id, product_slug, name, sku, color,
-           size, image_src, image_alt, image_position, quantity, unit_amount, line_total)
+           size, image_src, image_alt, image_position, quantity, unit_amount, line_total,
+           discount_amount, discount_percent)
          VALUES (:orderId, :position, :productId, :variantId, :productSlug, :name, :sku, :color,
-           :size, :imageSrc, :imageAlt, :imagePosition, :quantity, :unitAmount, :lineTotal)`,
+           :size, :imageSrc, :imageAlt, :imagePosition, :quantity, :unitAmount, :lineTotal,
+           :discountAmount, :discountPercent)`,
         {
           ...item,
           orderId,
@@ -233,6 +253,16 @@ export const orderRepository = {
       { orderId, providerRef },
       tx,
     );
+  },
+
+  /** The status of the newest payment attempt of the order. */
+  async latestPaymentStatus(orderId: string, tx: Tx): Promise<string | null> {
+    const rows = await selectRows<{ status: string }>(
+      `SELECT status FROM payments WHERE order_id = :orderId ORDER BY created_at DESC, id LIMIT 1`,
+      { orderId },
+      tx,
+    );
+    return rows[0]?.status ?? null;
   },
 
   /** Updates the newest payment attempt that is not finished. */
@@ -400,6 +430,7 @@ export const orderRepository = {
     wasReserved: boolean,
     orderId: string,
     tx: Tx,
+    note = "Order paid",
   ): Promise<void> {
     await execute(
       `UPDATE inventory SET on_hand = on_hand - :quantity,
@@ -410,8 +441,63 @@ export const orderRepository = {
     );
     await execute(
       `INSERT INTO stock_movements (variant_id, market, delta, reason, note, order_id)
-       VALUES (:variantId, :market, :delta, 'sale', 'Order paid', :orderId)`,
-      { variantId, market, delta: -quantity, orderId },
+       VALUES (:variantId, :market, :delta, 'sale', :note, :orderId)`,
+      { variantId, market, delta: -quantity, orderId, note },
+      tx,
+    );
+  },
+
+  /** What the customer sent as proof of a transfer. Returns the proof's id. */
+  async insertProof(
+    proof: {
+      orderId: string;
+      transactionRef: string | null;
+      fileKey: string | null;
+    },
+    tx: Tx,
+  ): Promise<string> {
+    const rows = await selectRows<{ id: string }>(
+      `INSERT INTO payment_proofs (order_id, transaction_ref, file_key)
+       VALUES (:orderId, :transactionRef, :fileKey) RETURNING id`,
+      proof,
+      tx,
+    );
+    return rows[0].id;
+  },
+
+  async countProofs(orderId: string, tx: Tx): Promise<number> {
+    const rows = await selectRows<{ n: number }>(
+      "SELECT count(*)::int AS n FROM payment_proofs WHERE order_id = :orderId",
+      { orderId },
+      tx,
+    );
+    return rows[0].n;
+  },
+
+  /** Another order that already used this transaction ID (a rejected proof does not count). */
+  async findOtherOrderWithRef(
+    orderId: string,
+    transactionRef: string,
+    tx: Tx,
+  ): Promise<string | null> {
+    const rows = await selectRows<{ number: string }>(
+      `SELECT o.number FROM payment_proofs p JOIN orders o ON o.id = p.order_id
+       WHERE lower(p.transaction_ref) = lower(:transactionRef) AND p.order_id <> :orderId
+         AND p.status <> 'rejected' LIMIT 1`,
+      { orderId, transactionRef },
+      tx,
+    );
+    return rows[0]?.number ?? null;
+  },
+
+  /** The newest proof of each order: what the customer needs to see (waiting, approved, or why it was rejected). */
+  listLatestProofs(orderIds: string[], tx?: Tx): Promise<ProofRow[]> {
+    if (orderIds.length === 0) return Promise.resolve([]);
+    return selectRows<ProofRow>(
+      `SELECT DISTINCT ON (order_id) order_id, status, review_note, submitted_at
+       FROM payment_proofs WHERE order_id IN (:orderIds)
+       ORDER BY order_id, submitted_at DESC, id`,
+      { orderIds },
       tx,
     );
   },
@@ -424,6 +510,8 @@ export const orderRepository = {
       paymentStatus?: PaymentStatus;
       stockState?: StockState;
       clearReservation?: boolean;
+      /** Gives the order until this moment to be paid (instead of the time it had). */
+      reservationExpiresAt?: Date;
       paid?: boolean;
       cancel?: { reason: string } | "clear";
     },
@@ -434,7 +522,9 @@ export const orderRepository = {
          status = COALESCE(:status, status),
          payment_status = COALESCE(:paymentStatus, payment_status),
          stock_state = COALESCE(:stockState, stock_state),
-         reservation_expires_at = CASE WHEN :clearReservation THEN NULL ELSE reservation_expires_at END,
+         reservation_expires_at = CASE WHEN :clearReservation THEN NULL
+           WHEN CAST(:reservationExpiresAt AS timestamptz) IS NOT NULL THEN CAST(:reservationExpiresAt AS timestamptz)
+           ELSE reservation_expires_at END,
          paid_at = CASE WHEN :paid THEN now() ELSE paid_at END,
          cancelled_at = CASE WHEN :cancelReason IS NOT NULL THEN now() WHEN :cancelClear THEN NULL ELSE cancelled_at END,
          cancel_reason = CASE WHEN :cancelReason IS NOT NULL THEN CAST(:cancelReason AS text) WHEN :cancelClear THEN NULL ELSE cancel_reason END
@@ -445,6 +535,7 @@ export const orderRepository = {
         paymentStatus: changes.paymentStatus ?? null,
         stockState: changes.stockState ?? null,
         clearReservation: changes.clearReservation ?? false,
+        reservationExpiresAt: changes.reservationExpiresAt ?? null,
         paid: changes.paid ?? false,
         cancelReason:
           changes.cancel && changes.cancel !== "clear"

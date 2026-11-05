@@ -4,6 +4,7 @@ import type { Catalog, CategoryDefinition } from "@/features/catalog/types";
 import type { ProductDetail } from "@/features/product-detail/types";
 import type { ProductListing } from "@/features/products/types";
 import type { ProductSummary } from "@/types/product";
+import { getOffer, type OfferDto } from "@/server/services/offer-service";
 
 import {
   toCatalogProduct,
@@ -20,6 +21,8 @@ export interface HomeProducts {
   featured: ProductSummary[];
   newArrivals: ProductSummary[];
   specialOffers: ProductSummary[];
+  /** When the special offers row ends, and its headline (both optional). */
+  offer: OfferDto;
 }
 
 /** Everything the shop shows comes from here: categories, product lists, product pages and home sections. */
@@ -103,10 +106,15 @@ export const catalogService = {
         .filter((row) => row.home_section === name)
         .map((row) => toSummary(row, parts));
 
+    // An offer whose end time has passed is over: its row is empty, so the shop does not show it.
+    const offer = await getOffer();
+    const ended = offer.endsAt !== null && new Date(offer.endsAt) <= new Date();
+
     return {
       featured: section("featured"),
       newArrivals: section("new-arrivals"),
-      specialOffers: section("special-offers"),
+      specialOffers: ended ? [] : section("special-offers"),
+      offer,
     };
   },
 };

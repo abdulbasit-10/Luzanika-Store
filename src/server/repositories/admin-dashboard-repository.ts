@@ -69,7 +69,7 @@ export const adminDashboardRepository = {
   ordersByStatus(period: Period): Promise<StatusCount[]> {
     return selectRows<StatusCount>(
       `SELECT o.market, o.status, count(*)::int AS n FROM orders o
-       WHERE o.placed_at >= :from AND o.placed_at < :to AND ${MARKET_FILTER}
+       WHERE o.placed_at >= :from AND o.placed_at < :to AND o.deleted_at IS NULL AND ${MARKET_FILTER}
        GROUP BY o.market, o.status`,
       params(period),
     );
@@ -116,6 +116,18 @@ export const adminDashboardRepository = {
     );
   },
 
+  /** Right now: orders whose customer sent a payment proof that no one has checked yet. */
+  awaitingVerification(
+    market: Market | null,
+  ): Promise<{ market: Market; n: number }[]> {
+    return selectRows<{ market: Market; n: number }>(
+      `SELECT o.market, count(*)::int AS n FROM orders o
+       WHERE o.payment_status = 'awaiting_verification' AND ${MARKET_FILTER}
+       GROUP BY o.market`,
+      { market },
+    );
+  },
+
   async newCustomers(period: Period): Promise<number> {
     const rows = await selectRows<{ n: number }>(
       `SELECT count(*)::int AS n FROM customers
@@ -129,7 +141,7 @@ export const adminDashboardRepository = {
   ordersPerDay(period: Period): Promise<DayAmount[]> {
     return selectRows<DayAmount>(
       `SELECT ${DAY("o.placed_at")} AS day, o.market, count(*)::int AS n, 0 AS amount FROM orders o
-       WHERE o.placed_at >= :from AND o.placed_at < :to AND ${MARKET_FILTER}
+       WHERE o.placed_at >= :from AND o.placed_at < :to AND o.deleted_at IS NULL AND ${MARKET_FILTER}
        GROUP BY 1, o.market`,
       params(period),
     );
