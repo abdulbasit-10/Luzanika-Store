@@ -6,7 +6,7 @@ import Link from "next/link";
  * The 404 artwork of the Figma: a big grey "404" with a tall chest of drawers
  * and a broken cabinet laid over it. Everything inside the artwork is placed in
  * percentages of its box (measured on the Figma frame, 830 x 432), so it scales
- * as one picture. The digits are text (cqw = a share of the artwork's width).
+ * as one picture. The digits are the Figma's two grey vector pieces.
  * The photos are stretched into their boxes, exactly as the Figma does.
  */
 
@@ -16,11 +16,26 @@ export function NotFoundView() {
     <main className="flex flex-1 flex-col items-center justify-center bg-white px-gutter py-6 text-center">
       <div
         aria-hidden
-        className="@container relative aspect-[830/432] w-[min(100%,52rem,calc((100dvh-var(--header-height)-15rem)*1.92))]"
+        className="relative aspect-[830/432] w-[min(100%,52rem,calc((100dvh-var(--header-height)-15rem)*1.92))]"
       >
-        <span className="absolute inset-x-0 top-[-2%] block text-center text-[48.5cqw] leading-none font-black tracking-tighter text-[#8e8e8e] select-none">
-          404
-        </span>
+        <div className="absolute top-[6.98%] left-0 h-[67.7%] w-full">
+          <Image
+            src="/images/not-found/404-lower.svg"
+            alt=""
+            fill
+            unoptimized
+            className="object-fill"
+          />
+        </div>
+        <div className="absolute top-0 left-[0.32%] h-[41.2%] w-[93.1%]">
+          <Image
+            src="/images/not-found/404-upper.svg"
+            alt=""
+            fill
+            unoptimized
+            className="object-fill"
+          />
+        </div>
         <div className="absolute top-[14.8%] left-[7.2%] h-[68.6%] w-[22.85%] -rotate-[2.63deg]">
           <Image
             src="/images/not-found/cabinet.webp"
