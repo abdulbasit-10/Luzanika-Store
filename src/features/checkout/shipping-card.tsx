@@ -25,25 +25,7 @@ export function ShippingCard({
 
   return (
     <section aria-label="Delivery address" className={cardClass}>
-      <div className="flex flex-col gap-2.5">
-        <Field
-          id="checkout-full-name"
-          label="Recipient's Full Name"
-          required
-          hint="The name the courier asks for at the door."
-          error={errors.fullName?.message}
-        >
-          <input
-            id="checkout-full-name"
-            type="text"
-            autoComplete="name"
-            placeholder="Eduard Franz"
-            aria-invalid={Boolean(errors.fullName)}
-            aria-describedby="checkout-full-name-message"
-            className={fieldControlClass}
-            {...register("fullName")}
-          />
-        </Field>
+      <div className="grid gap-2.5 sm:grid-cols-2">
         <Field
           id="checkout-company"
           label="Company Name (Optional)"

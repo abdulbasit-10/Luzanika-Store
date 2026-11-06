@@ -4,20 +4,16 @@ import type { ReactNode } from "react";
 
 import type { CartTotals } from "@/features/cart/cart-totals";
 import type { RegionCode } from "@/types/region";
-import { cn } from "@/utils/cn";
 import { formatRegionalPrice } from "@/utils/format-currency";
 
 /** The "Product Summary" card shared by the cart and checkout pages. `children` is the action under the total (Checkout, Pay Now). */
 export function OrderSummary({
   totals,
   region,
-  className,
   children,
 }: {
   totals: CartTotals;
   region: RegionCode;
-  /** Replaces the default placement (a card that stays in view while the cart scrolls). */
-  className?: string;
   children: ReactNode;
 }) {
   const money = (amount: number) => formatRegionalPrice(amount, region);
@@ -25,11 +21,7 @@ export function OrderSummary({
   return (
     <aside
       aria-labelledby="order-summary-title"
-      className={cn(
-        "rounded-xl bg-panel p-5",
-        className ??
-          "lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:self-start",
-      )}
+      className="rounded-xl bg-panel p-5 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:self-start"
     >
       <h2
         id="order-summary-title"
