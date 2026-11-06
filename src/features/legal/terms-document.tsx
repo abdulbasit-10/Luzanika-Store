@@ -13,7 +13,7 @@ type TermsContent = typeof termsConditions;
  */
 export function TermsDocument({ content }: { content: TermsContent }) {
   return (
-    <div className="flex max-w-[820px] flex-col gap-10 lg:gap-10">
+    <div className="mx-auto flex max-w-[820px] flex-col gap-10 lg:gap-10">
       <header className="flex flex-col gap-5 lg:gap-[19px]">
         <Eyebrow>{content.eyebrow}</Eyebrow>
         <div className="flex flex-col gap-4 lg:gap-[25px]">

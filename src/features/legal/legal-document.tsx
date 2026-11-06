@@ -16,13 +16,13 @@ const cardIcons: Record<LegalCard["icon"], LucideIcon> = {
 };
 
 /*
- * Long-form legal text, laid out as a single left-aligned column (820px at
- * 1440, as in the Figma). Blocks are spaced 45px apart; sizes follow the
+ * Long-form legal text, laid out as a single column centred on the page
+ * (820px wide, as in the Figma). Blocks are spaced 45px apart; sizes follow the
  * Figma (measured on the Privacy Policy frame).
  */
 export function LegalDocument({ chapters }: { chapters: LegalChapter[] }) {
   return (
-    <div className="flex max-w-[820px] flex-col gap-10 lg:gap-[45px]">
+    <div className="mx-auto flex max-w-[820px] flex-col gap-10 lg:gap-[45px]">
       {chapters.map((chapter) => (
         <ChapterBlocks key={chapter.title} chapter={chapter} />
       ))}
