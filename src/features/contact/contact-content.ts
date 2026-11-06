@@ -6,7 +6,7 @@ import { siteConfig } from "@/config/site";
 export const contactHero = {
   title: "Contact Us",
   image: {
-    src: "/images/contact/hero.jpg",
+    src: "/images/contact/contact-hero.jpg",
     alt: "",
     position: "50% 50%",
   },

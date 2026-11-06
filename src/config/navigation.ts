@@ -36,7 +36,7 @@ export const footerColumns: { title: string; links: NavLink[] }[] = [
     title: "Help",
     links: [
       { label: "Contact Us", href: "/contact" },
-      { label: "FAQ", href: "/faq" },
+      { label: "FAQS", href: "/faq" },
       { label: "Shipping Policy", href: "/shipping-returns" },
       { label: "Returns & Refunds", href: "/shipping-returns" },
     ],

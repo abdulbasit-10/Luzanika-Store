@@ -32,7 +32,7 @@ export function FormField({
       </label>
       {children}
       {error ? (
-        <p id={`${id}-error`} role="alert" className="text-xs text-red-300">
+        <p id={`${id}-error`} role="alert" className="text-xs text-danger">
           {error}
         </p>
       ) : null}

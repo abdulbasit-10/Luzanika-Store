@@ -14,10 +14,11 @@ import {
  * --contact-fit (see globals.css): the whole form is visible at any laptop
  * size, Windows scaling or browser zoom. Text and control sizes have a minimum
  * so they stay usable on very short screens.
+ * Figma: a white page under the photo banner, and a cream card for the form.
  */
 export function ContactSection() {
   return (
-    <Section className="lg:py-0">
+    <Section tone="white" className="lg:py-0">
       <div className="lg:flex lg:min-h-[calc(100dvh-var(--header-height)-var(--banner-short))] lg:items-center lg:py-4">
         <div className="grid w-full items-start gap-10 py-16 lg:grid-cols-2 lg:gap-15 lg:py-0">
           <div>
@@ -65,7 +66,7 @@ export function ContactSection() {
             />
           </div>
 
-          <div className="rounded-3xl bg-foreground p-6 text-white lg:px-[max(1.5rem,calc(40*var(--contact-fit)))] lg:py-[calc(48*var(--contact-fit))]">
+          <div className="rounded-3xl bg-section p-6 text-foreground lg:px-[max(1.5rem,calc(40*var(--contact-fit)))] lg:py-[calc(48*var(--contact-fit))]">
             <h2 className="text-center font-heading text-3xl font-medium lg:text-[max(1.375rem,calc(44*var(--contact-fit)))] lg:leading-tight">
               {contactForm.title}
             </h2>

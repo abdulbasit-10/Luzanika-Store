@@ -15,7 +15,7 @@ import { submitContactMessage } from "@/features/contact/contact-service";
 import { cn } from "@/utils/cn";
 
 const controlClass =
-  "w-full rounded-md bg-white px-4 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-invalid:outline-2 aria-invalid:outline-red-300 lg:text-[max(0.8125rem,calc(16*var(--contact-fit)))]";
+  "w-full rounded-md bg-white px-4 text-base text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent aria-invalid:outline-2 aria-invalid:outline-danger lg:text-[max(0.8125rem,calc(16*var(--contact-fit)))]";
 
 const inputHeight = "h-12 lg:h-[max(1.75rem,calc(68*var(--contact-fit)))]";
 const labelClass =
@@ -115,13 +115,13 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="mt-2 h-14 w-full cursor-pointer rounded-full bg-accent font-button text-base font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-60 lg:mt-[calc(8*var(--contact-fit))] lg:h-[max(2rem,calc(64*var(--contact-fit)))]"
+        className="mt-2 h-14 w-full cursor-pointer rounded-full bg-accent font-button text-base font-semibold text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60 lg:mt-[calc(8*var(--contact-fit))] lg:h-[max(2rem,calc(64*var(--contact-fit)))]"
       >
         {isPending ? "Sending…" : contactForm.submitLabel}
       </button>
 
       {isError ? (
-        <p role="alert" className="text-center text-sm text-red-300">
+        <p role="alert" className="text-center text-sm text-danger">
           {contactForm.errorMessage}
         </p>
       ) : null}
