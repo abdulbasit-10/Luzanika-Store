@@ -191,13 +191,14 @@ export const detailedProducts: SampleProductDetail[] = [
     ),
     sizes: ["30 ml", "50 ml", "100 ml"],
     details: [
+      // Each line of the body is one bullet on the page (the "Ingredients" cards of the Figma).
       {
-        title: "Description",
-        body: "Amber Oud opens warm and resinous, settling into a deep, smoky heart of oud. A confident unisex scent made for evenings and special occasions, with lasting depth that lingers on skin and fabric.",
+        title: "This fragrance contains:",
+        body: "Alcohol Denat\nParfum (Fragrance)\nAqua (Water)\nLinalool",
       },
       {
-        title: "Fragrance Notes",
-        body: "Top: bergamot and saffron. Heart: oud and rose. Base: amber, sandalwood and musk. Store in a cool, dry place away from direct sunlight to preserve the scent.",
+        title: "This fragrance contains:",
+        body: "Limonene\nCoumarin\nGeraniol\nCitronellol",
       },
     ],
     category: { slug: "fragrances", label: "Fragrances" },

@@ -8,7 +8,7 @@ import { addImage } from "@/server/services/admin-product-service";
 /**
  * POST /api/v1/admin/products/:id/images: uploads a photo (multipart, field
  * "photo", JPG/PNG/WebP up to 8 MB). It is shrunk to at most 1600 px, saved as
- * WebP and added as the product's last photo; at most 10 photos per product.
+ * WebP and added as the product's last photo; at most 5 photos per product (one main and four more).
  * Its description starts as the product name: change it with PATCH.
  */
 export const POST = staffRoute<{ id: string }>(

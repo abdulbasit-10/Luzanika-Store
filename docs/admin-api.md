@@ -304,7 +304,7 @@ once the cash is collected.
 A deleted product cannot be changed until restored (`409`). Stock is changed
 under `/stock`, not here.
 
-**Photos** (at most 10 per product):
+**Photos** (at most 5 per product: one main photo and four more):
 
 | Method | Path                            | Permission        | Notes                                                                                                                                    |
 | ------ | ------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

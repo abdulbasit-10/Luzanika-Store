@@ -23,7 +23,7 @@ interface ProductGalleryProps {
 const columnWidth =
   "lg:w-[max(15rem,min(40rem,44vw,calc((100dvh-var(--header-height)-3rem)*0.652)))]";
 
-/** Large photo with a thumbnail strip. The first image is shown by default. */
+/** A row of small photos on top and the large photo below, like the Figma. The first image is shown by default. */
 export function ProductGallery({
   images,
   productName,
@@ -39,31 +39,6 @@ export function ProductGallery({
         columnWidth,
       )}
     >
-      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
-        {current ? (
-          <Image
-            key={current.src}
-            src={current.src}
-            alt={current.alt}
-            fill
-            priority={active === 0}
-            sizes="(min-width: 1024px) 40rem, 100vw"
-            style={{ objectPosition: current.position }}
-            className="object-cover"
-          />
-        ) : (
-          <span className="flex size-full items-center justify-center text-muted-foreground">
-            <ImageIcon aria-hidden className="size-10" />
-            <span className="sr-only">No photo of {productName}</span>
-          </span>
-        )}
-        {isNew ? (
-          <span className="absolute top-4 left-4 bg-surface px-4 py-2.5 text-[11px] leading-4 font-bold text-foreground uppercase italic">
-            New
-          </span>
-        ) : null}
-      </div>
-
       {images.length > 1 ? (
         <ul
           aria-label="Product photos"
@@ -98,6 +73,31 @@ export function ProductGallery({
           ))}
         </ul>
       ) : null}
+
+      <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+        {current ? (
+          <Image
+            key={current.src}
+            src={current.src}
+            alt={current.alt}
+            fill
+            priority={active === 0}
+            sizes="(min-width: 1024px) 40rem, 100vw"
+            style={{ objectPosition: current.position }}
+            className="object-cover"
+          />
+        ) : (
+          <span className="flex size-full items-center justify-center text-muted-foreground">
+            <ImageIcon aria-hidden className="size-10" />
+            <span className="sr-only">No photo of {productName}</span>
+          </span>
+        )}
+        {isNew ? (
+          <span className="absolute top-4 left-4 bg-surface px-4 py-2.5 text-[11px] leading-4 font-bold text-foreground uppercase italic">
+            New
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

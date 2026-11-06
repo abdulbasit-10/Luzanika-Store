@@ -69,7 +69,14 @@ export function ProductDetailView({ product }: { product: ProductDetail }) {
 
         {product.details?.length ? (
           <div className="mt-20 lg:mt-28">
-            <ProductDetailsSection sections={product.details} />
+            <ProductDetailsSection
+              sections={product.details}
+              heading={
+                product.category?.slug === "fragrances"
+                  ? "Ingredients"
+                  : "Details"
+              }
+            />
           </div>
         ) : null}
 

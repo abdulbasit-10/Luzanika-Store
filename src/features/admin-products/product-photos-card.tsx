@@ -24,7 +24,7 @@ import {
 } from "./admin-products-service";
 import { useProductMutation } from "./product-mutation";
 
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 5;
 const MAX_BYTES = 8 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
@@ -150,7 +150,7 @@ function PhotoTile({
   );
 }
 
-/** Up to ten photos. The first one is the main photo the shop shows in lists. */
+/** One main photo and four more (five at most). The first one is the main photo the shop shows in lists. */
 export function ProductPhotosCard({
   product,
   canEdit,

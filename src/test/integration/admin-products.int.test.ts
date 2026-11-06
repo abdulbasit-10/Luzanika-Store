@@ -748,11 +748,11 @@ describe("product photos", () => {
     expect((await upload(staff.cookie, product.id, big)).status).toBe(413);
   });
 
-  it("allows at most 10 photos and leaves no stray file behind when it refuses", async () => {
+  it("allows at most 5 photos and leaves no stray file behind when it refuses", async () => {
     const staff = await manager();
     const product = await newProduct(staff.cookie);
     const bytes = await picture(100, 100);
-    for (let n = 0; n < 10; n++) {
+    for (let n = 0; n < 5; n++) {
       expect((await upload(staff.cookie, product.id, bytes)).status).toBe(201);
     }
 
@@ -760,13 +760,13 @@ describe("product photos", () => {
       "SELECT count(*) AS n FROM product_images WHERE product_id = :id",
       { id: product.id },
     );
-    expect(Number(filesBefore[0].n)).toBe(10);
+    expect(Number(filesBefore[0].n)).toBe(5);
 
-    const eleventh = await upload(staff.cookie, product.id, bytes);
-    expect(eleventh.status).toBe(409);
+    const sixth = await upload(staff.cookie, product.id, bytes);
+    expect(sixth.status).toBe(409);
 
     const detail = (await read(staff.cookie, product.id)).body.product;
-    expect(detail.images).toHaveLength(10);
+    expect(detail.images).toHaveLength(5);
     for (const image of detail.images) {
       expect(await storage.get(`products/${fileOf(image.src)}`)).not.toBeNull();
     }
