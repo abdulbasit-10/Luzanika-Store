@@ -33,7 +33,10 @@ export function XIcon(props: IconProps) {
 export function FacebookIcon(props: IconProps) {
   return (
     <SocialSvg {...props}>
-      <path d="M14 8h2V5h-2c-2 0-3.5 1.6-3.5 3.8V11H8v3h2.5v7h3v-7H16l.5-3h-3V9.2c0-.7.3-1.2 1-1.2z" />
+      <path
+        transform="translate(6 2) scale(0.0391)"
+        d="M279.14 288l14.22-92.66h-88.91v-60.13c0-25.35 12.42-50.06 52.24-50.06h40.42V6.26S260.43 0 225.36 0c-73.22 0-121.08 44.38-121.08 124.72v70.62H22.89V288h81.39v224h100.17V288z"
+      />
     </SocialSvg>
   );
 }

@@ -1,6 +1,8 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+import { siteConfig } from "@/config/site";
+
 export const contactHero = {
   title: "Contact Us",
   image: {
@@ -24,21 +26,21 @@ export interface ContactDetail {
   href?: string;
 }
 
-// Placeholder details copied from the Figma frame; replace with the client's.
+// The shop's real details, shared with the footer through siteConfig.
 export const contactDetails: ContactDetail[] = [
   {
     label: "Mail",
-    value: "mdkhan.or@gmail.com",
+    value: siteConfig.contact.email,
     icon: Mail,
-    href: "mailto:mdkhan.or@gmail.com",
+    href: `mailto:${siteConfig.contact.email}`,
   },
   {
     label: "Phone",
-    value: "+923419000933",
+    value: siteConfig.contact.customerService.phone,
     icon: Phone,
-    href: "tel:+923419000933",
+    href: `tel:${siteConfig.contact.customerService.phone.replace(/[^\d+]/g, "")}`,
   },
-  { label: "Office", value: "0000 seltice Way Coeur D Alene", icon: MapPin },
+  { label: "Office", value: siteConfig.contact.address, icon: MapPin },
 ];
 
 export const contactSocial = { title: "Stay Connected" };

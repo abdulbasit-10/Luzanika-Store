@@ -1,0 +1,2 @@
+-- migrate:irreversible
+-- The placeholder details are gone on purpose; the real ones are not put back to fake values.

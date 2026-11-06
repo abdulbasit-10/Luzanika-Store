@@ -33,7 +33,7 @@ import {
 import { CookiePreferences } from "@/features/cookies/cookie-preferences";
 import { cn } from "@/utils/cn";
 
-const PRIVACY_EMAIL = "privacy@luzanika.com";
+const PRIVACY_EMAIL = siteConfig.contact.email;
 
 const featureIcons: Record<
   (typeof cookieFeatureCards)[number]["icon"],
