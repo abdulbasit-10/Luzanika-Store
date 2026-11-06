@@ -10,7 +10,7 @@ const pad = "px-(--page-pad) lg:px-[clamp(1.5rem,3.8vw,3.4rem)]";
 const columns = "lg:grid lg:grid-cols-[clamp(15rem,24vw,21.5rem)_1fr]";
 
 /*
- * Frame for the account pages: the links on a white column, the page on the
+ * Frame for the account pages: the links on a dark column, the page on the
  * grey area. The browser asks the server who is signed in; until it answers
  * the page shows a placeholder, and visitors who are not signed in are sent to
  * the login page and brought back afterwards. The API refuses account data
@@ -38,7 +38,7 @@ export function AccountShell({ children }: { children: ReactNode }) {
       className={`flex flex-1 flex-col lg:min-h-[calc(100dvh-var(--header-height))] ${columns}`}
     >
       <aside
-        className={`bg-surface py-4 ${pad} lg:py-[clamp(0.75rem,3.2dvh,3.4rem)]`}
+        className={`bg-primary py-4 ${pad} lg:py-[clamp(0.75rem,3.2dvh,3.4rem)]`}
       >
         {ready ? <AccountSidebar /> : <SidebarSkeleton />}
       </aside>
@@ -56,9 +56,9 @@ export function AccountShell({ children }: { children: ReactNode }) {
 function SidebarSkeleton() {
   return (
     <div role="status" className="animate-pulse space-y-4">
-      <div className="h-11 rounded-md bg-black/10" />
-      <div className="h-11 rounded-md bg-black/5" />
-      <div className="h-11 rounded-md bg-black/5" />
+      <div className="h-11 rounded-md bg-white/15" />
+      <div className="h-11 rounded-md bg-white/10" />
+      <div className="h-11 rounded-md bg-white/10" />
       <span className="sr-only">Loading your account…</span>
     </div>
   );

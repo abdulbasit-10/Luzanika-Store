@@ -27,7 +27,7 @@ const items: { label: string; href: string; icon: LucideIcon }[] = [
 const itemClass =
   "flex h-11 shrink-0 items-center gap-2.5 rounded-md px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:w-full";
 
-/** Links between the account pages, and Log out. A row you can scroll on small screens. */
+/** Links between the account pages, and Log out, on the dark panel of the Figma. A row you can scroll on small screens. */
 export function AccountSidebar() {
   const pathname = usePathname();
   const router = useRouter();
@@ -59,8 +59,8 @@ export function AccountSidebar() {
             className={cn(
               itemClass,
               active
-                ? "bg-primary text-primary-foreground"
-                : "text-foreground/75 hover:bg-black/5",
+                ? "bg-white text-foreground"
+                : "text-white/80 hover:bg-white/10",
             )}
           >
             <Icon aria-hidden className="size-4" strokeWidth={1.75} />
@@ -75,7 +75,7 @@ export function AccountSidebar() {
         onClick={() => mutate()}
         className={cn(
           itemClass,
-          "px-0 text-danger hover:bg-danger/5 disabled:opacity-60 lg:mt-auto lg:px-4",
+          "px-0 text-[#ff6b6b] hover:bg-white/10 disabled:opacity-60 lg:mt-auto lg:px-4",
         )}
       >
         <LogOut aria-hidden className="size-4" strokeWidth={1.75} />
