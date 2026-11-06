@@ -443,7 +443,8 @@ export async function changeOrderStatus(
     throw badMove(current.status, body.status);
   }
 
-  let email: EmailMessage | null = null;
+  // Built once the order is read back, so the email can list what was ordered and what it cost.
+  let buildEmail: ((order: AdminOrderDto) => EmailMessage) | null = null;
 
   if (body.status === "cancelled") {
     const reason = body.reason ?? "Cancelled by staff";
@@ -460,12 +461,14 @@ export async function changeOrderStatus(
       throw badMove(latest.status, "cancelled");
     }
     if (unpaidCod) refreshCatalogCache();
-    email = orderCancelledEmail({
-      to: current.email,
-      name: current.ship_name,
-      orderNumber: number,
-      reason: body.reason ?? null,
-    });
+    buildEmail = (order) =>
+      orderCancelledEmail({
+        to: current.email,
+        name: current.ship_name,
+        orderNumber: number,
+        reason: body.reason ?? null,
+        order,
+      });
   } else {
     await withTransaction(async (tx) => {
       const locked = await adminOrderRepository.lockByNumber(number, tx);
@@ -489,22 +492,25 @@ export async function changeOrderStatus(
       await recordAuditFor(ctx, tx, number, locked.status, body.status, {});
     });
 
-    email =
+    buildEmail = (order) =>
       body.status === "in_delivery"
         ? orderShippedEmail({
             to: current.email,
             name: current.ship_name,
             orderNumber: number,
+            order,
           })
         : orderCompletedEmail({
             to: current.email,
             name: current.ship_name,
             orderNumber: number,
+            order,
           });
   }
 
-  if (email) await notifyCustomer(email);
-  return getAdminOrder(number);
+  const updated = await getAdminOrder(number);
+  if (buildEmail) await notifyCustomer(buildEmail(updated));
+  return updated;
 }
 
 async function recordAuditFor(
