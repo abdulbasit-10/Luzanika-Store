@@ -37,20 +37,24 @@ npx tsx --env-file=.env.neon db/seed-catalog.ts      # optional: the sample cata
 
 ## Variables
 
-| Variable                                                                                               | Value                                                                                                          |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                                         | Neon **pooled** string (host contains `-pooler`), as the owner user                                            |
-| `DATABASE_SSL`                                                                                         | `true`                                                                                                         |
-| `DATABASE_POOL_MAX`                                                                                    | `5`                                                                                                            |
-| `NEXT_PUBLIC_SITE_URL`, `APP_ORIGINS`                                                                  | `https://${{RAILWAY_PUBLIC_DOMAIN}}` (Railway fills it in). Baked in at build: changing them needs a redeploy. |
-| `NEXT_PUBLIC_API_URL`                                                                                  | `/api/v1`                                                                                                      |
-| `TRUST_PROXY`                                                                                          | `true` (Railway's proxy sets the visitor IP header; check once on the live site)                               |
-| `BCRYPT_COST`                                                                                          | `12`                                                                                                           |
-| `STAFF_2FA_ENCRYPTION_KEY`                                                                             | A new key: `openssl rand -base64 32`. If it is lost, staff set up their authenticator again.                   |
-| `PAYMENT_PROVIDER`                                                                                     | `stripe` (the app refuses `simulated` in production). Cash on delivery and manual transfers work without it.   |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`                                 | From the Cloudinary dashboard (the key needs upload permission, role Master Admin)                             |
-| `CLOUDINARY_FOLDER`                                                                                    | `luzanika-demo` (use another folder for the live shop)                                                         |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, `CONTACT_TO_EMAIL` | The mail settings (Resend). Without `SMTP_HOST` no email is sent.                                              |
+| Variable                                                               | Value                                                                                                                                                                                 |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                         | Neon **pooled** string (host contains `-pooler`), as the owner user                                                                                                                   |
+| `DATABASE_SSL`                                                         | `true`                                                                                                                                                                                |
+| `DATABASE_POOL_MAX`                                                    | `5`                                                                                                                                                                                   |
+| `NEXT_PUBLIC_SITE_URL`, `APP_ORIGINS`                                  | `https://${{RAILWAY_PUBLIC_DOMAIN}}` (Railway fills it in). Baked in at build: changing them needs a redeploy.                                                                        |
+| `NEXT_PUBLIC_API_URL`                                                  | `/api/v1`                                                                                                                                                                             |
+| `TRUST_PROXY`                                                          | `true` (Railway's proxy sets the visitor IP header; check once on the live site)                                                                                                      |
+| `BCRYPT_COST`                                                          | `12`                                                                                                                                                                                  |
+| `STAFF_2FA_ENCRYPTION_KEY`                                             | A new key: `openssl rand -base64 32`. If it is lost, staff set up their authenticator again.                                                                                          |
+| `PAYMENT_PROVIDER`                                                     | `stripe` (the app refuses `simulated` in production). Cash on delivery and manual transfers work without it.                                                                          |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | From the Cloudinary dashboard (the key needs upload permission, role Master Admin)                                                                                                    |
+| `CLOUDINARY_FOLDER`                                                    | `luzanika-demo` (use another folder for the live shop)                                                                                                                                |
+| `RESEND_API_KEY`, `MAIL_FROM`, `CONTACT_TO_EMAIL`                      | Email through Resend's web API. **Railway blocks SMTP on the trial and hobby plans, so use `RESEND_API_KEY` (the same key as before) and not `SMTP_*`.** Without it no email is sent. |
+
+## Email on Railway
+
+On the trial and hobby plans Railway blocks outgoing mail-server (SMTP) connections, so order, password-reset and contact emails would silently fail. The app can send through Resend's web API instead (plain HTTPS): set `RESEND_API_KEY` (and `MAIL_FROM` on a domain verified in Resend) and leave the `SMTP_*` variables out. The failure shows in the Deploy Logs as `order email failed`.
 
 ## Later
 

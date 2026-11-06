@@ -6,6 +6,7 @@ const KEYS = [
   "SMTP_SECURE",
   "SMTP_USER",
   "SMTP_PASSWORD",
+  "RESEND_API_KEY",
   "MAIL_FROM",
   "CONTACT_TO_EMAIL",
 ];
@@ -28,6 +29,7 @@ describe("getMailEnv", () => {
   it("has no mail server when nothing is set", async () => {
     expect((await load())()).toEqual({
       smtp: null,
+      resendApiKey: null,
       from: null,
       contactTo: null,
     });
@@ -48,9 +50,23 @@ describe("getMailEnv", () => {
         secure: false,
         auth: { user: "mailer", password: "secret-value" },
       },
+      resendApiKey: null,
       from: "Luzanika <shop@example.com>",
       contactTo: "inbox@example.com",
     });
+  });
+
+  it("reads the Resend API key and needs a sender with it", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_key");
+    vi.stubEnv("MAIL_FROM", "Luzanika <orders@example.com>");
+    expect((await load())()).toMatchObject({
+      smtp: null,
+      resendApiKey: "re_test_key",
+      from: "Luzanika <orders@example.com>",
+    });
+
+    vi.stubEnv("MAIL_FROM", "");
+    await expect(async () => (await load())()).rejects.toThrow("MAIL_FROM");
   });
 
   it("encrypts from the start on port 465 unless told otherwise", async () => {
