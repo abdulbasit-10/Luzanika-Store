@@ -17,7 +17,6 @@ export default function ContactPage() {
         title={contactHero.title}
         image={contactHero.image}
         titleClassName="lg:text-[clamp(2.25rem,3.89vw,3.5rem)]"
-        short
       />
       <ContactSection />
     </main>
