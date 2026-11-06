@@ -37,6 +37,8 @@ Admin screens, all on the real API:
 
 **Figma styling pass (shop).** Header and footer are the page grey `#D9D9D9` (footer has a 1px black top line and a 14px bottom row); pages the Figma draws on white have a white `main`: the five collection pages, Products, product details, Home, Cart, Checkout, Order Confirmation, FAQ, About. The shared `Section` (`src/components/ui/section.tsx`) has three tones: `default` (page grey), `white`, `cream`. The active link of the shop menu is bold without moving the others (hidden bold copy of the label keeps the width); mobile menu and admin sidebar mark the active item too. FAQ: white page, cream full-width search, brown-outlined unselected pills, cream cards. Login: see above.
 
+**User flow bars (2026-11-06).** Following the Figma "User Dashborad" frames, these pages have a **white** header and footer around the **grey** page: the signed-in pages `/account`, `/account/addresses`, `/orders`, `/wishlist` (route group `src/app/(user)/`, which also holds the account sidebar shell) and the sign-up, forgot-password and reset-password pages (route group `src/app/(user-flow)/`). Both layouts use `<Header tone="white" />` and `<Footer tone="white" />`. Every other page keeps the grey bars through `src/app/(site)/layout.tsx`. The login page has its own full-screen layout without header or footer. Sign-up has a cream card with the Figma form (`signup-panel.tsx`; `SocialSignIn` has an `outlined` option). Folders could not be renamed with `git mv` while `next dev` ran (Windows lock), so files were copied and the old ones removed.
+
 Not built: the "Edit Items" popup in the Figma (a wholesale template; ask the designer what it is for).
 
 ## Next
