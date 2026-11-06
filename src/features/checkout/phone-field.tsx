@@ -8,13 +8,14 @@ import { Field } from "@/components/ui/field";
 import {
   PHONE_CODES,
   PHONE_PATTERN,
+  phoneProblem,
   type CheckoutFormValues,
 } from "@/features/checkout/checkout-schema";
 
 /**
  * The phone number field of the Figma: a round flag, the country code (with a
- * small arrow), a divider, the number, and a check mark once the number looks
- * right. The code is chosen from the two markets; it is put in front of the
+ * small arrow), a divider, the number, and a check mark once the number is
+ * right for that country. The code is chosen from the two markets; it is put in front of the
  * number when the order is sent (see fullPhoneNumber).
  */
 export function PhoneField() {
@@ -26,7 +27,8 @@ export function PhoneField() {
   const code = useWatch({ control, name: "phoneCode" });
   const phone = useWatch({ control, name: "phone" });
   const flagRegion = PHONE_CODES.find((entry) => entry.code === code)?.region;
-  const looksRight = PHONE_PATTERN.test(phone.trim());
+  const looksRight =
+    PHONE_PATTERN.test(phone.trim()) && !phoneProblem(phone, code);
 
   return (
     <Field
