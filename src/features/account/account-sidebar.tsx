@@ -2,10 +2,10 @@
 
 import { useMutation } from "@tanstack/react-query";
 import {
+  CircleCheck,
   ClipboardList,
   Heart,
   LogOut,
-  MapPin,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -19,7 +19,7 @@ import { cn } from "@/utils/cn";
 
 const items: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Account", href: "/account", icon: User },
-  { label: "Saved Addresses", href: "/account/addresses", icon: MapPin },
+  { label: "Saved Addresses", href: "/account/addresses", icon: CircleCheck },
   { label: "Wishlist", href: "/wishlist", icon: Heart },
   { label: "Order History", href: "/orders", icon: ClipboardList },
 ];

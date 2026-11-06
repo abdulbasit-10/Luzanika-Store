@@ -167,7 +167,7 @@ export function AddressesView() {
       <h1 className="sr-only">Saved addresses</h1>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-[280px]">
+        <div className="relative min-w-[12rem] flex-1">
           <Search
             aria-hidden
             className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -222,10 +222,10 @@ export function AddressesView() {
             {shown.map((address) => (
               <li
                 key={address.id}
-                className="flex items-start justify-between gap-4 py-[clamp(0.75rem,2.2dvh,1.1rem)]"
+                className="flex items-center justify-between gap-4 py-[clamp(0.75rem,2.2dvh,1.1rem)]"
               >
                 <div className="min-w-0 text-xs leading-5 text-muted-foreground">
-                  <h2 className="text-[13px] font-semibold text-foreground">
+                  <h2 className="text-sm font-semibold text-foreground">
                     {address.fullName}
                   </h2>
                   <p>{address.phone}</p>
@@ -266,7 +266,6 @@ export function AddressesView() {
                       Use the address for {address.fullName} as default
                     </span>
                   }
-                  className="mt-1"
                 />
               </li>
             ))}
