@@ -19,7 +19,6 @@ export default function FaqPage() {
         title={faqPage.hero.title}
         image={faqPage.hero.image}
         titleClassName="lg:text-[clamp(2.25rem,3.89vw,3.5rem)]"
-        short
       />
       <Section tone="white" className="lg:py-25">
         <SectionHeading

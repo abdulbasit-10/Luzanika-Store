@@ -35,7 +35,7 @@ export interface LegalChapter {
   subsections: LegalSubsection[];
 }
 
-/* The banner photo is shared with the FAQ page. */
+/* A neutral banner photo for the legal pages (the FAQ page has its own photo now). */
 export const legalHeroImage = {
   src: "/images/faq/hero.jpg",
   alt: "",

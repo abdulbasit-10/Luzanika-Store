@@ -19,7 +19,7 @@ export const faqPage = {
   searchPlaceholder: "Search common questions, topics, or keywords...",
   hero: {
     title: "Frequently Asked Questions",
-    image: { src: "/images/faq/hero.jpg", alt: "", position: "50% 50%" },
+    image: { src: "/images/faq/faq-hero.jpg", alt: "", position: "50% 50%" },
   },
 };
 
