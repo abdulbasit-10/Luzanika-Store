@@ -551,6 +551,8 @@ describe("profile photo", () => {
       },
       get: async () => null,
       delete: async () => {},
+      publicUrl: () => null,
+      keyFromPublicUrl: () => null,
     };
     setStorage(failing);
 
@@ -568,6 +570,8 @@ describe("profile photo", () => {
     setStorage({
       put: (key, bytes) => storage.put(key, bytes),
       get: (key) => storage.get(key),
+      publicUrl: () => null,
+      keyFromPublicUrl: () => null,
       delete: async () => {
         throw new Error("permission denied");
       },

@@ -2,6 +2,7 @@ import "server-only";
 
 import { getStorageEnv } from "@/server/config/storage-env";
 
+import { CloudinaryStorage } from "./cloudinary-storage";
 import { LocalDiskStorage } from "./local-disk-storage";
 import type { FileStorage } from "./storage";
 
@@ -10,10 +11,16 @@ export type { FileStorage, StoredFile } from "./storage";
 let instance: FileStorage | undefined;
 let override: FileStorage | undefined;
 
-/** The storage in use. To move to cloud storage, return a different FileStorage here. */
+/** The storage in use: Cloudinary when its settings are present, otherwise the server's disk. */
 export function getStorage(): FileStorage {
   if (override) return override;
-  instance ??= new LocalDiskStorage(getStorageEnv().uploadsDir);
+  if (!instance) {
+    const env = getStorageEnv();
+    instance =
+      env.kind === "cloudinary"
+        ? new CloudinaryStorage(env)
+        : new LocalDiskStorage(env.uploadsDir);
+  }
   return instance;
 }
 
