@@ -13,10 +13,10 @@ import Link from "next/link";
 /** The 404 page content, without the header and footer (the callers add them when they are missing). */
 export function NotFoundView() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center bg-white px-gutter py-6 text-center">
+    <main className="flex min-h-[calc(100dvh-var(--header-height))] flex-1 flex-col items-center justify-center bg-white px-gutter py-4 text-center">
       <div
         aria-hidden
-        className="relative aspect-[830/432] w-[min(100%,52rem,calc((100dvh-var(--header-height)-15rem)*1.92))]"
+        className="relative aspect-[830/432] w-[min(100%,46rem,calc((100dvh-var(--header-height)-17.5rem)*1.92))]"
       >
         <div className="absolute top-[6.98%] left-0 h-[67.7%] w-full">
           <Image
@@ -58,7 +58,7 @@ export function NotFoundView() {
         </div>
       </div>
 
-      <h1 className="-mt-[2.5dvh] font-heading text-[clamp(1.75rem,6.4dvh,3.5rem)] leading-tight font-medium text-foreground uppercase">
+      <h1 className="-mt-[2.5dvh] font-heading text-[clamp(1.75rem,5.6dvh,3.25rem)] leading-tight font-medium text-foreground uppercase">
         Page not found
       </h1>
       <p className="mt-[clamp(0.5rem,3dvh,2rem)] text-[clamp(0.875rem,2.3dvh,1.25rem)] font-medium text-muted-foreground">
