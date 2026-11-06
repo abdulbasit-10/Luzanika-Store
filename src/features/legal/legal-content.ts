@@ -42,8 +42,8 @@ export const legalHeroImage = {
   position: "50% 50%",
 };
 
-/* The Privacy Policy banner photo of the Figma (a cart with a globe, coins and a calculator). */
-export const privacyHeroImage = {
+/* The banner photo of the Figma Privacy, Terms and Cookies pages (a cart with a globe, coins and a calculator). */
+export const policyHeroImage = {
   src: "/images/legal/privacy-hero.jpg",
   alt: "",
   position: "50% 50%",

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { PageBanner } from "@/components/shared/page-banner";
 import { Section } from "@/components/ui/section";
-import { legalHeroImage } from "@/features/legal/legal-content";
+import { policyHeroImage } from "@/features/legal/legal-content";
 import { TermsDocument } from "@/features/legal/terms-document";
 import { termsConditions } from "@/features/legal/terms-content";
 
@@ -17,11 +17,10 @@ export default function TermsPage() {
     <main className="flex-1">
       <PageBanner
         title={termsConditions.title}
-        image={legalHeroImage}
+        image={policyHeroImage}
         titleClassName="lg:text-[clamp(2.25rem,3.89vw,3.5rem)]"
-        short
       />
-      <Section className="lg:pt-25 lg:pb-[102px]">
+      <Section tone="white" className="lg:pt-25 lg:pb-[102px]">
         <TermsDocument content={termsConditions} />
       </Section>
     </main>

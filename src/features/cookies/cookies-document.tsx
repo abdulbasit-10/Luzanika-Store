@@ -57,7 +57,7 @@ export function CookiesDocument() {
   const { welcome } = cookiesPolicy;
 
   return (
-    <div className="flex max-w-[820px] flex-col gap-10">
+    <div className="mx-auto flex max-w-[820px] flex-col gap-10">
       <header className="flex flex-col gap-4 lg:gap-5">
         <Eyebrow>{cookiesPolicy.eyebrow}</Eyebrow>
         <h2 className="font-heading text-3xl leading-tight font-bold text-black lg:text-[43.5px]">
@@ -84,7 +84,7 @@ export function CookiesDocument() {
 
       <nav
         aria-label="Cookies policy sections"
-        className="rounded-xl bg-white p-4"
+        className="rounded-xl border border-[#d1c4b8]/30 bg-white p-4"
       >
         <p className="flex items-center gap-2 text-[10px] font-medium tracking-[0.12em] uppercase">
           <List aria-hidden className="size-3.5" />
@@ -120,7 +120,10 @@ export function CookiesDocument() {
           {cookieFeatureCards.map((card) => {
             const Icon = featureIcons[card.icon];
             return (
-              <article key={card.title} className="rounded-xl bg-white p-4">
+              <article
+                key={card.title}
+                className="rounded-xl border border-[#d1c4b8]/30 bg-white p-4"
+              >
                 <h4 className="flex items-center gap-2 font-heading text-base font-medium">
                   <Icon aria-hidden className="size-4" strokeWidth={1.5} />
                   {card.title}
@@ -143,7 +146,7 @@ export function CookiesDocument() {
           Luzanika employs telemetry solely to enhance and safeguard your
           shopping journey. We may use cookies to:
         </p>
-        <ul className="flex flex-col gap-3.5 rounded-xl bg-white p-5">
+        <ul className="flex flex-col gap-3.5 rounded-xl border border-[#d1c4b8]/30 bg-white p-5">
           {cookieUses.map((use) => (
             <li key={use} className="flex items-start gap-3">
               <span
@@ -171,7 +174,7 @@ export function CookiesDocument() {
           {cookieTypes.map((type) => (
             <article
               key={type.key}
-              className="flex flex-col rounded-xl bg-white p-4"
+              className="flex flex-col rounded-xl border border-[#d1c4b8]/30 bg-white p-4"
             >
               <div className="flex items-start justify-between gap-3">
                 <h4 className="font-heading text-base font-medium">
@@ -288,7 +291,7 @@ export function CookiesDocument() {
 
       <PolicySection id="client-support" number="8." title="Contact Us">
         <p className={bodyText}>{clientSupport.body}</p>
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[#d1c4b8]/30 bg-white p-4">
           <div className="flex items-center gap-3">
             <span
               aria-hidden
@@ -314,7 +317,7 @@ export function CookiesDocument() {
         </div>
       </PolicySection>
 
-      <aside className="flex flex-wrap items-center justify-between gap-5 rounded-xl bg-white p-5 lg:p-6">
+      <aside className="flex flex-wrap items-center justify-between gap-5 rounded-xl border border-[#d1c4b8]/30 bg-white p-5 lg:p-6">
         <div className="max-w-sm">
           <p className="text-[9px] tracking-[0.15em] text-muted-foreground uppercase">
             {moreInformation.eyebrow}
