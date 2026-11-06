@@ -4,6 +4,7 @@ import {
   PHONE_PATTERN,
   checkoutSchema,
   fullPhoneNumber,
+  limitPhoneInput,
   phoneProblem,
 } from "./checkout-schema";
 
@@ -118,5 +119,40 @@ describe("checkout form phone rule", () => {
 
   it("gives only the general message for something that is not a number at all", () => {
     expect(phoneIssues("call me")).toEqual(["Enter a valid phone number"]);
+  });
+});
+
+describe("limitPhoneInput", () => {
+  it("lets a complete Pakistani number through and stops anything after it", () => {
+    expect(limitPhoneInput("0300 4589211", "+92")).toBe("0300 4589211");
+    expect(limitPhoneInput("0300 45892115", "+92")).toBe("0300 4589211");
+    expect(limitPhoneInput("03004589211999", "+92")).toBe("03004589211");
+    // Without the leading 0 a Pakistani mobile has 10 digits.
+    expect(limitPhoneInput("3004589211", "+92")).toBe("3004589211");
+    expect(limitPhoneInput("30045892119", "+92")).toBe("3004589211");
+  });
+
+  it("removes letters and symbols, as when typing or pasting", () => {
+    expect(limitPhoneInput("0300-abc 4589211", "+92")).toBe("0300- 4589211");
+    expect(limitPhoneInput("phone", "+92")).toBe("");
+    expect(limitPhoneInput("03#00$4589211", "+92")).toBe("03004589211");
+  });
+
+  it("keeps a leading + but no other +, and allows up to 15 digits abroad", () => {
+    expect(limitPhoneInput("+44 20 7946 0958", "+92")).toBe("+44 20 7946 0958");
+    expect(limitPhoneInput("0+300", "+92")).toBe("0300");
+    expect(limitPhoneInput("+1234567890123456789", "+92")).toBe(
+      "+123456789012345",
+    );
+    // 15 digits at most: 0044 20 7946 0958 and one more.
+    expect(limitPhoneInput("0044 20 7946 0958 1234", "+92")).toBe(
+      "0044 20 7946 0958 1",
+    );
+  });
+
+  it("allows longer German numbers", () => {
+    // 14 digits with the leading 0.
+    expect(limitPhoneInput("01520 982341119", "+49")).toBe("01520 982341119");
+    expect(limitPhoneInput("01520 9823411199", "+49")).toBe("01520 982341119");
   });
 });

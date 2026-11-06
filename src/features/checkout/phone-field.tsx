@@ -8,6 +8,7 @@ import { Field } from "@/components/ui/field";
 import {
   PHONE_CODES,
   PHONE_PATTERN,
+  limitPhoneInput,
   phoneProblem,
   type CheckoutFormValues,
 } from "@/features/checkout/checkout-schema";
@@ -27,6 +28,7 @@ export function PhoneField() {
   const code = useWatch({ control, name: "phoneCode" });
   const phone = useWatch({ control, name: "phone" });
   const flagRegion = PHONE_CODES.find((entry) => entry.code === code)?.region;
+  const { onChange: onPhoneChange, ...phoneProps } = register("phone");
   const looksRight =
     PHONE_PATTERN.test(phone.trim()) && !phoneProblem(phone, code);
 
@@ -64,12 +66,18 @@ export function PhoneField() {
         <input
           id="checkout-phone"
           type="tel"
+          inputMode="tel"
           autoComplete="tel-national"
           placeholder="0300 4589211"
           aria-invalid={Boolean(errors.phone)}
           aria-describedby="checkout-phone-message"
           className="min-w-0 flex-1 bg-transparent placeholder:text-muted-foreground focus-visible:outline-none"
-          {...register("phone")}
+          {...phoneProps}
+          onChange={(event) => {
+            // Cut what is typed or pasted down to a complete number before the form sees it.
+            event.target.value = limitPhoneInput(event.target.value, code);
+            return onPhoneChange(event);
+          }}
         />
         {looksRight ? (
           <span

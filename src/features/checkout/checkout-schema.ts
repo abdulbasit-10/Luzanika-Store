@@ -36,6 +36,42 @@ export function phoneProblem(phone: string, code: string): string | null {
 }
 
 /**
+ * What the phone box keeps while someone types or pastes: only digits, spaces,
+ * "(", ")" and "-" (and a "+" at the very start), and no more digits than a
+ * complete number has, so nothing more can be typed once it is complete.
+ * - A number with its own "+" or "00": up to 15 digits (the international limit).
+ * - +92: 11 digits with the leading 0 (0300 4589211), 10 without it.
+ * - +49: 14 digits with the leading 0, 13 without it.
+ */
+export function limitPhoneInput(value: string, code: string): string {
+  const cleaned = value.replace(/[^\d\s()+-]/g, "").replace(/(?!^)\+/g, "");
+  const digits = cleaned.replace(/\D/g, "");
+
+  const international = cleaned.startsWith("+") || digits.startsWith("00");
+  const leadingZero = digits.startsWith("0");
+  const maxDigits = international
+    ? 15
+    : code === "+92"
+      ? leadingZero
+        ? 11
+        : 10
+      : leadingZero
+        ? 14
+        : 13;
+
+  let kept = "";
+  let count = 0;
+  for (const char of cleaned) {
+    if (/\d/.test(char)) {
+      if (count >= maxDigits) break;
+      count += 1;
+    }
+    kept += char;
+  }
+  return kept;
+}
+
+/**
  * The number as it is sent with the order. A number typed with its own "+" (or
  * "00") is kept; otherwise the chosen country code is put in front and the
  * leading zero of the local number is dropped ("0300 4589211" becomes "+92 300 4589211").
