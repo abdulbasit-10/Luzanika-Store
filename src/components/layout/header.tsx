@@ -36,9 +36,12 @@ function IconLink({
   );
 }
 
-export function Header() {
+/** `white` is for the signed-in account pages; every other page keeps the grey bar. */
+export function Header({ tone = "grey" }: { tone?: "grey" | "white" }) {
   return (
-    <header className="sticky top-0 z-40 bg-background">
+    <header
+      className={`sticky top-0 z-40 ${tone === "white" ? "bg-surface" : "bg-background"}`}
+    >
       <Container className="flex h-(--header-height) items-center justify-between gap-6">
         <Logo />
         <MainNav />

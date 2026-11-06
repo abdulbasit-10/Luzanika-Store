@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.next-prod/
+/.next-*/
 /out/
 
 # production
@@ -54,3 +55,6 @@ GEMINI.md
 
 # uploaded files (profile photos, ...)
 /.uploads/
+
+# Claude Code local files
+/.claude/

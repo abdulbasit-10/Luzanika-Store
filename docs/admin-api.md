@@ -315,10 +315,13 @@ under `/stock`, not here.
 
 The file type is decided by what the image decoder finds, not by the file name
 or type the browser sent. A new photo's description starts as the product name.
-Each answer is the whole updated product. Uploaded photos are public at
-`/api/v1/media/products/<name>.webp` (cached for a year; every upload gets a
-new name), and that is the `src` the shop pages use. Photos that ship with the
-site keep their `/images/...` paths.
+Each answer is the whole updated product. With Cloudinary set up, an uploaded
+photo is public at its Cloudinary address
+(`https://res.cloudinary.com/<cloud>/image/upload/<folder>/products/<name>.webp`),
+and that is the `src` the shop pages use. Without Cloudinary (files on the
+server's disk) the `src` is `/api/v1/media/products/<name>.webp` (cached for a
+year; every upload gets a new name). Photos that ship with the site keep their
+`/images/...` paths.
 
 ### Categories, collections, home page
 
@@ -455,11 +458,12 @@ events and is not returned by this endpoint.
 
 ## Environment
 
-| Variable                   | Purpose                                                                                                                       |
-| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `STAFF_2FA_ENCRYPTION_KEY` | **Required for the admin.** 32 random bytes as base64; encrypts authenticator secrets. If it is lost, staff set up 2FA again. |
-| `SMTP_*`, `MAIL_FROM`      | Invites, password resets and customer order emails. Without `SMTP_HOST`, development prints emails in the server log.         |
-| `UPLOADS_DIR`              | Where uploaded files (product photos, customer avatars) are kept. Required in production, an absolute path.                   |
+| Variable                   | Purpose                                                                                                                                                                                                                                                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STAFF_2FA_ENCRYPTION_KEY` | **Required for the admin.** 32 random bytes as base64; encrypts authenticator secrets. If it is lost, staff set up 2FA again.                                                                                                                                                                                          |
+| `SMTP_*`, `MAIL_FROM`      | Invites, password resets and customer order emails. Without `SMTP_HOST`, development prints emails in the server log.                                                                                                                                                                                                  |
+| `CLOUDINARY_*`             | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (all three), optional `CLOUDINARY_FOLDER` (default `luzanika`). Every picture goes to Cloudinary: product photos public, profile photos and payment screenshots private (signed, opened only through the app). The key needs upload permission. |
+| `UPLOADS_DIR`              | Only when Cloudinary is not set up: where uploaded files are kept on disk. Required in production then, an absolute path.                                                                                                                                                                                              |
 
 Generate the key with:
 

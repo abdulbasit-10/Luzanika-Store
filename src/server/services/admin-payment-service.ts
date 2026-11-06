@@ -125,12 +125,17 @@ export async function confirmOrderPayment(
     );
   });
 
+  const updated = await getAdminOrder(number);
   for (const target of notify) {
     await notifyCustomer(
-      orderPaymentConfirmedEmail({ ...target, orderNumber: number }),
+      orderPaymentConfirmedEmail({
+        ...target,
+        orderNumber: number,
+        order: updated,
+      }),
     );
   }
-  return getAdminOrder(number);
+  return updated;
 }
 
 /**
@@ -208,16 +213,18 @@ export async function rejectOrderPayment(
     notify.push({ to: order.email, name: order.ship_name });
   });
 
+  const updated = await getAdminOrder(number);
   for (const target of notify) {
     await notifyCustomer(
       orderPaymentRejectedEmail({
         ...target,
         orderNumber: number,
         reason: body.reason,
+        order: updated,
       }),
     );
   }
-  return getAdminOrder(number);
+  return updated;
 }
 
 /** A customer's payment screenshot. Never public: only the admin route for staff who may verify payments calls this. */

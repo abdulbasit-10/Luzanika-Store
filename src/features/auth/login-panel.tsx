@@ -51,7 +51,7 @@ export function LoginPanel() {
 
   return (
     <div className="w-full max-w-[400px]">
-      <h1 className="text-[clamp(1.5rem,3.6dvh,1.875rem)] leading-tight font-semibold">
+      <h1 className="text-[clamp(1.5rem,3.6dvh,1.875rem)] leading-tight font-medium">
         Get Started Now
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -62,10 +62,20 @@ export function LoginPanel() {
         <SocialSignIn />
       </div>
 
+      {/* The faint "or" line of the Figma between the social buttons and the form. */}
+      <div
+        aria-hidden
+        className="mt-[clamp(0.75rem,2.2dvh,1.25rem)] flex items-center gap-3 text-xs text-[#d0d5dd]"
+      >
+        <span className="h-px flex-1 bg-[#eaecf0]" />
+        or
+        <span className="h-px flex-1 bg-[#eaecf0]" />
+      </div>
+
       <form
         noValidate
         onSubmit={handleSubmit((values) => mutate(values))}
-        className="mt-[clamp(1rem,3.2dvh,1.75rem)] flex flex-col gap-[clamp(0.75rem,2dvh,1.25rem)]"
+        className="mt-[clamp(0.75rem,2.2dvh,1.25rem)] flex flex-col gap-[clamp(0.75rem,2dvh,1.25rem)]"
       >
         <Field id="login-email" label="Email" error={errors.email?.message}>
           <EmailInput

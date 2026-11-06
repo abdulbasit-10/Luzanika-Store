@@ -79,4 +79,13 @@ export class LocalDiskStorage implements FileStorage {
   async delete(key: string): Promise<void> {
     await rm(this.pathFor(key), { force: true });
   }
+
+  // Files on disk are served by the app's own media route.
+  publicUrl(): string | null {
+    return null;
+  }
+
+  keyFromPublicUrl(): string | null {
+    return null;
+  }
 }

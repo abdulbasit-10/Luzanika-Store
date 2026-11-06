@@ -30,6 +30,10 @@ export default defineConfig({
       SMTP_HOST: "",
       MAIL_FROM: "",
       CONTACT_TO_EMAIL: "",
+      // Tests keep their pictures in a temporary folder, never in the developer's Cloudinary account.
+      CLOUDINARY_CLOUD_NAME: "",
+      CLOUDINARY_API_KEY: "",
+      CLOUDINARY_API_SECRET: "",
     },
   },
 });

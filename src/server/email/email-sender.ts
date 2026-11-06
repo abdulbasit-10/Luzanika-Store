@@ -5,6 +5,7 @@ import nodemailer from "nodemailer";
 import { getMailEnv } from "@/server/config/mail-env";
 import { logger } from "@/server/logger";
 
+import { createResendSender } from "./resend-sender";
 import { createSmtpSender } from "./smtp-sender";
 
 export interface EmailMessage {
@@ -40,6 +41,7 @@ const missingProviderSender: EmailSender = {
 
 let override: EmailSender | undefined;
 let smtpSender: EmailSender | undefined;
+let resendSender: EmailSender | undefined;
 
 /** Replace the sender, for tests only. Pass undefined to restore the default. */
 export function setEmailSender(sender: EmailSender | undefined): void {
@@ -69,13 +71,26 @@ function getSmtpSender(): EmailSender | null {
   return smtpSender;
 }
 
+/** Builds the sender for Resend's web API once. */
+function getResendSender(): EmailSender | null {
+  if (resendSender) return resendSender;
+
+  const { resendApiKey, from } = getMailEnv();
+  if (!resendApiKey || !from) return null;
+
+  resendSender = createResendSender(resendApiKey, from);
+  return resendSender;
+}
+
 /**
- * The sender in use, in this order: a test override, the configured mail
- * server (SMTP_HOST), the log in development, and in production without a
- * mail server a sender that fails loudly.
+ * The sender in use, in this order: a test override, Resend's web API
+ * (RESEND_API_KEY), the configured mail server (SMTP_HOST), the log in
+ * development, and in production without either a sender that fails loudly.
  */
 export function getEmailSender(): EmailSender {
   if (override) return override;
+  const resend = getResendSender();
+  if (resend) return resend;
   const smtp = getSmtpSender();
   if (smtp) return smtp;
   return process.env.NODE_ENV === "production"

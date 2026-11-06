@@ -66,11 +66,6 @@ export const aboutPillars = {
   ] satisfies Pillar[],
 };
 
-export const aboutPortfolio = {
-  eyebrow: "Portfolio Repertoire",
-  title: "Find Your Everyday Essentials",
-};
-
 export const aboutCta = {
   title: "Your Style, Your Story.",
   description:

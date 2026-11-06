@@ -39,7 +39,12 @@ const mailEnvSchema = z.object({
   SMTP_SECURE: optionalText.pipe(z.enum(["true", "false"]).optional()),
   SMTP_USER: optionalText,
   SMTP_PASSWORD: optionalText,
-  /** Who the emails come from. Required once SMTP_HOST is set. */
+  /**
+   * Resend API key. When set, emails go through Resend's web API (HTTPS) instead of the mail server,
+   * for hosts that block SMTP (Railway trial and hobby plans). Needs MAIL_FROM.
+   */
+  RESEND_API_KEY: optionalText,
+  /** Who the emails come from. Required once SMTP_HOST or RESEND_API_KEY is set. */
   MAIL_FROM: sender,
   /** Where contact-form messages are delivered. */
   CONTACT_TO_EMAIL: optionalText.pipe(z.email().optional()),
@@ -56,6 +61,8 @@ export interface SmtpSettings {
 export interface MailEnv {
   /** null when no mail server is configured. */
   smtp: SmtpSettings | null;
+  /** Resend API key, or null when emails go through the mail server (or nowhere). */
+  resendApiKey: string | null;
   /** Sender address, or null when not set. */
   from: string | null;
   /** Receiving address of the contact form, or null when not set. */
@@ -80,7 +87,7 @@ export function getMailEnv(): MailEnv {
   }
 
   const env = result.data;
-  if (env.SMTP_HOST && !env.MAIL_FROM) {
+  if ((env.SMTP_HOST || env.RESEND_API_KEY) && !env.MAIL_FROM) {
     throw new Error("Invalid mail environment variables: MAIL_FROM");
   }
   if (Boolean(env.SMTP_USER) !== Boolean(env.SMTP_PASSWORD)) {
@@ -103,6 +110,7 @@ export function getMailEnv(): MailEnv {
               : null,
         }
       : null,
+    resendApiKey: env.RESEND_API_KEY ?? null,
     from: env.MAIL_FROM ?? null,
     contactTo: env.CONTACT_TO_EMAIL ?? null,
   };

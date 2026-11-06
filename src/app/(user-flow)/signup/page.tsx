@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <main className="flex flex-1 items-center justify-center bg-background px-gutter py-8 lg:min-h-[calc(100dvh-var(--header-height))] lg:py-10">
+    <main className="flex flex-1 items-center justify-center bg-background px-gutter py-6 lg:min-h-[calc(100dvh-var(--header-height))] lg:py-[clamp(0.75rem,2.2dvh,2.5rem)]">
       <Suspense>
         <SignupPanel />
       </Suspense>

@@ -16,6 +16,16 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30,
     // The widest picture is the hero (1774 px). Fewer sizes mean fewer first-visit conversions and cache entries.
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // Product photos are served from our own Cloudinary account (only its public "upload" pictures).
+    remotePatterns: process.env.CLOUDINARY_CLOUD_NAME
+      ? [
+          {
+            protocol: "https",
+            hostname: "res.cloudinary.com",
+            pathname: `/${process.env.CLOUDINARY_CLOUD_NAME}/image/upload/**`,
+          },
+        ]
+      : [],
   },
   // Do not advertise the framework in every response.
   poweredByHeader: false,

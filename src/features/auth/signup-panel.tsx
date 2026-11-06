@@ -27,6 +27,9 @@ import {
 } from "@/features/auth/use-redirect-when-signed-in";
 import { useSignIn } from "@/features/auth/use-session";
 
+/** The Figma inputs are white with a light grey outline on the cream card. */
+const inputOutline = "border border-[#d7d7d7]";
+
 export function SignupPanel() {
   const redirecting = useRedirectWhenSignedIn();
   const next = useNextPath();
@@ -76,7 +79,7 @@ export function SignupPanel() {
   const busy = isPending || isSuccess;
 
   return (
-    <div className="w-full max-w-[400px]">
+    <div className="w-full max-w-[540px] rounded-2xl bg-section px-[clamp(1.25rem,6vw,3.25rem)] py-[clamp(0.875rem,3dvh,2.25rem)]">
       <div className="text-center">
         <h1 className="text-[clamp(1.375rem,3.2dvh,1.75rem)] leading-tight font-semibold">
           Create New Account
@@ -86,10 +89,17 @@ export function SignupPanel() {
         </p>
       </div>
 
-      <div className="mt-[clamp(0.875rem,2.6dvh,1.5rem)]">
-        <SocialSignIn />
+      <div className="mt-[clamp(0.75rem,2.4dvh,1.5rem)]">
+        <SocialSignIn outlined />
       </div>
-      <p className="mt-3 text-center text-[11px] text-muted-foreground">or</p>
+      <div
+        aria-hidden
+        className="mt-[clamp(0.625rem,1.8dvh,1.125rem)] flex items-center gap-3 text-xs text-muted-foreground"
+      >
+        <span className="h-px flex-1 bg-[#d7d7d7]" />
+        or
+        <span className="h-px flex-1 bg-[#d7d7d7]" />
+      </div>
 
       <form
         noValidate
@@ -97,16 +107,18 @@ export function SignupPanel() {
           void confirmPassword;
           mutate(values);
         })}
-        className="mt-[clamp(0.5rem,1.6dvh,1rem)] flex flex-col gap-[clamp(0.625rem,1.8dvh,1.125rem)]"
+        className="mt-[clamp(0.5rem,1.4dvh,1rem)] flex flex-col gap-[clamp(0.5rem,1.5dvh,1rem)]"
       >
         <div className="grid grid-cols-2 gap-3">
           <Field
             id="signup-first-name"
             label="First Name"
+            labelClassName="text-sm"
             error={errors.firstName?.message}
           >
             <AuthInput
               id="signup-first-name"
+              className={inputOutline}
               placeholder="Name"
               autoComplete="given-name"
               aria-invalid={Boolean(errors.firstName)}
@@ -117,10 +129,12 @@ export function SignupPanel() {
           <Field
             id="signup-last-name"
             label="Last Name"
+            labelClassName="text-sm"
             error={errors.lastName?.message}
           >
             <AuthInput
               id="signup-last-name"
+              className={inputOutline}
               placeholder="Name"
               autoComplete="family-name"
               aria-invalid={Boolean(errors.lastName)}
@@ -130,9 +144,15 @@ export function SignupPanel() {
           </Field>
         </div>
 
-        <Field id="signup-email" label="Email" error={errors.email?.message}>
+        <Field
+          id="signup-email"
+          label="Email"
+          labelClassName="text-sm"
+          error={errors.email?.message}
+        >
           <EmailInput
             id="signup-email"
+            className={inputOutline}
             aria-invalid={Boolean(errors.email)}
             aria-describedby="signup-email-message"
             {...register("email")}
@@ -142,10 +162,12 @@ export function SignupPanel() {
         <Field
           id="signup-password"
           label="Password"
+          labelClassName="text-sm"
           error={errors.password?.message}
         >
           <PasswordInput
             id="signup-password"
+            className={inputOutline}
             placeholder="Your password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.password)}
@@ -157,10 +179,12 @@ export function SignupPanel() {
         <Field
           id="signup-confirm-password"
           label="Confirm Password"
+          labelClassName="text-sm"
           error={errors.confirmPassword?.message}
         >
           <PasswordInput
             id="signup-confirm-password"
+            className={inputOutline}
             placeholder="Re-enter your password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.confirmPassword)}
@@ -184,7 +208,7 @@ export function SignupPanel() {
         </Button>
       </form>
 
-      <p className="mt-[clamp(1rem,3dvh,2rem)] text-center text-xs text-muted-foreground">
+      <p className="mt-[clamp(0.75rem,2.2dvh,1.5rem)] text-center text-xs text-muted-foreground">
         Already have an account?{" "}
         <Link
           href={withNextPath("/login", next)}

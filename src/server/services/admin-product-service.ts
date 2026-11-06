@@ -150,7 +150,9 @@ export async function listProducts(
       };
     }
     const stock: Record<Market, number> = { PK: 0, DE: 0 };
-    for (const entry of available.filter((item) => item.product_id === row.id)) {
+    for (const entry of available.filter(
+      (item) => item.product_id === row.id,
+    )) {
       stock[entry.market] = Math.max(0, Number(entry.available));
     }
     return {
@@ -179,7 +181,12 @@ export async function listProducts(
 
 function toVariantDto(
   variant: VariantRow,
-  stock: { variant_id: string; market: Market; on_hand: number; reserved: number }[],
+  stock: {
+    variant_id: string;
+    market: Market;
+    on_hand: number;
+    reserved: number;
+  }[],
 ): VariantDto {
   const perMarket: VariantDto["stock"] = {
     PK: { onHand: 0, reserved: 0, available: 0 },
@@ -292,22 +299,40 @@ async function checkReferences(
   tx: Tx,
 ): Promise<void> {
   const fail = (field: string, message: string) =>
-    new ApiError("validation_failed", { message, fields: { [field]: message } });
+    new ApiError("validation_failed", {
+      message,
+      fields: { [field]: message },
+    });
 
-  if (refs.categoryId && !(await adminCatalogRepository.findCategory(refs.categoryId, tx))) {
+  if (
+    refs.categoryId &&
+    !(await adminCatalogRepository.findCategory(refs.categoryId, tx))
+  ) {
     throw fail("categoryId", "This category does not exist");
   }
-  if (refs.collectionId && !(await adminCatalogRepository.findCollection(refs.collectionId, tx))) {
+  if (
+    refs.collectionId &&
+    !(await adminCatalogRepository.findCollection(refs.collectionId, tx))
+  ) {
     throw fail("collectionId", "This collection does not exist");
   }
   if (refs.subcategoryId) {
     if (!refs.categoryId) {
-      throw fail("subcategoryId", "Choose a category before choosing a subcategory");
+      throw fail(
+        "subcategoryId",
+        "Choose a category before choosing a subcategory",
+      );
     }
-    const sub = await adminCatalogRepository.findSubcategory(refs.subcategoryId, tx);
+    const sub = await adminCatalogRepository.findSubcategory(
+      refs.subcategoryId,
+      tx,
+    );
     if (!sub) throw fail("subcategoryId", "This subcategory does not exist");
     if (sub.category_id !== refs.categoryId) {
-      throw fail("subcategoryId", "This subcategory belongs to another category");
+      throw fail(
+        "subcategoryId",
+        "This subcategory belongs to another category",
+      );
     }
   }
 }
@@ -359,7 +384,8 @@ export async function createProduct(
   const base = explicitSlug ?? slugify(body.name);
   if (!base) {
     throw new ApiError("validation_failed", {
-      message: "Please give a slug: the name has no letters or digits to make one from.",
+      message:
+        "Please give a slug: the name has no letters or digits to make one from.",
       fields: { slug: "Please give a slug" },
     });
   }
@@ -375,7 +401,8 @@ export async function createProduct(
         if (explicitSlug) throw slugTaken();
         for (let n = 2; ; n++) {
           slug = `${base.slice(0, 110)}-${n}`;
-          if (!(await adminProductRepository.slugExists(slug, undefined, tx))) break;
+          if (!(await adminProductRepository.slugExists(slug, undefined, tx)))
+            break;
         }
       }
 
@@ -449,7 +476,9 @@ export async function updateProduct(
       await checkReferences(
         {
           categoryId:
-            body.categoryId !== undefined ? body.categoryId : current.category_id,
+            body.categoryId !== undefined
+              ? body.categoryId
+              : current.category_id,
           subcategoryId:
             body.subcategoryId !== undefined
               ? body.subcategoryId
@@ -502,7 +531,9 @@ export async function deleteProduct(
     const current = await adminProductRepository.lockById(id, tx);
     if (!current) throw notFound();
     if (current.deleted_at) {
-      throw new ApiError("conflict", { message: "This product is already deleted." });
+      throw new ApiError("conflict", {
+        message: "This product is already deleted.",
+      });
     }
     await adminProductRepository.softDelete(id, tx);
     await recordAudit(
@@ -512,7 +543,11 @@ export async function deleteProduct(
         action: "products.delete",
         entityType: "product",
         entityId: id,
-        before: { status: current.status, name: current.name, slug: current.slug },
+        before: {
+          status: current.status,
+          name: current.name,
+          slug: current.slug,
+        },
         after: { status: "archived", deleted: true },
       },
       ctx.requestId,
@@ -531,7 +566,9 @@ export async function restoreProduct(
     const current = await adminProductRepository.lockById(id, tx);
     if (!current) throw notFound();
     if (!current.deleted_at) {
-      throw new ApiError("conflict", { message: "This product is not deleted." });
+      throw new ApiError("conflict", {
+        message: "This product is not deleted.",
+      });
     }
     await adminProductRepository.restore(id, tx);
     await recordAudit(
@@ -578,9 +615,13 @@ export async function setPrices(
         await adminProductRepository.upsertPrice(id, market, price, tx);
       }
     }
-    if (current.status === "active" && (await adminProductRepository.countPrices(id, tx)) === 0) {
+    if (
+      current.status === "active" &&
+      (await adminProductRepository.countPrices(id, tx)) === 0
+    ) {
       throw new ApiError("conflict", {
-        message: "A product on sale needs a price in at least one market. Switch it to draft first.",
+        message:
+          "A product on sale needs a price in at least one market. Switch it to draft first.",
       });
     }
 
@@ -684,9 +725,14 @@ export async function updateVariant(
     productId = await withTransaction(async (tx) => {
       const variant = await adminProductRepository.lockVariant(variantId, tx);
       if (!variant) {
-        throw new ApiError("not_found", { message: "This variant does not exist." });
+        throw new ApiError("not_found", {
+          message: "This variant does not exist.",
+        });
       }
-      const product = await adminProductRepository.lockById(variant.product_id, tx);
+      const product = await adminProductRepository.lockById(
+        variant.product_id,
+        tx,
+      );
       if (!product || product.deleted_at) {
         throw new ApiError("conflict", {
           message: "This product was deleted. Restore it before changing it.",
@@ -694,12 +740,16 @@ export async function updateVariant(
       }
 
       // A colour and its code go together, also after this change.
-      const colorName = body.colorName !== undefined ? body.colorName : variant.color_name;
-      const colorHex = body.colorHex !== undefined ? body.colorHex : variant.color_hex;
+      const colorName =
+        body.colorName !== undefined ? body.colorName : variant.color_name;
+      const colorHex =
+        body.colorHex !== undefined ? body.colorHex : variant.color_hex;
       if ((colorName === null) !== (colorHex === null)) {
         throw new ApiError("validation_failed", {
           message: "Give both the colour name and its code, or neither.",
-          fields: { colorHex: "Give both the colour name and its code, or neither" },
+          fields: {
+            colorHex: "Give both the colour name and its code, or neither",
+          },
         });
       }
 
@@ -721,7 +771,8 @@ export async function updateVariant(
         (await adminProductRepository.countActiveVariants(product.id, tx)) === 0
       ) {
         throw new ApiError("conflict", {
-          message: "A product on sale needs at least one active variant. Switch it to draft first.",
+          message:
+            "A product on sale needs at least one active variant. Switch it to draft first.",
         });
       }
 
@@ -796,11 +847,19 @@ export async function setSections(
 /** Where the shop page finds an uploaded photo (see the public media route). */
 const PHOTO_URL_PREFIX = "/api/v1/media/";
 
+/**
+ * The address the shop uses for a stored photo: Cloudinary's own address when
+ * the storage can serve it, otherwise the app's media route.
+ */
+function photoAddress(key: string): string {
+  return getStorage().publicUrl(key) ?? `${PHOTO_URL_PREFIX}${key}`;
+}
+
 /** The storage key behind a photo address, or null for the sample photos that ship with the site (/images/...). */
 function uploadedKey(src: string): string | null {
   return src.startsWith(PHOTO_URL_PREFIX)
     ? src.slice(PHOTO_URL_PREFIX.length)
-    : null;
+    : getStorage().keyFromPublicUrl(src);
 }
 
 async function removeFileQuietly(key: string | null): Promise<void> {
@@ -856,7 +915,7 @@ export async function addImage(
         });
       }
       const image = await adminProductRepository.insertImage(
-        { productId: id, src: `${PHOTO_URL_PREFIX}${key}`, alt: product.name },
+        { productId: id, src: photoAddress(key), alt: product.name },
         tx,
       );
       await recordAudit(

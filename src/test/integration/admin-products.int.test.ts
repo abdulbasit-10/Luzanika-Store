@@ -890,6 +890,41 @@ describe("product photos", () => {
     expect(again.status).toBe(404);
   });
 
+  it("keeps the storage's own public address for a photo and removes the file behind it", async () => {
+    // Like Cloudinary: the shop loads the photo from the storage's address, not from our media route.
+    const CDN = "https://cdn.example.test/";
+    setStorage({
+      put: (key, bytes) => storage.put(key, bytes),
+      get: (key) => storage.get(key),
+      delete: (key) => storage.delete(key),
+      publicUrl: (key) => `${CDN}${key}`,
+      keyFromPublicUrl: (url) =>
+        url.startsWith(CDN) ? url.slice(CDN.length) : null,
+    });
+    const staff = await manager();
+    const product = await newProduct(staff.cookie);
+    const added = await upload(
+      staff.cookie,
+      product.id,
+      await picture(100, 100),
+    );
+    expect(added.status).toBe(201);
+    const [image] = added.body.product.images as { id: string; src: string }[];
+    expect(image.src).toMatch(
+      /^https:\/\/cdn\.example\.test\/products\/[0-9a-f]{32}\.webp$/,
+    );
+    const key = image.src.slice(CDN.length);
+    expect(await storage.get(key)).not.toBeNull();
+
+    const removed = await call(deleteImageRoute, {
+      method: "DELETE",
+      staffCookie: staff.cookie,
+      params: { id: product.id, imageId: image.id },
+    });
+    expect(removed.status).toBe(200);
+    expect(await storage.get(key)).toBeNull();
+  });
+
   it("removes a sample photo from the product without touching any file", async () => {
     const staff = await manager();
     const product = await newProduct(staff.cookie);

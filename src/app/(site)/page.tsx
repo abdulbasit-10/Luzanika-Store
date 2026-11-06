@@ -1,5 +1,7 @@
 import { CategorySection } from "@/features/home/category-section";
-import { FaqSection } from "@/features/home/faq-section";
+// The FAQ section is hidden on the home page for now. To show it again, remove the two comment marks
+// (this import and the <FaqSection /> line below). The FAQ page itself is unchanged.
+// import { FaqSection } from "@/features/home/faq-section";
 import { FeaturedProductsSection } from "@/features/home/featured-products-section";
 import { HeroSection } from "@/features/home/hero-section";
 import { NewArrivalsSection } from "@/features/home/new-arrivals-section";
@@ -13,7 +15,7 @@ export default function Home() {
       <CategorySection />
       <FeaturedProductsSection />
       <NewArrivalsSection />
-      <FaqSection />
+      {/* <FaqSection /> */}
       <SpecialOffersSection />
     </main>
   );

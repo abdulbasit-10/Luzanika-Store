@@ -31,7 +31,14 @@ export function buildContentSecurityPolicy({ isDev }: Options): string {
       ...(isDev ? ["'unsafe-eval'"] : []),
     ],
     "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": ["'self'", "data:", "blob:"],
+    "img-src": [
+      "'self'",
+      "data:",
+      "blob:",
+      ...(process.env.CLOUDINARY_CLOUD_NAME
+        ? ["https://res.cloudinary.com"]
+        : []),
+    ],
     "font-src": ["'self'"],
     "connect-src": ["'self'", ...(isDev ? ["ws:", "wss:"] : [])],
     "media-src": ["'self'"],

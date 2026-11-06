@@ -5,7 +5,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { cn } from "@/utils/cn";
 
 interface AboutSplitSectionProps {
-  tone?: "default" | "cream";
+  tone?: "default" | "white" | "cream";
   eyebrow: string;
   title: string;
   description: string;
