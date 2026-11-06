@@ -59,11 +59,11 @@ export function CookieConsentBanner() {
           Reject optional
         </Button>
         <Link
-          href="/cookies#cookie-preferences"
+          href="/cookies"
           className="ml-auto flex items-center gap-1.5 text-[10px] font-medium tracking-[0.12em] text-muted-foreground uppercase hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Settings2 aria-hidden className="size-3" />
-          Settings
+          Cookie policy
         </Link>
       </div>
     </section>

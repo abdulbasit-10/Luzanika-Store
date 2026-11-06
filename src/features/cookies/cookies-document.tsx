@@ -1,12 +1,4 @@
-import {
-  AppWindow,
-  Compass,
-  Globe,
-  LayoutGrid,
-  Lock,
-  SlidersHorizontal,
-  type LucideIcon,
-} from "lucide-react";
+import { Lock, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -18,7 +10,10 @@ import {
   policyUpdates,
   retention,
 } from "@/features/cookies/cookie-content";
-import { CookiePreferences } from "@/features/cookies/cookie-preferences";
+// The browser links and the preference switches are not in the Figma, so they are hidden for now.
+// To show them again, restore these imports, `browserIcons` and the commented block in section 3.
+// import { AppWindow, Compass, Globe, LayoutGrid } from "lucide-react";
+// import { CookiePreferences } from "@/features/cookies/cookie-preferences";
 
 const featureIcons: Record<
   (typeof cookieFeatureCards)[number]["icon"],
@@ -28,7 +23,7 @@ const featureIcons: Record<
   sliders: SlidersHorizontal,
 };
 
-const browserIcons: LucideIcon[] = [Compass, Globe, AppWindow, LayoutGrid];
+// const browserIcons: LucideIcon[] = [Compass, Globe, AppWindow, LayoutGrid];
 
 const bodyText = "text-base leading-[1.3] text-muted-foreground";
 
@@ -119,6 +114,7 @@ export function CookiesDocument() {
         title="Managing Your Cookie Preferences"
       >
         <p className={bodyText}>{managePreferences.body}</p>
+        {/*
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {managePreferences.browsers.map((browser, index) => {
             const Icon = browserIcons[index];
@@ -139,6 +135,7 @@ export function CookiesDocument() {
           })}
         </ul>
         <CookiePreferences />
+        */}
       </PolicySection>
 
       <PolicySection
