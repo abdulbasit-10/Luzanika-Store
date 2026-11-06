@@ -24,6 +24,10 @@ const items: { label: string; href: string; icon: LucideIcon }[] = [
   { label: "Order History", href: "/orders", icon: ClipboardList },
 ];
 
+/** Reserves the width of the label in bold, so the row does not change size when the link turns bold. */
+const reserveBold =
+  "after:invisible after:block after:h-0 after:overflow-hidden after:font-bold after:content-[attr(data-label)]";
+
 const itemClass =
   "flex h-11 shrink-0 items-center gap-2.5 rounded-md px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:w-full";
 
@@ -59,12 +63,14 @@ export function AccountSidebar() {
             className={cn(
               itemClass,
               active
-                ? "bg-white text-foreground"
+                ? "bg-white font-bold text-foreground"
                 : "text-white/80 hover:bg-white/10",
             )}
           >
             <Icon aria-hidden className="size-4" strokeWidth={1.75} />
-            {label}
+            <span data-label={label} className={reserveBold}>
+              {label}
+            </span>
           </Link>
         );
       })}
