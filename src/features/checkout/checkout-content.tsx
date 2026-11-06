@@ -14,6 +14,7 @@ import type { CartTotals } from "@/features/cart/cart-totals";
 import { OrderSummary } from "@/features/cart/order-summary";
 import {
   checkoutSchema,
+  fullPhoneNumber,
   type CheckoutFormValues,
 } from "@/features/checkout/checkout-schema";
 import { ContactCard } from "@/features/checkout/contact-card";
@@ -37,7 +38,10 @@ function toOrderInput(
 ): PlaceOrderInput {
   return {
     market: region,
-    contact: { email: values.email, phone: values.phone },
+    contact: {
+      email: values.email,
+      phone: fullPhoneNumber(values.phone, values.phoneCode),
+    },
     shipping: {
       fullName: values.fullName,
       company: values.company || undefined,
@@ -105,6 +109,7 @@ export function CheckoutContent({
     defaultValues: {
       fullName: user ? `${user.firstName} ${user.lastName}`.trim() : "",
       email: user?.email ?? "",
+      phoneCode: region === "PK" ? "+92" : "+49",
       phone: user?.phone ?? "",
       company: "",
       country: regionCountry,

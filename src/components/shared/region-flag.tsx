@@ -1,11 +1,20 @@
 import type { RegionCode } from "@/types/region";
+import { cn } from "@/utils/cn";
 
-export function RegionFlag({ region }: { region: RegionCode }) {
+export function RegionFlag({
+  region,
+  className,
+}: {
+  region: RegionCode;
+  /** Replaces the default small rounded rectangle, e.g. `size-6 rounded-full` for a round flag. */
+  className?: string;
+}) {
   return (
     <svg
       aria-hidden
       viewBox="0 0 24 16"
-      className="h-3.5 w-5 shrink-0 rounded-[2px]"
+      preserveAspectRatio="xMidYMid slice"
+      className={cn("h-3.5 w-5 shrink-0 rounded-[2px]", className)}
     >
       {region === "PK" ? (
         <>

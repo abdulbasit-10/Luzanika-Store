@@ -4,6 +4,27 @@ import { PAYMENT_METHODS } from "@/features/orders/payment-methods";
 
 const required = (message: string) => z.string().trim().min(1, message);
 
+/** What a phone number may look like (the server checks the same rule). */
+export const PHONE_PATTERN = /^\+?[\d\s()-]{6,19}$/;
+
+/** The country codes offered next to the phone number: Pakistan and Germany. */
+export const PHONE_CODES = [
+  { code: "+92", region: "PK" },
+  { code: "+49", region: "DE" },
+] as const;
+
+/**
+ * The number as it is sent with the order. A number typed with its own "+" (or
+ * "00") is kept; otherwise the chosen country code is put in front and the
+ * leading zero of the local number is dropped ("0300 4589211" becomes "+92 300 4589211").
+ */
+export function fullPhoneNumber(phone: string, code: string): string {
+  const typed = phone.trim();
+  if (typed.startsWith("+")) return typed;
+  if (typed.startsWith("00")) return `+${typed.slice(2)}`;
+  return `${code} ${typed.replace(/^0+/, "")}`;
+}
+
 /*
  * There are no card fields here on purpose. Card details are entered in the
  * payment provider's own secure fields, so a card number never touches our
@@ -15,10 +36,8 @@ const baseSchema = z.object({
     "Keep it under 80 characters",
   ),
   email: z.email("Enter a valid email address"),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^\+?[\d\s()-]{6,19}$/, "Enter a valid phone number"),
+  phoneCode: z.enum(["+92", "+49"]),
+  phone: z.string().trim().regex(PHONE_PATTERN, "Enter a valid phone number"),
   company: z.string().trim().max(120, "Keep it under 120 characters"),
   country: required("Enter your country"),
   city: required("Enter your city"),

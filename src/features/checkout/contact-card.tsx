@@ -4,6 +4,7 @@ import { useFormContext } from "react-hook-form";
 
 import { Field, fieldControlClass } from "@/components/ui/field";
 import type { CheckoutFormValues } from "@/features/checkout/checkout-schema";
+import { PhoneField } from "@/features/checkout/phone-field";
 
 export const cardClass = "rounded-xl bg-panel p-4";
 
@@ -57,24 +58,7 @@ export function ContactCard() {
             {...register("email")}
           />
         </Field>
-        <Field
-          id="checkout-phone"
-          label="Phone Number"
-          required
-          hint="For SMS dispatch updates & courier confirmation."
-          error={errors.phone?.message}
-        >
-          <input
-            id="checkout-phone"
-            type="tel"
-            autoComplete="tel"
-            placeholder="0300 4589211"
-            aria-invalid={Boolean(errors.phone)}
-            aria-describedby="checkout-phone-message"
-            className={fieldControlClass}
-            {...register("phone")}
-          />
-        </Field>
+        <PhoneField />
       </div>
     </section>
   );
