@@ -122,7 +122,7 @@ function Subsection({ subsection }: { subsection: LegalSubsection }) {
             return (
               <article
                 key={card.title}
-                className="rounded-xl bg-white px-5 pt-5 pb-6"
+                className="rounded-2xl border border-[#d1c4b8]/30 bg-white px-5 pt-5 pb-6"
               >
                 <h4 className="flex items-center gap-2.5 font-heading text-base font-medium text-foreground">
                   <Icon

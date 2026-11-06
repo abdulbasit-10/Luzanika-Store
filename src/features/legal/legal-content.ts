@@ -42,6 +42,13 @@ export const legalHeroImage = {
   position: "50% 50%",
 };
 
+/* The Privacy Policy banner photo of the Figma (a cart with a globe, coins and a calculator). */
+export const privacyHeroImage = {
+  src: "/images/legal/privacy-hero.jpg",
+  alt: "",
+  position: "50% 50%",
+};
+
 const welcome: LegalIntro = {
   eyebrow: "Maison Luzanika • Client Charter",
   title: "Welcome to Our Privacy Policy!",
