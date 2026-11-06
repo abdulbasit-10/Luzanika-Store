@@ -101,11 +101,15 @@ export function getStorageEnv(): StorageEnv {
         "Invalid storage environment variables: set the CLOUDINARY_* values, or UPLOADS_DIR as an absolute path (production)",
       );
     }
-    cached = { kind: "disk", uploadsDir: path.resolve(UPLOADS_DIR) };
+    cached = {
+      kind: "disk",
+      uploadsDir: path.resolve(/*turbopackIgnore: true*/ UPLOADS_DIR),
+    };
   } else {
     cached = {
       kind: "disk",
       uploadsDir: path.resolve(
+        /*turbopackIgnore: true*/
         UPLOADS_DIR ?? path.join(os.homedir(), ".luzanika-dev-uploads"),
       ),
     };
