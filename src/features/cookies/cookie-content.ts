@@ -1,7 +1,8 @@
 /*
- * Copied from the Figma "Cookies Policy" frames. The Figma marks this as
- * suggested copy that the client must confirm; the retention text (section 6)
- * was cut off in the design and is written to match the real behaviour.
+ * Copied from the Figma "Cookies Policy" frame (five numbered sections). The
+ * Figma marks this as suggested copy that the client must confirm. The text of
+ * section 4 stops at a colon in the design, so it ends with what really
+ * happens: the visitor's own choice is kept for 12 months (see cookie-storage).
  */
 export const cookiesPolicy = {
   title: "Cookies Policy",
@@ -9,8 +10,6 @@ export const cookiesPolicy = {
   heading: "Cookies Policy",
   description:
     "Learn how we use cookies to improve your browsing and shopping experience with quiet precision.",
-  lastUpdated: "October 24, 2024",
-  version: "1.8",
   welcome: {
     title: "Welcome to Our Cookies Policy",
     description:
@@ -18,20 +17,9 @@ export const cookiesPolicy = {
   },
 } as const;
 
-export const cookieIndex = [
-  { id: "what-are-cookies", label: "What Are Cookies?" },
-  { id: "how-we-use-cookies", label: "How We Use Them" },
-  { id: "types-of-cookies", label: "Types of Cookies" },
-  { id: "third-party-cookies", label: "Third Parties" },
-  { id: "managing-preferences", label: "Preferences" },
-  { id: "retention", label: "Retention" },
-  { id: "policy-updates", label: "Policy Updates" },
-  { id: "client-support", label: "Client Support" },
-] as const;
-
 export const cookieFeatureCards = [
   {
-    title: "Local & Encrypted",
+    title: "Local And Encrypted",
     text: "Stored on your client browser, inaccessible across unrelated origins.",
     icon: "lock",
   },
@@ -102,13 +90,6 @@ export const cookieTypes: CookieType[] = [
   },
 ];
 
-export const thirdPartyCookies = {
-  body: "Some cookies may be placed by trusted third-party services integrated into our store infrastructure, such as analytical platforms, payment token gateways, and global carrier tracking interfaces.",
-  noteTitle: "Atelier Transparency Note",
-  note: "Financial transactions are tokenized through strictly encrypted PCI-DSS Level 1 payment gateways (Stripe, Apple Pay). Real-time courier dispatch status (DHL Express / FedEx Priority) relies on ephemeral verification identifiers that never record your browsing history outside our boutique.",
-  tags: ["Tokenized Checkout", "Encrypted Telemetry", "Zero Data Brokerage"],
-} as const;
-
 export const managePreferences = {
   body: "You may manage or adjust your cookie preferences at any time through our on-site settings panel or natively via your browser configurations:",
   browsers: [
@@ -132,21 +113,10 @@ export const managePreferences = {
 } as const;
 
 export const retention =
-  "Some cookies are deleted when you close your browser, while others remain on your device for a specified period or until you delete them. Your own cookie choices are remembered for 12 months, after which we will ask you again.";
+  "Some cookies are deleted when you close your browser, while others remain on your device for a specified period or until manually expunged. Your own cookie choices are remembered for 12 months, after which we will ask you again.";
 
 export const policyUpdates =
   "We may update this Cookies Policy from time to time to mirror changes in legal obligations, browser architectures, or our bespoke catalog capabilities. Any revisions will be published on this page accompanied by an updated revision date.";
-
-export const clientSupport = {
-  body: "If you have questions, inquiries, or bespoke data requests regarding our Cookies Policy, our concierge and privacy compliance specialists remain at your service:",
-  officerLabel: "Data Protection Officer",
-} as const;
-
-export const moreInformation = {
-  eyebrow: "Private atelier support",
-  title: "Need More Information?",
-  text: "If you have questions about our policies or wish to explore bespoke styling assistance, our team is here to help.",
-} as const;
 
 export const consentNotice = {
   title: "Atelier Privacy Notice",
