@@ -6,7 +6,7 @@ import { aboutCta } from "@/features/about/about-content";
 
 export function AboutCtaSection() {
   return (
-    <Section className="lg:py-25">
+    <Section tone="cream" className="lg:py-25">
       <div className="grid items-center gap-8 rounded-3xl bg-foreground p-6 lg:mx-5 lg:grid-cols-[1fr_44.6%] lg:gap-10 lg:px-10">
         <div className="flex flex-col items-start">
           <h2 className="font-heading text-3xl leading-tight font-semibold text-white lg:text-[41px]">

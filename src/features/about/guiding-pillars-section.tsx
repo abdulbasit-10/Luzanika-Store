@@ -4,7 +4,7 @@ import { aboutPillars } from "@/features/about/about-content";
 
 export function GuidingPillarsSection() {
   return (
-    <Section className="lg:py-25">
+    <Section tone="white" className="lg:py-25">
       <SectionHeading
         eyebrow={aboutPillars.eyebrow}
         title={aboutPillars.title}
@@ -15,7 +15,7 @@ export function GuidingPillarsSection() {
         {aboutPillars.items.map(({ title, description, icon: Icon }) => (
           <li
             key={title}
-            className="flex flex-col items-center rounded-xl bg-white px-8 pt-8 pb-6 text-center lg:pt-11 lg:pb-5"
+            className="flex flex-col items-center rounded-xl border border-[#f0f2ff] bg-section px-8 pt-8 pb-6 text-center lg:pt-11 lg:pb-5"
           >
             <span
               aria-hidden

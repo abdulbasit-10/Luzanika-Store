@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 
 import { AboutCtaSection } from "@/features/about/about-cta-section";
 import { AboutHero } from "@/features/about/about-hero";
-import { AboutPortfolioSection } from "@/features/about/about-portfolio-section";
 import { AboutSplitSection } from "@/features/about/about-split-section";
 import { aboutMission, aboutStory } from "@/features/about/about-content";
 import { GuidingPillarsSection } from "@/features/about/guiding-pillars-section";
@@ -15,12 +14,12 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="flex-1">
+    // Figma: a white page between the grey header and footer. The sections set their own colours.
+    <main className="flex-1 bg-white">
       <AboutHero />
-      <AboutSplitSection {...aboutStory} />
+      <AboutSplitSection {...aboutStory} tone="white" />
       <AboutSplitSection {...aboutMission} tone="cream" imageFirst />
       <GuidingPillarsSection />
-      <AboutPortfolioSection />
       <AboutCtaSection />
     </main>
   );

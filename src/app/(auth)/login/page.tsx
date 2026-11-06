@@ -12,8 +12,9 @@ export const metadata: Metadata = {
 };
 
 /*
- * Full-screen split layout from the Figma: photo on the left, form on the
- * right, with no header or footer. The photo is hidden below lg.
+ * Full-screen split layout from the Figma: photo on the left (darkened by a
+ * 25% black layer, the logo at its top-left), form on the right, with no
+ * header or footer. The photo is hidden below lg.
  */
 export default function LoginPage() {
   return (
@@ -27,7 +28,8 @@ export default function LoginPage() {
           sizes="50vw"
           className="object-cover object-[35%_50%]"
         />
-        <Logo size="lg" className="absolute bottom-8 left-8" />
+        <div aria-hidden className="absolute inset-0 bg-black/25" />
+        <Logo size="lg" className="absolute top-8 left-8" />
       </div>
 
       <div className="flex flex-1 flex-col px-gutter lg:px-[clamp(1.5rem,4vw,4rem)]">
