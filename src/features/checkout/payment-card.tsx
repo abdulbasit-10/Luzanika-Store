@@ -117,7 +117,7 @@ export function PaymentCard({ region }: { region: RegionCode }) {
           <div
             role="radiogroup"
             aria-labelledby="checkout-payment-title"
-            className="mt-2.5 flex flex-wrap gap-x-6 gap-y-2"
+            className="mt-3 flex flex-col gap-2.5"
           >
             {options.methods.map((option) => (
               <Radio

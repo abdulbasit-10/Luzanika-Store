@@ -8,9 +8,10 @@ import type { CheckoutFormValues } from "@/features/checkout/checkout-schema";
 export const cardClass = "rounded-xl bg-panel p-4";
 
 /**
- * Who the order is for. Only signed-in customers check out (the cart belongs to
- * their account), so there is no guest option: the name, email and phone are
- * filled in from the account and can be changed for this order.
+ * How to reach the customer: email and phone, side by side like the Figma. Only
+ * signed-in customers check out (the cart belongs to their account), so there is
+ * no guest option; both are filled in from the account and can be changed for
+ * this order. The recipient's name is in the delivery address card.
  */
 export function ContactCard() {
   const {
@@ -21,24 +22,6 @@ export function ContactCard() {
   return (
     <section aria-label="Contact details" className={cardClass}>
       <div className="grid gap-2.5 sm:grid-cols-2">
-        <Field
-          id="checkout-full-name"
-          label="Recipient's Full Name"
-          required
-          hint="The name the courier asks for at the door."
-          error={errors.fullName?.message}
-        >
-          <input
-            id="checkout-full-name"
-            type="text"
-            autoComplete="name"
-            placeholder="Eduard Franz"
-            aria-invalid={Boolean(errors.fullName)}
-            aria-describedby="checkout-full-name-message"
-            className={fieldControlClass}
-            {...register("fullName")}
-          />
-        </Field>
         <Field
           id="checkout-email"
           label="Email Address for Confirmation"

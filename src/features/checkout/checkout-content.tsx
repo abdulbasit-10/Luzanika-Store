@@ -80,8 +80,8 @@ function describeFailure(error: unknown): string {
 }
 
 /**
- * The forms and the order summary. They sit together so "Place Order" (in the
- * summary, outside the <form>) can follow the chosen payment method.
+ * The forms and the order summary. The summary sits inside the form, beside the
+ * payment card, so "Place Order" follows the chosen payment method.
  */
 export function CheckoutContent({
   lines,
@@ -155,42 +155,45 @@ export function CheckoutContent({
   const canPay = !isPending;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-8">
-      <FormProvider {...methods}>
-        <form
-          id={FORM_ID}
-          noValidate
-          onSubmit={handleSubmit((values) => {
-            reset();
-            mutate(toOrderInput(values, lines, totals, region));
-          })}
-          className="flex flex-col gap-2.5"
-        >
-          <ContactCard />
-          <ShippingCard
-            onCountryEdited={() => {
-              countryEdited.current = true;
-            }}
-          />
+    <FormProvider {...methods}>
+      <form
+        id={FORM_ID}
+        noValidate
+        onSubmit={handleSubmit((values) => {
+          reset();
+          mutate(toOrderInput(values, lines, totals, region));
+        })}
+        className="flex flex-col gap-4 lg:gap-7"
+      >
+        <ContactCard />
+        <ShippingCard
+          onCountryEdited={() => {
+            countryEdited.current = true;
+          }}
+        />
+        {/* Like the Figma: the payment card and the summary share the last row, the summary as tall as the payment card. */}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2.26fr)_minmax(0,1fr)] lg:items-stretch lg:gap-5">
           <PaymentCard region={region} />
-        </form>
-      </FormProvider>
-
-      <OrderSummary totals={totals} region={region}>
-        <Button
-          type="submit"
-          form={FORM_ID}
-          disabled={!canPay}
-          className="h-11 w-full rounded-lg px-4 py-0 text-[15px]"
-        >
-          {isPending ? "Placing your order…" : "Place Order"}
-        </Button>
-        {error ? (
-          <p role="alert" className="mt-3 text-center text-xs text-danger">
-            {describeFailure(error)}
-          </p>
-        ) : null}
-      </OrderSummary>
-    </div>
+          <OrderSummary
+            totals={totals}
+            region={region}
+            className="lg:self-stretch"
+          >
+            <Button
+              type="submit"
+              disabled={!canPay}
+              className="h-11 w-full rounded-lg px-4 py-0 text-[15px]"
+            >
+              {isPending ? "Placing your order…" : "Place Order"}
+            </Button>
+            {error ? (
+              <p role="alert" className="mt-3 text-center text-xs text-danger">
+                {describeFailure(error)}
+              </p>
+            ) : null}
+          </OrderSummary>
+        </div>
+      </form>
+    </FormProvider>
   );
 }

@@ -70,13 +70,13 @@ export function CheckoutView() {
   return (
     <Container className="pt-12 pb-16 lg:pt-[min(64px,3.5dvh)] lg:pb-16">
       <header>
-        <p className="text-sm text-muted-foreground uppercase">
+        <p className="text-xs text-muted-foreground uppercase">
           Express checkout pipeline
         </p>
         <h1 className="mt-3 font-heading text-4xl leading-[1.2] font-normal lg:mt-[min(10px,1.4dvh)] lg:text-[clamp(1.75rem,min(3vw,5dvh),2.5rem)]">
           Checkout And Payment
         </h1>
-        <p className="mt-3 max-w-[38.75rem] text-[15px] leading-6 lg:mt-[min(10px,1.4dvh)]">
+        <p className="mt-3 max-w-[38.75rem] text-sm leading-6 lg:mt-[min(10px,1.4dvh)]">
           Complete your delivery and financial credentials to finalize your
           order.
         </p>
